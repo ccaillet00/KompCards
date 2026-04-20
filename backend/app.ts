@@ -5,7 +5,7 @@ import { auth } from "./src/lib/auth";
 const app = express();
 const port = 3000;
 
-app.all("/api/auth/*", toNodeHandler(auth));
+app.all("/api/auth/{*any}", toNodeHandler(auth));
 
 // Mount express json middleware after Better Auth handler
 // or only apply it to routes that don't interact with Better Auth
