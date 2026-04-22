@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { auth } from "./auth";
+import { auth } from "../src/lib/auth";
 
 describe("Auth API", () => {
   it("should have signIn.email method available", async () => {

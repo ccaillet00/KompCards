@@ -1,0 +1,13 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: postgresSQL
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: supersecret123
+      POSTGRES_DB: kompcards
+    volumes:
+      - ./docker-data/postgres:/var/lib/postgresql
