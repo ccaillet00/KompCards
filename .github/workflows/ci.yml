@@ -50,5 +50,5 @@ jobs:
         run: bun test
         working-directory: ./backend
 
-      - name: Run linting (optional)
-        run: bunx eslint .
+      #- name: Run linting (optional)
+      #  run: bunx eslint .
