@@ -34,12 +34,14 @@ jobs:
 
       - name: Install dependencies
         run: bun install
+        working-directory: ./backend
 
       - name: Run tests
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kompcards_test
           BETTER_AUTH_SECRET: test-secret-key-that-is-long-enough-for-testing
         run: bun test
+        working-directory: ./backend
 
       - name: Run linting (optional)
         run: bunx eslint .
