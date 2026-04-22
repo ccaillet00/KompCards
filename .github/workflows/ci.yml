@@ -36,6 +36,12 @@ jobs:
         run: bun install
         working-directory: ./backend
 
+      - name: Push schema to database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kompcards_test
+        run: bun db:push
+        working-directory: ./backend
+
       - name: Run tests
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kompcards_test
