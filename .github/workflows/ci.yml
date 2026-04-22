@@ -40,6 +40,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kompcards_test
           BETTER_AUTH_SECRET: test-secret-key-that-is-long-enough-for-testing
+          BETTER_AUTH_URL: http://localhost:3000
         run: bun test
         working-directory: ./backend
 
