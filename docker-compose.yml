@@ -1,0 +1,101 @@
+# KompCards — Gesamtsystem (siehe docs/ARCHITECTURE.md)
+#
+# Traefik ist die einzige öffentlich exponierte Kante.
+# Routing (path-basiert, same-origin ⇒ kein CORS):
+#   /     → Frontend (Nuxt)
+#   /api  → Backend (Express)
+# DB ist intern (nur Backend → DB), nicht öffentlich exponiert.
+#
+# Das DB-Schema wird NICHT aus SQL-Dateien erzeugt, sondern beim Backend-Start
+# über Drizzle-Migrationen gepusht (nur, wenn es noch nicht existiert).
+#
+# Start:  docker compose up --build
+# Hinweis: Frontend-Service ist auskommentiert, bis frontend/ gescaffoldet ist.
+
+name: kompcards
+
+services:
+  traefik:
+    image: traefik:v3.6
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080" # Dashboard (nur lokal)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - traefik-letsencrypt:/letsencrypt
+    networks:
+      - kompcards
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: mysql://kompcards:kompcards@db:3306/kompcards_db
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-string}
+      JWT_TTL_SECONDS: "43200"
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://llm:8000/v1}
+      LLM_API_KEY: ${LLM_API_KEY:-change-me}
+      LLM_MODEL: ${LLM_MODEL:-your-model}
+      PORT: "4000"
+      NODE_ENV: ${NODE_ENV:-development}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - kompcards
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.backend.rule=PathPrefix(`/api`)
+      - traefik.http.routers.backend.entrypoints=web
+      - traefik.http.routers.backend.priority=10
+      - traefik.http.services.backend.loadbalancer.server.port=4000
+
+  # Frontend (Nuxt 4.5.1) — aktivieren, sobald frontend/ gescaffoldet ist.
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #   environment:
+  #     NUXT_API_BASE: /api
+  #   networks:
+  #     - kompcards
+  #   restart: unless-stopped
+  #   labels:
+  #     - traefik.enable=true
+  #     - traefik.http.routers.frontend.rule=PathPrefix(`/`)
+  #     - traefik.http.routers.frontend.entrypoints=web
+  #     - traefik.http.routers.frontend.priority=1
+  #     - traefik.http.services.frontend.loadbalancer.server.port=3000
+
+  db:
+    image: mysql:8
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: kompcards_root
+      MYSQL_DATABASE: kompcards_db
+      MYSQL_USER: kompcards
+      MYSQL_PASSWORD: kompcards
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysql -h 127.0.0.1 -u kompcards -p$$MYSQL_PASSWORD -e 'SELECT 1' --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    ports:
+      - "3306:3306" # Nur für lokale Entwicklung; in Produktion entfernen.
+    # networks:
+    #   - kompcards
+    restart: unless-stopped
+    # Kein `ports:` — DB ist intern, nicht öffentlich exponiert.
+
+networks:
+  kompcards:
+    driver: bridge
+
+volumes:
+  db-data:
+  traefik-letsencrypt:

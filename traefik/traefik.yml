@@ -1,0 +1,39 @@
+# KompCards — Statische Traefik-Konfiguration
+# Dynamisches Routing erfolgt über Docker-Labels (siehe docker-compose.yml).
+#
+# Routing (path-basiert, same-origin ⇒ kein CORS):
+#   /     → Frontend (Nuxt)
+#   /api  → Backend (Express)
+#
+# Lokale Entwicklung: Services nutzen den `web`-EntryPoint (HTTP, :80).
+# Produktion: Router auf `web-secure` (HTTPS) + certresolver `letsencrypt` setzen.
+
+log:
+  level: INFO
+
+api:
+  dashboard: true
+  # Nur für lokale Entwicklung (Dashboard auf :8080). In Produktion: false.
+  insecure: true
+
+entryPoints:
+  web:
+    address: ":80"
+  web-secure:
+    address: ":443"
+
+providers:
+  docker:
+    exposedByDefault: false
+    network: kompcards
+    watch: true
+
+# TLS-Terminierung via Let's Encrypt (Produktion).
+# Wird lokal nicht genutzt (keine öffentliche Domain); für Produktion aktivieren.
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: admin@example.com
+      storage: /letsencrypt/acme.json
+      httpChallenge:
+        entryPoint: web
