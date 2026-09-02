@@ -1,5 +1,5 @@
 import { loadConfig } from './config.js';
-import { initDb } from './db/client.js';
+import { initDb, migrateDb } from './db/client.js';
 import { OpenAiCompatibleLlmClient } from './llm/client.js';
 import { createApp } from './app.js';
 import { AuthService } from './services/authService.js';
@@ -8,11 +8,16 @@ import { logger } from './utils/logger.js';
 
 /**
  * Entry-Point: lädt die Konfiguration, initialisiert DB + LLM-Client,
+ * wendet die Drizzle-Migrationen an (Schema nur aus dem Drizzle-Schema),
  * baut die App und startet den Server.
  */
-function main(): void {
+async function main(): Promise<void> {
   const config = loadConfig();
   const db = initDb(config);
+
+  // Schema aus dem Drizzle-Schema erzeugen (idempotent — nur wenn es fehlt).
+  await migrateDb();
+  logger.info('Drizzle-Migrationen angewendet');
 
   const llm = new OpenAiCompatibleLlmClient(config);
 
@@ -28,4 +33,7 @@ function main(): void {
   });
 }
 
-main();
+main().catch((err) => {
+  logger.error({ err }, 'Fehler beim Starten des Backends');
+  process.exit(1);
+});

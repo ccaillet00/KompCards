@@ -1,5 +1,8 @@
 import { drizzle, type MySql2Database } from 'drizzle-orm/mysql2';
+import { migrate } from 'drizzle-orm/mysql2/migrator';
 import mysql from 'mysql2/promise';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import type { AppConfig } from '../config.js';
 import * as schema from './schema.js';
@@ -42,6 +45,23 @@ export function getDb(): Database {
 export function initDb(config: AppConfig): Database {
   db = createDb(config);
   return db;
+}
+
+/**
+ * Wendet die Drizzle-Migrationen aus `drizzle/` an.
+ *
+ * Das DB-Schema wird ausschließlich aus dem Drizzle-Schema erzeugt — nicht aus
+ * SQL-Dateien. `migrate()` ist idempotent: Bereits angewendete Migrationen
+ * werden in der Tabelle `__drizzle_migrations` nachgehalten und übersprungen.
+ * Auf einer frischen DB erzeugt der Aufruf das komplette Schema; auf einer
+ * bestehenden DB passiert nichts.
+ */
+export async function migrateDb(): Promise<void> {
+  const database = getDb();
+  // Migrationsordner relativ zu diesem Modul (src/db → ../../drizzle).
+  const currentDir = path.dirname(fileURLToPath(import.meta.url));
+  const migrationsFolder = path.join(currentDir, '..', '..', 'drizzle');
+  await migrate(database, { migrationsFolder });
 }
 
 /** Injiziert einen DB-Client (für Tests). */

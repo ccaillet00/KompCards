@@ -1,7 +1,8 @@
 import { defineConfig } from 'drizzle-kit';
 
-// Das SQL in `SQL/create_tables.sql` ist die Single Source of Truth.
-// Dieses Config dient nur für Drizzle-Tooling (generate/push/studio).
+// Das Drizzle-Schema in `src/db/schema.ts` ist die Single Source of Truth.
+// Migrationen (out: ./drizzle) werden beim Backend-Start angewendet (migrateDb),
+// sofern sie noch nicht existieren.
 export default defineConfig({
   schema: './src/db/schema.ts',
   out: './drizzle',
