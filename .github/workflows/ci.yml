@@ -1,0 +1,70 @@
+# KompCards — CI (GitHub Actions)
+#
+# Deckt beide Tiers ab (Frontend + Backend), s. docs/DEVELOPMENT.md §5 und ADR-008.
+# Pro Tier: Install → Lint → Typecheck → Test → Docker-Build.
+#
+# Ein Tier wird übersprungen, solange sein Verzeichnis nicht existiert
+# (z. B. frontend/, bis es gescaffoldet ist). So läuft die Pipeline auch
+# heute — bei nur bestehendem backend/ — grün.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Ermittelt, welche Tiers vorhanden sind, und übergibt sie als JSON-Liste
+  # an den Matrix-Job unten. Fehlendes Verzeichnis ⇒ kein Eintrag ⇒ kein Job.
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      tiers: ${{ steps.detect.outputs.tiers }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Detect tiers
+        id: detect
+        run: |
+          tiers=()
+          [ -d frontend ] && tiers+=("frontend")
+          [ -d backend ]  && tiers+=("backend")
+          echo "tiers=$(printf '%s\n' "${tiers[@]}" | jq -R . | jq -s -c .)" >> "$GITHUB_OUTPUT"
+
+  ci:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tier: ${{ fromJson(needs.setup.outputs.tiers) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.tier }}
+        run: bun install --frozen-lockfile
+
+      - name: Lint (ESLint)
+        working-directory: ${{ matrix.tier }}
+        run: bun run lint
+
+      - name: Typecheck (tsc --noEmit)
+        working-directory: ${{ matrix.tier }}
+        run: bun run typecheck
+
+      - name: Test (Vitest)
+        working-directory: ${{ matrix.tier }}
+        run: bun run test
+
+      - name: Docker build
+        working-directory: ${{ matrix.tier }}
+        run: docker build -t kompcards-${{ matrix.tier }}:ci .
