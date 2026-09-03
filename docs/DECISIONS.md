@@ -1,6 +1,6 @@
 # KompCards — Entscheidungen (ADR-Log)
 
-**Stand:** 2026-09-01
+**Stand:** 2026-09-03
 Kurze Architektur-Entscheidungsrekorde (ADR) aus dem Requirements-Review. Status: alle **Acceptiert**.
 
 ## ADR-001: Repository-Layout
@@ -48,9 +48,28 @@ Kurze Architektur-Entscheidungsrekorde (ADR) aus dem Requirements-Review. Status
 - **Entscheidung:** **Traefik** als Reverse Proxy / Edge Router. Path-basiertes Routing: `/` → Frontend (Nuxt), `/api` → Backend (Express). DB bleibt intern (nur Backend → DB), öffentlich nicht exponiert.
 - **Konsequenz:** `docker-compose.yml` erhält einen Traefik-Service (einzige öffentliche Kante); Frontend & API sind same-origin ⇒ kein CORS. Ersetzt die frühere Nuxt-Proxy-Annahme. TLS-Terminierung am Traefik.
 
+## ADR-010: Curriculum-Import — CSV-Upload, Löschen & Neu
+- **Kontext:** Rahmenlehrplan-Daten (curriculum, areas, competencies) wurden aus einer Markdown-Datei in drei CSV-Dateien umgewandelt (`backend/csv/curriculum.csv`, `areas.csv`, `competencies.csv`). Ein API-Endpunkt soll diese in die DB importieren. Der Endpunkt ist nur innerhalb der Applikation (auth-geschützt) erreichbar, nicht öffentlich.
+- **Entscheidung:**
+  - **Ein Endpunkt** `POST /api/curriculum/import` (multipart, 3 Dateien gleichzeitig: `curriculum`, `areas`, `competencies`).
+  - **CSV-Struktur:** `curriculum.csv` (`id,code,titel`), `areas.csv` (`id,curriculum_id,code,titel`), `competencies.csv` (`id,area_id,code,description`).
+  - **Strategie: Löschen & Neu** (komplett) — bestehende Referenzdaten werden in einer DB-Transaktion gelöscht (children first: competencies → areas → curriculum) und neu eingefügt. Begründung: Die CSVs sind die **Single Source of Truth**; ein Upsert wäre komplexer (Match-Logik, Orphan-Handling) und bei strukturellen Änderungen inkonsistent.
+  - **Validierung:** Spaltennamen, Pflichtwerte und numerische IDs werden vor dem Import geprüft (400 bei Fehlern). BOM wird entfernt.
+  - **FK-Schutz:** 409 Conflict, falls `competency_proof`-Zeilen existieren (NO ACTION-FK würde sonst verletzt).
+  - **ID-Mapping:** CSV-IDs → neue AUTO_INCREMENT-IDs (in-memory Map), da die DB-IDs neu generiert werden.
+  - **Auth:** Bestehendes `requireAuth` + `requireUser` (kein separates Admin-Role, da kein Role-System vorhanden).
+  - **Bibliotheken:** `csv-parse/sync` (synchrones CSV-Parsing), `multer` (multipart-Upload, memory storage, 5 MB Limit pro Datei).
+  - **Response:** `200 { imported: { curriculum: n, areas: n, competencies: n } }`.
+- **Konsequenz:**
+  - Atomarer Import (Transaktion) — bei Fehler bleibt der vorherige Zustand erhalten.
+  - Wiederholter Import ist idempotent (Löschen & Neu).
+  - Bestehende Kompetenznachweise schützen vor versehentlichem Datenverlust (409).
+  - CSV-Dateien liegen in `backend/csv/` (Versionierung im Repo).
+
 ## Offene Entscheidungen
 
 Keine — alle Kernpunkte geschlossen:
 - **Nuxt:** Version **4.5.1** (bestätigt).
 - **Reverse Proxy / FE→BE-Kommunikation:** **Traefik** (ADR-009).
 - **`quality` / `overlap_curriculum`:** **LLM-seitig gesetzt** (bestätigt).
+- **Curriculum-Import:** **CSV-Upload, Löschen & Neu** (ADR-010).

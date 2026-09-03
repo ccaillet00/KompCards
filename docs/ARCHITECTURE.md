@@ -1,6 +1,6 @@
 # KompCards — Architektur
 
-**Stand:** 2026-09-01
+**Stand:** 2026-09-03
 **Legende:** **Vorgabe** / **Annahme** (s. [PROJECT.md](./PROJECT.md)).
 
 ## 1. Gesamtüberblick (3-Tier)
@@ -141,6 +141,30 @@ Logout / Revocation
 
 > **Wichtig:** Spaltennamen **1:1** übernehmen — inkl. des Tippfehlers `note_improvment`. Domänen-Kommentare zusätzlich via `.$comment()`/JSDoc im TS-Schema; das SQL bleibt Single Source of Truth.
 
-## 9. Entscheidungen
+## 9. Curriculum-Import (CSV)
+
+Die Referenzdaten (`curriculum`, `areas`, `competencies`) werden per **CSV-Upload** importiert.
+
+- **Endpunkt:** `POST /api/curriculum/import` (multipart, 3 Dateien: `curriculum`, `areas`, `competencies`).
+- **Auth:** Erfordert gültige Session (`requireAuth` + `requireUser`).
+- **Strategie:** **Löschen & Neu** (komplett) — bestehende Referenzdaten werden gelöscht und neu eingefügt.
+- **FK-Schutz:** Falls `competency_proof`-Zeilen existieren → **409 Conflict** (Import abgelehnt).
+- **ID-Mapping:** CSV-IDs werden auf neue AUTO_INCREMENT-IDs gemappt (in-memory Map).
+- **Transaktion:** Löschen + Einfügen in einer DB-Transaktion (atomar).
+- **Parsing:** `csv-parse/sync` (synchron); **Upload:** `multer` (memory storage, max. 5 MB/Datei).
+- **Service:** `CurriculumService` (Business Logic + Drizzle-Queries, ADR-005).
+
+```
+POST /api/curriculum/import  (multipart: curriculum.csv, areas.csv, competencies.csv)
+  → requireAuth + requireUser
+  → multer (3 Dateien, memory)
+  → CurriculumService.importCurriculum()
+      1. CSVs parsen & validieren (Spalten, Werte)
+      2. FK-Check: competency_proof existiert? → 409
+      3. Transaktion: DELETE (competencies → areas → curriculum) + INSERT (mit ID-Mapping)
+  → 200 { imported: { curriculum: n, areas: n, competencies: n } }
+```
+
+## 10. Entscheidungen
 
 Siehe [DECISIONS.md](./DECISIONS.md).

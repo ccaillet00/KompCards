@@ -1,6 +1,6 @@
 # KompCards — Projektbeschreibung
 
-**Stand:** 2026-09-01
+**Stand:** 2026-09-03
 **Legende:** **Vorgabe** = aus deinen Anforderungen bzw. fixem Datenmodell. **Annahme** = von mir ergänzt, zur Bestätigung.
 
 ## 1. Zweck & Kontext
@@ -73,6 +73,7 @@ Maschinelle Auswertung/Ausformulierung des Arbeitsergebnisses:
 - Nutzer können den Output akzeptieren (`is_saved`) oder mit Feedback neu erzeugen (Revision).
 - Karten können gespeichert (`saved`) oder verworfen (`discarded`) werden.
 - Karten können als **Duplikat einer eigenen Karte** kopiert werden.
+- Referenzdaten (Rahmenlehrplan: curriculum, areas, competencies) können per **CSV-Upload** importiert werden (`POST /api/curriculum/import`, auth-geschützt).
 
 ### Nicht-funktionale (Vorgabe)
 - 3-Tier-Architektur (Frontend / Backend / DB); **keine** Direkt-DB-Zugriffe im API-Handler.
