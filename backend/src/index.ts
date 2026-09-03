@@ -4,6 +4,7 @@ import { OpenAiCompatibleLlmClient } from './llm/client.js';
 import { createApp } from './app.js';
 import { AuthService } from './services/authService.js';
 import { CompetencyService } from './services/competencyService.js';
+import { CurriculumService } from './services/curriculumService.js';
 import { logger } from './utils/logger.js';
 
 /**
@@ -24,6 +25,7 @@ async function main(): Promise<void> {
   const services = {
     auth: new AuthService(db, config),
     competency: new CompetencyService(db, llm, config.llmModel),
+    curriculum: new CurriculumService(db),
   };
 
   const app = createApp(config, services);

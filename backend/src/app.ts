@@ -4,8 +4,10 @@ import { ZodError } from 'zod';
 import type { AppConfig } from './config.js';
 import { authRouter } from './routes/auth.js';
 import { competencyRouter } from './routes/competency.js';
+import { curriculumRouter } from './routes/curriculum.js';
 import type { AuthService } from './services/authService.js';
 import type { CompetencyService } from './services/competencyService.js';
+import type { CurriculumService } from './services/curriculumService.js';
 import { AppError } from './utils/errors.js';
 import { logger } from './utils/logger.js';
 
@@ -20,6 +22,7 @@ export function createApp(
   services: {
     auth: AuthService;
     competency: CompetencyService;
+    curriculum: CurriculumService;
   },
 ): Express {
   const app = express();
@@ -34,6 +37,7 @@ export function createApp(
   // API-Routen (Traefik leitet /api an dieses Backend weiter)
   app.use('/api/auth', authRouter(config, services.auth));
   app.use('/api/competency', competencyRouter(config, services.competency));
+  app.use('/api/curriculum', curriculumRouter(config, services.curriculum));
 
   // 404 für unbekannte API-Pfade
   app.use((_req: Request, res: Response) => {
