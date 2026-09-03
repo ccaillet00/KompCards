@@ -1,0 +1,15 @@
+# Nuxt
+.nuxt
+.output
+dist
+data
+
+# Abhängigkeiten & Logs
+node_modules
+*.log
+
+# Diverses
+.DS_Store
+.env
+.env.*
+!.env.example
