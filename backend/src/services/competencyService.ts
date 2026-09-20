@@ -152,6 +152,12 @@ export class CompetencyService {
     if (!created) {
       throw new Error('Insert competency_input: Zeile nicht gefunden');
     }
+
+    await this.db
+      .update(competencyProof)
+      .set({ updatedAt: new Date() })
+      .where(eq(competencyProof.id, proofId));
+
     return created;
   }
 

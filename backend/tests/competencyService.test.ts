@@ -60,6 +60,7 @@ function createMockDb(options: MockDbOptions = {}) {
   const insertedInputs: unknown[] = [];
   const insertedOutputs: unknown[] = [];
   const statusUpdates: Array<{ proofId: number; status: number }> = [];
+  const updatedAtUpdates: Array<{ proofId: number }> = [];
 
   const db = {
     select: vi.fn(() => ({
@@ -160,10 +161,15 @@ function createMockDb(options: MockDbOptions = {}) {
       })),
     })),
     update: vi.fn((table: unknown) => ({
-      set: vi.fn((vals: { status?: number; isSaved?: boolean }) => ({
+      set: vi.fn((vals: { status?: number; isSaved?: boolean; updatedAt?: Date }) => ({
         where: vi.fn(async () => {
-          if (table === competencyProof && vals.status !== undefined) {
-            statusUpdates.push({ proofId: proof?.id ?? 1, status: vals.status });
+          if (table === competencyProof) {
+            if (vals.status !== undefined) {
+              statusUpdates.push({ proofId: proof?.id ?? 1, status: vals.status });
+            }
+            if (vals.updatedAt !== undefined) {
+              updatedAtUpdates.push({ proofId: proof?.id ?? 1 });
+            }
           }
           return [];
         }),
@@ -172,6 +178,7 @@ function createMockDb(options: MockDbOptions = {}) {
     _insertedInputs: insertedInputs,
     _insertedOutputs: insertedOutputs,
     _statusUpdates: statusUpdates,
+    _updatedAtUpdates: updatedAtUpdates,
   };
 
   return db;
@@ -216,6 +223,16 @@ describe('CompetencyService.saveInput', () => {
     const service = new CompetencyService(db as never, llm, 'test-model');
 
     await expect(service.saveInput('user-1', 1, validPayload)).rejects.toThrow(ForbiddenError);
+  });
+
+  it('aktualisiert updatedAt der Karte beim Speichern', async () => {
+    const db = createMockDb();
+    const llm = createMockLlm();
+    const service = new CompetencyService(db as never, llm, 'test-model');
+
+    await service.saveInput('user-1', 1, validPayload);
+
+    expect(db._updatedAtUpdates).toEqual([{ proofId: 1 }]);
   });
 });
 
