@@ -120,6 +120,25 @@ export function useAuth() {
     }
   }
 
+  async function logout(): Promise<void> {
+    const currentToken = token.value
+    isLoading.value = true
+    error.value = null
+    try {
+      if (currentToken) {
+        await $fetch<void>(`${config.public.apiBase}/auth/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${currentToken}` },
+        })
+      }
+    } catch (requestError) {
+      error.value = apiErrorMessage(requestError)
+    } finally {
+      clearSession()
+      isLoading.value = false
+    }
+  }
+
   return {
     token,
     user,
@@ -129,6 +148,7 @@ export function useAuth() {
     isAuthenticated: computed(() => Boolean(token.value && expiresAt.value && expiresAt.value > Date.now())),
     login,
     register,
+    logout,
     clearSession,
   }
 }
