@@ -11,6 +11,26 @@ export interface ImportResult {
   competencies: number;
 }
 
+export interface CompetencyTree {
+  id: number;
+  code: string;
+  description: string;
+}
+
+export interface AreaTree {
+  id: number;
+  code: string;
+  titel: string;
+  competencies: CompetencyTree[];
+}
+
+export interface CurriculumTree {
+  id: number;
+  code: string;
+  titel: string;
+  areas: AreaTree[];
+}
+
 interface CurriculumRow {
   id: number;
   code: string;
@@ -128,6 +148,49 @@ export class CurriculumService {
 
     logger.info({ ...result }, 'Rahmenlehrplan-Import abgeschlossen');
     return result;
+  }
+
+  /**
+   * Liefert alle Lehrgänge mit ihren Bereichen und Kompetenzen als verschachtelte Struktur.
+   *
+   * Drei separate SELECTs (kleine Referenzdaten) + In-Memory-Nesting via Maps.
+   * Skaliert linear mit der Anzahl Lehrgänge — pro Lehrgang bleibt die Datenmenge konstant.
+   */
+  async getCurriculumTree(): Promise<CurriculumTree[]> {
+    const [curriculumRows, areaRows, competencyRows] = await Promise.all([
+      this.db.select().from(curriculum),
+      this.db.select().from(areas),
+      this.db.select().from(competencies),
+    ]);
+
+    // Kompetenzen nach areaId gruppieren
+    const competenciesByArea = new Map<number, CompetencyTree[]>();
+    for (const c of competencyRows) {
+      const list = competenciesByArea.get(c.areaId) ?? [];
+      list.push({ id: c.id, code: c.code, description: c.description });
+      competenciesByArea.set(c.areaId, list);
+    }
+
+    // Bereiche nach curriculumId gruppieren
+    const areasByCurriculum = new Map<number, AreaTree[]>();
+    for (const a of areaRows) {
+      const list = areasByCurriculum.get(a.curriculumId) ?? [];
+      list.push({
+        id: a.id,
+        code: a.code,
+        titel: a.titel,
+        competencies: competenciesByArea.get(a.id) ?? [],
+      });
+      areasByCurriculum.set(a.curriculumId, list);
+    }
+
+    // Verschachteln
+    return curriculumRows.map((c) => ({
+      id: c.id,
+      code: c.code,
+      titel: c.titel,
+      areas: areasByCurriculum.get(c.id) ?? [],
+    }));
   }
 }
 

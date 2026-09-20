@@ -163,3 +163,131 @@ describe('CurriculumService.importCurriculum', () => {
     ).rejects.toThrow(BadRequestError);
   });
 });
+
+// ─── getCurriculumTree (mit gemockter DB) ────────────────────────────────────
+
+function createTreeMockDb(
+  curriculumRows: { id: number; code: string; titel: string }[],
+  areaRows: { id: number; curriculumId: number; code: string; titel: string }[],
+  competencyRows: { id: number; areaId: number; code: string; description: string }[],
+) {
+  const db = {
+    select: vi.fn(() => ({
+      from: vi.fn((table: unknown) => {
+        if (table === curriculum) return Promise.resolve(curriculumRows);
+        if (table === areas) return Promise.resolve(areaRows);
+        if (table === competencies) return Promise.resolve(competencyRows);
+        return Promise.resolve([]);
+      }),
+    })),
+  };
+  return db;
+}
+
+describe('CurriculumService.getCurriculumTree', () => {
+  it('gibt leeres Array zurück wenn keine Daten vorhanden', async () => {
+    const db = createTreeMockDb([], [], []);
+    const service = new CurriculumService(db as never);
+
+    const result = await service.getCurriculumTree();
+    expect(result).toEqual([]);
+  });
+
+  it('gibt einen Lehrgang mit Bereichen und Kompetenzen zurück', async () => {
+    const db = createTreeMockDb(
+      [{ id: 1, code: 'RLP_INF', titel: 'Rahmenlehrplan Informatik' }],
+      [
+        { id: 1, curriculumId: 1, code: 'A1', titel: 'Unternehmensprozesse' },
+        { id: 2, curriculumId: 1, code: 'A2', titel: 'Kommunikation' },
+      ],
+      [
+        { id: 1, areaId: 1, code: 'A1.1', description: 'Geschäftsprozesse ausführen' },
+        { id: 2, areaId: 2, code: 'A2.1', description: 'Kommunizieren' },
+      ],
+    );
+    const service = new CurriculumService(db as never);
+
+    const result = await service.getCurriculumTree();
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({
+      id: 1,
+      code: 'RLP_INF',
+      titel: 'Rahmenlehrplan Informatik',
+      areas: [
+        {
+          id: 1,
+          code: 'A1',
+          titel: 'Unternehmensprozesse',
+          competencies: [{ id: 1, code: 'A1.1', description: 'Geschäftsprozesse ausführen' }],
+        },
+        {
+          id: 2,
+          code: 'A2',
+          titel: 'Kommunikation',
+          competencies: [{ id: 2, code: 'A2.1', description: 'Kommunizieren' }],
+        },
+      ],
+    });
+  });
+
+  it('gibt mehrere Lehrgänge zurück', async () => {
+    const db = createTreeMockDb(
+      [
+        { id: 1, code: 'RLP_INF', titel: 'Rahmenlehrplan Informatik' },
+        { id: 2, code: 'RLP_WIRTSCH', titel: 'Rahmenlehrplan Wirtschaft' },
+      ],
+      [
+        { id: 1, curriculumId: 1, code: 'A1', titel: 'Unternehmensprozesse' },
+        { id: 2, curriculumId: 2, code: 'B1', titel: 'Buchhaltung' },
+      ],
+      [
+        { id: 1, areaId: 1, code: 'A1.1', description: 'Geschäftsprozesse ausführen' },
+        { id: 2, areaId: 2, code: 'B1.1', description: 'Bilanz erstellen' },
+      ],
+    );
+    const service = new CurriculumService(db as never);
+
+    const result = await service.getCurriculumTree();
+
+    expect(result).toHaveLength(2);
+    expect(result[0]?.code).toBe('RLP_INF');
+    expect(result[0]?.areas).toHaveLength(1);
+    expect(result[1]?.code).toBe('RLP_WIRTSCH');
+    expect(result[1]?.areas).toHaveLength(1);
+  });
+
+  it('ordnet Kompetenzen korrekt dem Bereich zu', async () => {
+    const db = createTreeMockDb(
+      [{ id: 1, code: 'RLP_INF', titel: 'Rahmenlehrplan Informatik' }],
+      [
+        { id: 1, curriculumId: 1, code: 'A1', titel: 'Unternehmensprozesse' },
+        { id: 2, curriculumId: 1, code: 'A2', titel: 'Kommunikation' },
+      ],
+      [
+        { id: 1, areaId: 1, code: 'A1.1', description: 'Prozess 1' },
+        { id: 2, areaId: 1, code: 'A1.2', description: 'Prozess 2' },
+        { id: 3, areaId: 2, code: 'A2.1', description: 'Komm 1' },
+      ],
+    );
+    const service = new CurriculumService(db as never);
+
+    const result = await service.getCurriculumTree();
+
+    expect(result[0]?.areas[0]?.competencies).toHaveLength(2);
+    expect(result[0]?.areas[1]?.competencies).toHaveLength(1);
+  });
+
+  it('gibt Bereiche ohne Kompetenzen mit leerem Array zurück', async () => {
+    const db = createTreeMockDb(
+      [{ id: 1, code: 'RLP_INF', titel: 'Rahmenlehrplan Informatik' }],
+      [{ id: 1, curriculumId: 1, code: 'A1', titel: 'Leerer Bereich' }],
+      [],
+    );
+    const service = new CurriculumService(db as never);
+
+    const result = await service.getCurriculumTree();
+
+    expect(result[0]?.areas[0]?.competencies).toEqual([]);
+  });
+});

@@ -22,6 +22,14 @@ export function curriculumRouter(config: AppConfig, curriculumService: Curriculu
   const router = Router();
   router.use(requireAuth(config), requireUser);
 
+  // GET / — alle Lehrgänge mit Bereichen und Kompetenzen (verschachtelt)
+  router.get('/', (_req: AuthRequest, res: Response, next: NextFunction) => {
+    curriculumService
+      .getCurriculumTree()
+      .then((tree) => res.json(tree))
+      .catch(next);
+  });
+
   router.post(
     '/import',
     upload.fields([
