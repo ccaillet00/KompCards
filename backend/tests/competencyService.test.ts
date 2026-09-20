@@ -10,7 +10,7 @@ import {
   curriculum,
 } from '../src/db/schema.js';
 import { ProofStatus } from '../src/status.js';
-import { ForbiddenError, NotFoundError } from '../src/utils/errors.js';
+import { BadRequestError, ForbiddenError, NotFoundError } from '../src/utils/errors.js';
 import type { LlmClient, LlmResult } from '../src/llm/types.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -360,5 +360,64 @@ describe('CompetencyService.triggerLlmCheck', () => {
         curriculum: { code: 'RLP_INF', titel: 'Informatik' },
       },
     });
+  });
+
+  it('wirft BadRequestError wenn Pflichtfelder leer sind', async () => {
+    const input = {
+      id: 1,
+      competencyProofId: 1,
+      userRole: '',
+      what: 'API implementieren',
+      how: 'mit REST und Express',
+      why: 'um Daten auszutauschen',
+      environment: 'Firma XY',
+      subject: null,
+    };
+    const db = createMockDb({ inputs: [input] });
+    const llm = createMockLlm();
+    const service = new CompetencyService(db as never, llm, 'test-model');
+
+    await expect(service.triggerLlmCheck('user-1', 1)).rejects.toThrow(BadRequestError);
+    expect(llm.generateCompetencyOutput).not.toHaveBeenCalled();
+  });
+
+  it('wirft BadRequestError wenn mehrere Pflichtfelder leer sind', async () => {
+    const input = {
+      id: 1,
+      competencyProofId: 1,
+      userRole: '',
+      what: '',
+      how: 'mit REST und Express',
+      why: '',
+      environment: 'Firma XY',
+      subject: null,
+    };
+    const db = createMockDb({ inputs: [input] });
+    const llm = createMockLlm();
+    const service = new CompetencyService(db as never, llm, 'test-model');
+
+    await expect(service.triggerLlmCheck('user-1', 1)).rejects.toThrow(
+      /userRole, what, why/,
+    );
+    expect(llm.generateCompetencyOutput).not.toHaveBeenCalled();
+  });
+
+  it('wirft BadRequestError wenn Felder nur Whitespace enthalten', async () => {
+    const input = {
+      id: 1,
+      competencyProofId: 1,
+      userRole: '   ',
+      what: 'API implementieren',
+      how: 'mit REST und Express',
+      why: 'um Daten auszutauschen',
+      environment: 'Firma XY',
+      subject: null,
+    };
+    const db = createMockDb({ inputs: [input] });
+    const llm = createMockLlm();
+    const service = new CompetencyService(db as never, llm, 'test-model');
+
+    await expect(service.triggerLlmCheck('user-1', 1)).rejects.toThrow(BadRequestError);
+    expect(llm.generateCompetencyOutput).not.toHaveBeenCalled();
   });
 });
