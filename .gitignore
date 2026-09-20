@@ -4,3 +4,4 @@ drizzle/
 .env
 *.log
 .DS_Store
+*.csv

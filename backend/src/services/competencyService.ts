@@ -2,16 +2,19 @@ import { and, asc, eq } from 'drizzle-orm';
 
 import type { Database } from '../db/client.js';
 import {
+  areas,
+  competencies,
   competencyInput,
   competencyLlmOutput,
   competencyProof,
+  curriculum,
   type CompetencyInput,
   type CompetencyLlmOutput,
   type CompetencyProof,
 } from '../db/schema.js';
 import { ProofStatus } from '../status.js';
 
-import type { LlmClient, LlmRequest } from '../llm/types.js';
+import type { LlmClient, LlmContext, LlmRequest } from '../llm/types.js';
 import { ForbiddenError, NotFoundError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 
@@ -110,19 +113,19 @@ export class CompetencyService {
   }
 
   /**
-   * Erfasst die strukturierte Eingabe und löst die LLM-Prüfung aus.
+   * Speichert die strukturierte Eingabe **ohne** LLM-Call.
    *
-   * Flow: `draft`/`llm_check_failed` → `llm_check` (2) → LLM-Call →
-   * `llm_check_finished` (4) bei Erfolg, `llm_check_failed` (3) bei Fehler.
+   * Der Status der Karte bleibt unverändert (`draft`/`llm_check_failed`).
+   * Die LLM-Prüfung wird separat via `triggerLlmCheck` ausgelöst.
    */
-  async submitInput(
+  async saveInput(
     userId: string,
     proofId: number,
     payload: SubmitInputPayload,
-  ): Promise<CompetencyLlmOutput | null> {
+  ): Promise<CompetencyInput> {
     const proof = await this.assertOwnProof(userId, proofId);
     if (proof.status !== ProofStatus.Draft && proof.status !== ProofStatus.LlmCheckFailed) {
-      throw new ForbiddenError('Karte ist nicht in einem prüfbaren Zustand');
+      throw new ForbiddenError('Karte ist nicht in einem speicherbaren Zustand');
     }
 
     const [inputResult] = await this.db
@@ -141,18 +144,54 @@ export class CompetencyService {
       throw new Error('Insert competency_input: keine ID zurückgegeben');
     }
 
+    return inputResult as CompetencyInput;
+  }
+
+  /**
+   * Löst die LLM-Prüfung für die neueste gespeicherte Eingabe aus.
+   *
+   * Flow: `draft`/`llm_check_failed` → `llm_check` (2) → LLM-Call →
+   * `llm_check_finished` (4) bei Erfolg, `llm_check_failed` (3) bei Fehler.
+   *
+   * @throws NotFoundError wenn keine Eingabe für die Karte vorhanden ist.
+   * @throws ForbiddenError wenn die Karte nicht in `draft`/`llm_check_failed` ist.
+   */
+  async triggerLlmCheck(
+    userId: string,
+    proofId: number,
+  ): Promise<CompetencyLlmOutput | null> {
+    const proof = await this.assertOwnProof(userId, proofId);
+    if (proof.status !== ProofStatus.Draft && proof.status !== ProofStatus.LlmCheckFailed) {
+      throw new ForbiddenError('Karte ist nicht in einem prüfbaren Zustand');
+    }
+
+    const inputs = await this.db
+      .select()
+      .from(competencyInput)
+      .where(eq(competencyInput.competencyProofId, proofId));
+
+    if (inputs.length === 0) {
+      throw new NotFoundError('Keine Eingabe für diese Karte vorhanden');
+    }
+
+    // Neueste Eingabe (höchste ID) verwenden
+    const latestInput = inputs.reduce((a, b) => (a.id > b.id ? a : b));
+
     await this.setProofStatus(proofId, ProofStatus.LlmCheck);
 
+    const context = await this.loadLlmContext(proof.competencyId);
+
     const llmRequest: LlmRequest = {
-      userRole: payload.userRole,
-      what: payload.what,
-      how: payload.how,
-      why: payload.why,
-      environment: payload.environment,
-      subject: payload.subject ?? null,
+      userRole: latestInput.userRole,
+      what: latestInput.what,
+      how: latestInput.how,
+      why: latestInput.why,
+      environment: latestInput.environment,
+      subject: latestInput.subject,
+      context,
     };
 
-    return this.runLlmCheck(proofId, inputResult.id, null, llmRequest);
+    return this.runLlmCheck(proofId, latestInput.id, null, llmRequest);
   }
 
   /**
@@ -195,6 +234,8 @@ export class CompetencyService {
 
     await this.setProofStatus(proofRow.id, ProofStatus.LlmCheck);
 
+    const context = await this.loadLlmContext(proofRow.competencyId);
+
     const llmRequest: LlmRequest = {
       userRole: inputRow.userRole,
       what: inputRow.what,
@@ -203,6 +244,7 @@ export class CompetencyService {
       environment: inputRow.environment,
       subject: inputRow.subject,
       userFeedback,
+      context,
     };
 
     const result = await this.runLlmCheck(
@@ -248,6 +290,44 @@ export class CompetencyService {
   }
 
   /**
+   * Lädt die Kompetenz-Kette (Kompetenz → Bereich → Lehrgang) für den LLM-Kontext.
+   */
+  private async loadLlmContext(competencyId: number): Promise<LlmContext> {
+    const [competency] = await this.db
+      .select()
+      .from(competencies)
+      .where(eq(competencies.id, competencyId))
+      .limit(1);
+    if (!competency) {
+      throw new NotFoundError('Kompetenz nicht gefunden');
+    }
+
+    const [area] = await this.db
+      .select()
+      .from(areas)
+      .where(eq(areas.id, competency.areaId))
+      .limit(1);
+    if (!area) {
+      throw new NotFoundError('Bereich nicht gefunden');
+    }
+
+    const [curriculumRow] = await this.db
+      .select()
+      .from(curriculum)
+      .where(eq(curriculum.id, area.curriculumId))
+      .limit(1);
+    if (!curriculumRow) {
+      throw new NotFoundError('Lehrgang nicht gefunden');
+    }
+
+    return {
+      competency: { code: competency.code, description: competency.description },
+      area: { code: area.code, titel: area.titel },
+      curriculum: { code: curriculumRow.code, titel: curriculumRow.titel },
+    };
+  }
+
+  /**
    * Führt den LLM-Call aus und persistiert das Ergebnis.
    * @returns der gespeicherte Output oder `null` bei Fehlschlag.
    */
@@ -268,6 +348,7 @@ export class CompetencyService {
           competencyInputId: inputId,
           workResult: result.workResult,
           quality: result.quality,
+          qualityStatement: result.qualityStatement,
           llmModel: this.llmModel,
           overlapCurriculum: result.overlapCurriculum,
           noteImprovment: result.noteImprovment,

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { renderPage } from '@nuxt/test-utils/runtime'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
+import IndexPage from '../pages/index.vue'
 
 describe('Startseite (Rauchtest)', () => {
   it('zeigt den Titel', async () => {
-    const { html } = await renderPage('/')
-    expect(html).toContain('KompCards')
+    const wrapper = await mountSuspended(IndexPage)
+    expect(wrapper.html()).toContain('KompCards')
   })
 })

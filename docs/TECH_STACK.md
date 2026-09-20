@@ -1,6 +1,6 @@
 # KompCards — Tech-Stack
 
-**Stand:** 2026-09-01
+**Stand:** 2026-09-03
 **Legende:** **Vorgabe** / **Annahme** (s. [PROJECT.md](./PROJECT.md)).
 
 ## Frontend
@@ -30,6 +30,8 @@
 | Logging | **pino** | Vorgabe |
 | Linter | **ESLint** | Vorgabe |
 | Tests | **Vitest** | Vorgabe |
+| CSV-Parsing | **csv-parse** (sync) | ADR-010; synchrones Parsing für den Curriculum-Import |
+| File-Upload | **multer** | ADR-010; multipart-Upload (memory storage, 5 MB Limit) |
 
 ## Querschnitt
 

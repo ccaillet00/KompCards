@@ -12,7 +12,7 @@ export default tseslint.config(
       '.nuxt/**',
       '.output/**',
       'dist/**',
-      'eslint.config.mjs',
+      'eslint.config.mjs'
     ],
   },
   eslint.configs.recommended,

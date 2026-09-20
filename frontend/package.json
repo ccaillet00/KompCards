@@ -23,7 +23,8 @@
     "@eslint/js": "^9.18.0",
     "@iconify-json/lucide": "^1.0.0",
     "@nuxt/test-utils": "^3.23.0",
-    "@vitejs/plugin-vue": "^5.2.1",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vue/test-utils": "^2.4.6",
     "autoprefixer": "^10.4.20",
     "daisyui": "^4.12.24",
     "eslint": "^9.18.0",
@@ -33,7 +34,7 @@
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0",
-    "vitest": "^2.1.9",
+    "vitest": "^4.0.0",
     "vitest-environment-nuxt": "^1.0.0",
     "vue-tsc": "^2.2.8"
   }

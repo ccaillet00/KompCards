@@ -1,0 +1,53 @@
+# KompCards — CI (GitLab)
+#
+# Deckt beide Tiers ab (Frontend + Backend), s. docs/DEVELOPMENT.md §5 und ADR-008.
+# Pro Tier: Install → Lint → Typecheck → Test → Docker-Build.
+#
+# Voraussetzung für den Runner: Bun + Docker im PATH.
+# Ein Tier wird übersprungen, solange sein Verzeichnis nicht existiert
+# (z. B. frontend/, bis es gescaffoldet ist) — via `exit 0` in before_script.
+
+stages:
+  - lint
+  - typecheck
+  - test
+  - docker
+
+# Gemeinsame Basis: parallel über beide Tiers, Abhängigkeiten installieren.
+# Fehlendes Tier-Verzeichnis ⇒ Job endet sauber (Exit 0), ohne zu rotieren.
+.tier-default:
+  parallel:
+    - frontend
+    - backend
+  before_script:
+    - if [ -z "$TIER" ] || [ ! -d "$TIER" ]; then echo "Tier '$TIER' nicht vorhanden — übersprungen."; exit 0; fi
+    - cd "$TIER"
+    - bun install --frozen-lockfile
+  cache:
+    key: "node-modules-${TIER}"
+    paths:
+      - ${TIER}/node_modules/
+
+lint:
+  stage: lint
+  extends: .tier-default
+  script:
+    - bun run lint
+
+typecheck:
+  stage: typecheck
+  extends: .tier-default
+  script:
+    - bun run typecheck
+
+test:
+  stage: test
+  extends: .tier-default
+  script:
+    - bun run test
+
+docker:
+  stage: docker
+  extends: .tier-default
+  script:
+    - docker build -t "kompcards-${TIER}:ci" .

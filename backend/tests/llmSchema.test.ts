@@ -7,10 +7,12 @@ describe('llmOutputSchema', () => {
     const result = llmOutputSchema.parse({
       work_result: 'Klare Ausformulierung',
       quality: 3,
+      quality_statement: 'Solide Umsetzung mit klarem Bezug zur Kompetenz.',
       overlap_curriculum: true,
       note_improvment: 'Mehr Details',
     });
     expect(result.quality).toBe(3);
+    expect(result.quality_statement).toBe('Solide Umsetzung mit klarem Bezug zur Kompetenz.');
     expect(result.overlap_curriculum).toBe(true);
   });
 
@@ -18,6 +20,7 @@ describe('llmOutputSchema', () => {
     const result = llmOutputSchema.parse({
       work_result: 'x',
       quality: 4,
+      quality_statement: 'Sehr gute Qualität.',
       overlap_curriculum: false,
       note_improvment: null,
     });
@@ -29,6 +32,7 @@ describe('llmOutputSchema', () => {
       llmOutputSchema.parse({
         work_result: 'x',
         quality: 5,
+        quality_statement: 'Test',
         overlap_curriculum: false,
         note_improvment: null,
       }),
@@ -37,6 +41,7 @@ describe('llmOutputSchema', () => {
       llmOutputSchema.parse({
         work_result: 'x',
         quality: 0,
+        quality_statement: 'Test',
         overlap_curriculum: false,
         note_improvment: null,
       }),
@@ -48,6 +53,30 @@ describe('llmOutputSchema', () => {
       llmOutputSchema.parse({
         work_result: '',
         quality: 1,
+        quality_statement: 'Test',
+        overlap_curriculum: false,
+        note_improvment: null,
+      }),
+    ).toThrow();
+  });
+
+  it('verwirft ein leeres quality_statement', () => {
+    expect(() =>
+      llmOutputSchema.parse({
+        work_result: 'x',
+        quality: 3,
+        quality_statement: '',
+        overlap_curriculum: false,
+        note_improvment: null,
+      }),
+    ).toThrow();
+  });
+
+  it('verwirft fehlendes quality_statement', () => {
+    expect(() =>
+      llmOutputSchema.parse({
+        work_result: 'x',
+        quality: 3,
         overlap_curriculum: false,
         note_improvment: null,
       }),

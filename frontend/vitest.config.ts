@@ -1,15 +1,14 @@
-import { defineConfig } from 'vitest/config'
-import Vue from '@vitejs/plugin-vue'
+import { defineVitestConfig } from '@nuxt/test-utils/config'
 
 // Komponententests im Nuxt-Umfeld (vitest-environment-nuxt).
-export default defineConfig({
-  plugins: [
-    Vue({
-      isProduction: false,
-    }),
-  ],
+export default defineVitestConfig({
   test: {
     environment: 'nuxt',
+    environmentOptions: {
+      nuxt: {
+        rootDir: new URL('./', import.meta.url).pathname,
+      },
+    },
     include: ['tests/**/*.test.ts'],
   },
 })
