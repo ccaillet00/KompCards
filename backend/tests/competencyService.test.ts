@@ -166,6 +166,7 @@ function createMockDb(options: MockDbOptions = {}) {
           if (table === competencyProof) {
             if (vals.status !== undefined) {
               statusUpdates.push({ proofId: proof?.id ?? 1, status: vals.status });
+              if (proof) proof.status = vals.status;
             }
             if (vals.updatedAt !== undefined) {
               updatedAtUpdates.push({ proofId: proof?.id ?? 1 });
@@ -187,6 +188,44 @@ function createMockDb(options: MockDbOptions = {}) {
 // ─── saveInput ───────────────────────────────────────────────────────────────
 
 describe('CompetencyService.saveInput', () => {
+  it('setzt eine überarbeitete Auswertung auf Entwurf zurück und prüft die neue Eingabe', async () => {
+    const proof = { id: 1, userId: 'user-1', status: ProofStatus.LlmCheckFinished as number, competencyId: 1 };
+    const db = createMockDb({ proof });
+    const llm = createMockLlm();
+    const service = new CompetencyService(db as never, llm, 'test-model');
+    const revisedPayload = { ...validPayload, what: 'Überarbeitete API implementieren' };
+
+    const input = await service.saveInput('user-1', 1, revisedPayload);
+
+    expect(input).toMatchObject(revisedPayload);
+    expect(proof.status).toBe(ProofStatus.Draft);
+    expect(llm.generateCompetencyOutput).not.toHaveBeenCalled();
+
+    const output = await service.triggerLlmCheck('user-1', 1);
+
+    expect(output).toMatchObject({ competencyInputId: input.id });
+    expect(llm.generateCompetencyOutput).toHaveBeenCalledTimes(1);
+    expect(llm.generateCompetencyOutput).toHaveBeenCalledWith(
+      expect.objectContaining(revisedPayload),
+    );
+    expect(db._statusUpdates).toEqual([
+      { proofId: 1, status: ProofStatus.Draft },
+      { proofId: 1, status: ProofStatus.LlmCheck },
+      { proofId: 1, status: ProofStatus.LlmCheckFinished },
+    ]);
+  });
+
+  it('behält beim Speichern nach fehlgeschlagener Prüfung den Status bei', async () => {
+    const proof = { id: 1, userId: 'user-1', status: ProofStatus.LlmCheckFailed, competencyId: 1 };
+    const db = createMockDb({ proof });
+    const service = new CompetencyService(db as never, createMockLlm(), 'test-model');
+
+    await service.saveInput('user-1', 1, validPayload);
+
+    expect(proof.status).toBe(ProofStatus.LlmCheckFailed);
+    expect(db._statusUpdates).toHaveLength(0);
+  });
+
   it('speichert die Eingabe ohne LLM-Call', async () => {
     const db = createMockDb();
     const llm = createMockLlm();
@@ -217,8 +256,8 @@ describe('CompetencyService.saveInput', () => {
     await expect(service.saveInput('user-1', 1, validPayload)).rejects.toThrow(NotFoundError);
   });
 
-  it('wirft ForbiddenError wenn Karte nicht in draft/llm_check_failed ist', async () => {
-    const db = createMockDb({ proof: { id: 1, userId: 'user-1', status: ProofStatus.Saved } });
+  it.each([ProofStatus.LlmCheck, ProofStatus.Saved, ProofStatus.Discarded])('verhindert Speichern bei gesperrtem Status %s', async (status) => {
+    const db = createMockDb({ proof: { id: 1, userId: 'user-1', status } });
     const llm = createMockLlm();
     const service = new CompetencyService(db as never, llm, 'test-model');
 
