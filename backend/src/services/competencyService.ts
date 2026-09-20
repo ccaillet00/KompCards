@@ -265,6 +265,8 @@ export class CompetencyService {
       throw new ForbiddenError('Kein Zugriff auf diese Karte');
     }
 
+    await this.assertCurrentOutput(proofRow, previous, true);
+
     const context = await this.loadLlmContext(proofRow.competencyId);
 
     await this.setProofStatus(proofRow.id, ProofStatus.LlmCheck);
@@ -295,7 +297,9 @@ export class CompetencyService {
 
   /** Akzeptiert einen LLM-Output (`is_saved = true`) und speichert die Karte. */
   async acceptOutput(userId: string, outputId: number): Promise<CompetencyLlmOutput> {
-    const { proofId } = await this.loadOwnOutput(userId, outputId);
+    const { proofId, output } = await this.loadOwnOutput(userId, outputId);
+    const proof = await this.assertOwnProof(userId, proofId);
+    await this.assertCurrentOutput(proof, output);
 
     await this.db
       .update(competencyLlmOutput)
@@ -408,6 +412,28 @@ export class CompetencyService {
       logger.error({ err }, 'LLM-Prüfung fehlgeschlagen');
       await this.setProofStatus(proofId, ProofStatus.LlmCheckFailed);
       return null;
+    }
+  }
+
+  /** Verhindert Aktionen auf abgeschlossenen Karten oder überholten Revisionen. */
+  private async assertCurrentOutput(
+    proof: CompetencyProof,
+    output: CompetencyLlmOutput,
+    allowFailedRetry = false,
+  ): Promise<void> {
+    if (proof.status !== ProofStatus.LlmCheckFinished
+      && !(allowFailedRetry && proof.status === ProofStatus.LlmCheckFailed)) {
+      throw new ForbiddenError('Diese Auswertung kann im aktuellen Kartenstatus nicht verändert werden.');
+    }
+    const inputs = await this.db.select().from(competencyInput)
+      .where(eq(competencyInput.competencyProofId, proof.id));
+    const latestInput = inputs.reduce<typeof inputs[number] | undefined>(
+      (latest, input) => !latest || input.id > latest.id ? input : latest, undefined,
+    );
+    const outputs = await this.db.select().from(competencyLlmOutput)
+      .where(eq(competencyLlmOutput.competencyInputId, output.competencyInputId));
+    if (latestInput?.id !== output.competencyInputId || outputs.some(item => item.id > output.id)) {
+      throw new ForbiddenError('Die Auswertung ist nicht mehr aktuell. Bitte lade die Karte erneut.');
     }
   }
 

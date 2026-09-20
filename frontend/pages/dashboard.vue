@@ -18,6 +18,12 @@ const createdCount = computed(() => cards.value.length)
 const completedCount = computed(() => cards.value.filter(card => card.status === 5).length)
 const activeCount = computed(() => cards.value.filter(card => card.status >= 1 && card.status <= 4).length)
 const latestCard = computed(() => cards.value[0] ?? null)
+const latestCardTarget = computed(() => {
+  if (!latestCard.value) return '/cards'
+  return [4, 5].includes(latestCard.value.status)
+    ? `/cards/${latestCard.value.id}/result`
+    : `/cards/${latestCard.value.id}`
+})
 const progress = computed(() => Math.min(100, Math.round((createdCount.value / TARGET_COUNT) * 100)))
 const remainingCount = computed(() => Math.max(0, TARGET_COUNT - createdCount.value))
 
@@ -75,9 +81,10 @@ onMounted(load)
 
       <div
         v-else
-        class="mt-10 grid max-w-5xl gap-5 lg:grid-cols-[1.45fr_0.85fr]"
+        data-test="dashboard-grid"
+        class="mt-10 grid w-full max-w-5xl min-w-0 gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.85fr)]"
       >
-        <UiSurfaceCard class="bg-base-100/95 p-7 backdrop-blur-sm">
+        <UiSurfaceCard class="min-w-0 bg-base-100/95 p-7 backdrop-blur-sm">
           <h2 class="flex items-center gap-3 font-display text-2xl font-bold text-primary">
             <UiIcon
               name="chart-no-axes-column-increasing"
@@ -90,7 +97,7 @@ onMounted(load)
               :current="createdCount"
               :target="TARGET_COUNT"
             />
-            <div class="grid flex-1 gap-3">
+            <div class="grid min-w-0 flex-1 gap-3">
               <div
                 data-test="completed-count"
                 class="flex items-center gap-4 rounded-xl bg-success/10 p-4"
@@ -133,7 +140,7 @@ onMounted(load)
           </div>
         </UiSurfaceCard>
 
-        <UiSurfaceCard class="flex flex-col justify-center bg-base-100/95 p-7 backdrop-blur-sm">
+        <UiSurfaceCard class="min-w-0 flex flex-col justify-center bg-base-100/95 p-7 backdrop-blur-sm">
           <span class="grid size-14 place-items-center rounded-full bg-primary text-primary-content">
             <UiIcon
               name="plus"
@@ -159,9 +166,9 @@ onMounted(load)
           </UiButton>
         </UiSurfaceCard>
 
-        <UiSurfaceCard class="bg-base-100/95 p-7 backdrop-blur-sm">
-          <div class="flex items-center justify-between gap-4">
-            <h2 class="flex items-center gap-3 font-display text-2xl font-bold text-primary">
+        <UiSurfaceCard class="min-w-0 bg-base-100/95 p-7 backdrop-blur-sm">
+          <div class="flex min-w-0 items-center justify-between gap-4">
+            <h2 class="flex min-w-0 items-center gap-3 font-display text-2xl font-bold text-primary">
               <UiIcon
                 name="clock"
                 :size="26"
@@ -170,17 +177,17 @@ onMounted(load)
             </h2>
             <NuxtLink
               v-if="latestCard"
-              :to="`/cards/${latestCard.id}`"
-              class="text-sm font-semibold text-primary"
+              :to="latestCardTarget"
+              class="shrink-0 text-sm font-semibold text-primary"
             >
               Zur Karte →
             </NuxtLink>
           </div>
           <NuxtLink
             v-if="latestCard"
-            :to="`/cards/${latestCard.id}`"
+            :to="latestCardTarget"
             data-test="latest-card"
-            class="mt-5 flex items-center gap-4 rounded-xl bg-base-200/80 p-5 transition-colors hover:bg-secondary"
+            class="mt-5 flex min-w-0 items-center gap-4 rounded-xl bg-base-200/80 p-5 transition-colors hover:bg-secondary"
           >
             <span class="grid size-12 shrink-0 place-items-center rounded-lg bg-base-100 text-primary">
               <UiIcon
@@ -207,7 +214,7 @@ onMounted(load)
           </div>
         </UiSurfaceCard>
 
-        <UiSurfaceCard class="flex flex-col justify-center bg-base-100/95 p-7 backdrop-blur-sm">
+        <UiSurfaceCard class="min-w-0 flex flex-col justify-center bg-base-100/95 p-7 backdrop-blur-sm">
           <h2 class="flex items-center gap-3 font-display text-2xl font-bold text-primary">
             <UiIcon
               name="graduation-cap"
@@ -225,7 +232,7 @@ onMounted(load)
           </p>
           <UiButton
             v-if="latestCard"
-            :to="`/cards/${latestCard.id}`"
+            :to="latestCardTarget"
             variant="secondary"
             class="mt-5 w-full"
           >

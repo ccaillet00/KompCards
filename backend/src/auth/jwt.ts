@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import jwt from 'jsonwebtoken';
 
@@ -28,7 +28,7 @@ export function signToken(
   return jwt.sign(
     { sub: user.id, email: user.email, iat: now, exp: now + config.jwtTtlSeconds },
     config.jwtSecret,
-    { algorithm: 'HS256' },
+    { algorithm: 'HS256', jwtid: randomUUID() },
   );
 }
 

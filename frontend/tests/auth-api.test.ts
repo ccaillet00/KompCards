@@ -15,6 +15,22 @@ const Harness = defineComponent({
 })
 
 describe('useAuth', () => {
+  it('prüft eine bereits geladene Sitzung nach Ablauf erneut', async () => {
+    sessionStorage.setItem('kompcards.auth', JSON.stringify({
+      token: 'stored-token', expiresAt: Date.now() + 1000,
+      user: { id: 'user-1', name: 'Ada', email: 'ada@example.ch' },
+    }))
+    const first = await mountSuspended(Harness)
+    expect((first.vm as unknown as { isAuthenticated: boolean }).isAuthenticated).toBe(true)
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 2000)
+    try {
+      const second = await mountSuspended(Harness)
+      expect((second.vm as unknown as { isAuthenticated: boolean }).isAuthenticated).toBe(false)
+      expect(sessionStorage.getItem('kompcards.auth')).toBeNull()
+    } finally {
+      clock.mockRestore()
+    }
+  })
   beforeEach(() => {
     vi.mocked($fetch).mockReset()
     clearNuxtState()
@@ -66,5 +82,30 @@ describe('useAuth', () => {
       method: 'POST',
       body: input,
     })
+  })
+
+  it('meldet die bestehende Sitzung serverseitig ab und entfernt sie lokal', async () => {
+    sessionStorage.setItem('kompcards.auth', JSON.stringify({
+      token: 'jwt-token',
+      expiresAt: Date.now() + 60_000,
+      user: { id: 'user-1', name: 'Ada', email: 'ada@example.ch' },
+    }))
+    vi.mocked($fetch).mockResolvedValue(undefined)
+    const wrapper = await mountSuspended(Harness)
+    const auth = wrapper.vm as unknown as {
+      logout: () => Promise<void>
+      token: string | null
+      user: { id: string } | null
+    }
+
+    await auth.logout()
+
+    expect($fetch).toHaveBeenCalledWith('/api/auth/logout', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer jwt-token' },
+    })
+    expect(auth.token).toBeNull()
+    expect(auth.user).toBeNull()
+    expect(sessionStorage.getItem('kompcards.auth')).toBeNull()
   })
 })

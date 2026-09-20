@@ -15,7 +15,7 @@ useSeoMeta({ title: 'Arbeit dokumentieren – KompCards' })
 
 const route = useRoute()
 const router = useRouter()
-const proofId = Number.parseInt(String(route.params.id), 10)
+const proofId = Number(route.params.id)
 const {
   proof,
   competencyContext,
@@ -61,7 +61,7 @@ function validateForCheck(): boolean {
 }
 
 async function saveDraft(): Promise<boolean> {
-  if (!editable.value) return false
+  if (!editable.value || isSaving.value || isChecking.value) return false
   savedMessage.value = null
   try {
     await saveInput(proofId, { ...form })
@@ -74,6 +74,7 @@ async function saveDraft(): Promise<boolean> {
 }
 
 async function checkWithLlm(): Promise<void> {
+  if (isSaving.value || isChecking.value) return
   savedMessage.value = null
   if (!validateForCheck() || !editable.value) return
 
@@ -94,7 +95,10 @@ watch(form, () => {
 }, { deep: true })
 
 onMounted(async () => {
-  if (!Number.isInteger(proofId) || proofId < 1) return
+  if (!Number.isSafeInteger(proofId) || proofId < 1) {
+    error.value = 'Ungültige Kompetenzkarte.'
+    return
+  }
   await loadProof(proofId)
   const latestInput = proof.value?.inputs.reduce((latest, input) => input.id > latest.id ? input : latest, proof.value.inputs[0])
   if (latestInput) {
@@ -176,7 +180,7 @@ onMounted(async () => {
             />
           </div>
           <form
-            v-else
+            v-else-if="proof"
             class="mt-9 space-y-6"
             @submit.prevent="checkWithLlm"
           >
@@ -187,7 +191,7 @@ onMounted(async () => {
               hint="Welche Rolle hattest du in der Arbeit?"
               placeholder="z. B. Entwickler, Projektleiter, Teil eines Teams …"
               :error="errors.userRole"
-              :disabled="!editable"
+              :disabled="!editable || isSaving || isChecking"
             />
             <DocumentationField
               id="what"
@@ -196,7 +200,7 @@ onMounted(async () => {
               hint="Beschreibe kurz und konkret, was du gemacht hast."
               placeholder="z. B. Datenmodell für eine Anwendung entworfen …"
               :error="errors.what"
-              :disabled="!editable"
+              :disabled="!editable || isSaving || isChecking"
             />
             <DocumentationField
               id="how"
@@ -205,7 +209,7 @@ onMounted(async () => {
               hint="Beschreibe, wie du die Arbeit umgesetzt hast."
               placeholder="z. B. Anforderungen analysiert, Modelle skizziert …"
               :error="errors.how"
-              :disabled="!editable"
+              :disabled="!editable || isSaving || isChecking"
             />
             <DocumentationField
               id="why"
@@ -214,7 +218,7 @@ onMounted(async () => {
               hint="Erkläre, warum du diesen Weg gewählt hast."
               placeholder="z. B. um eine skalierbare Lösung zu erreichen …"
               :error="errors.why"
-              :disabled="!editable"
+              :disabled="!editable || isSaving || isChecking"
             />
             <DocumentationField
               id="environment"
@@ -223,7 +227,7 @@ onMounted(async () => {
               hint="In welchem Umfeld fand die Arbeit statt?"
               placeholder="z. B. Schulprojekt, Praktikum, Berufsalltag …"
               :error="errors.environment"
-              :disabled="!editable"
+              :disabled="!editable || isSaving || isChecking"
             />
 
             <div class="flex flex-wrap items-center justify-between gap-4 border-t border-primary/10 pt-6">

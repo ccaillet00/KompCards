@@ -15,7 +15,7 @@ useSeoMeta({ title: 'LLM-Auswertung – KompCards' })
 
 const route = useRoute()
 const router = useRouter()
-const proofId = Number.parseInt(String(route.params.id), 10)
+const proofId = Number(route.params.id)
 const {
   proof,
   competencyContext,
@@ -37,6 +37,8 @@ const retryError = ref<string | null>(null)
 const showDiscard = ref(false)
 const actionMessage = ref<string | null>(null)
 const isAccepted = ref(false)
+const canAct = computed(() => Boolean(activeOutput.value && !isAccepted.value && proof.value?.status === 4))
+const busy = computed(() => isSaving.value || isChecking.value)
 
 const activeInput = computed(() => {
   if (!proof.value || !activeOutput.value) return null
@@ -54,6 +56,7 @@ const documentation = computed(() => activeInput.value
   : [])
 
 async function submitRetry(): Promise<void> {
+  if (!canAct.value || busy.value) return
   retryError.value = null
   actionMessage.value = null
   const feedback = retryFeedback.value.trim()
@@ -74,7 +77,7 @@ async function submitRetry(): Promise<void> {
 }
 
 async function accept(): Promise<void> {
-  if (!activeOutput.value) return
+  if (!activeOutput.value || !canAct.value || busy.value) return
   actionMessage.value = null
   try {
     activeOutput.value = await acceptOutput(activeOutput.value.id)
@@ -86,6 +89,7 @@ async function accept(): Promise<void> {
 }
 
 async function discard(): Promise<void> {
+  if (!canAct.value || busy.value) return
   actionMessage.value = null
   try {
     await discardProof(proofId)
@@ -96,7 +100,10 @@ async function discard(): Promise<void> {
 }
 
 onMounted(async () => {
-  if (!Number.isInteger(proofId) || proofId < 1) return
+  if (!Number.isSafeInteger(proofId) || proofId < 1) {
+    error.value = 'Ungültige Kompetenzkarte.'
+    return
+  }
   await loadProof(proofId)
   activeOutput.value = latestOutput.value
   isAccepted.value = proof.value?.status === 5 || Boolean(activeOutput.value?.isSaved)
@@ -198,7 +205,7 @@ onMounted(async () => {
                 </h2>
               </div>
               <UiButton
-                v-if="!isAccepted"
+                v-if="canAct && !busy"
                 :to="`/cards/${proofId}`"
                 variant="ghost"
                 size="sm"
@@ -239,7 +246,7 @@ onMounted(async () => {
                 <p class="text-xs font-bold uppercase tracking-[0.16em] opacity-70">
                   KompCards KI
                 </p>
-                <h2 class="font-display text-2xl font-bold">
+                <h2 class="font-display text-2xl font-bold text-primary-content">
                   LLM-Auswertung
                 </h2>
               </div>
@@ -306,7 +313,7 @@ onMounted(async () => {
         </main>
 
         <section
-          v-if="showRetry && !isAccepted"
+          v-if="showRetry && canAct"
           class="mt-6 max-w-6xl rounded-box border border-primary/15 bg-base-100/95 p-6 shadow-soft"
         >
           <label
@@ -335,14 +342,14 @@ onMounted(async () => {
           <div class="mt-4 flex flex-wrap justify-end gap-3">
             <UiButton
               variant="ghost"
-              :disabled="isChecking"
+              :disabled="busy"
               @click="showRetry = false"
             >
               Abbrechen
             </UiButton>
             <UiButton
               data-test="retry-output"
-              :disabled="isChecking"
+              :disabled="busy"
               @click="submitRetry"
             >
               <span
@@ -355,7 +362,7 @@ onMounted(async () => {
         </section>
 
         <section
-          v-if="showDiscard && !isAccepted"
+          v-if="showDiscard && canAct"
           class="alert mt-6 max-w-6xl border border-error/25 bg-error/5 text-base-content"
         >
           <UiIcon
@@ -375,7 +382,7 @@ onMounted(async () => {
             <UiButton
               variant="ghost"
               size="sm"
-              :disabled="isSaving"
+              :disabled="busy"
               @click="showDiscard = false"
             >
               Abbrechen
@@ -384,7 +391,7 @@ onMounted(async () => {
               data-test="confirm-discard"
               variant="danger"
               size="sm"
-              :disabled="isSaving"
+              :disabled="busy"
               @click="discard"
             >
               Verwerfen
@@ -393,7 +400,7 @@ onMounted(async () => {
         </section>
 
         <div
-          v-if="!isAccepted"
+          v-if="canAct"
           class="mt-7 flex max-w-6xl flex-wrap items-center justify-between gap-4 border-t border-primary/10 pt-6"
         >
           <UiButton
@@ -441,7 +448,7 @@ onMounted(async () => {
         </div>
 
         <div
-          v-else
+          v-else-if="isAccepted"
           class="mt-7 max-w-6xl rounded-box border border-success/20 bg-success/10 p-5 text-success"
         >
           <p class="flex items-center gap-2 font-semibold">
@@ -461,7 +468,7 @@ onMounted(async () => {
       </template>
 
       <div
-        v-else-if="!isLoading"
+        v-else-if="!isLoading && !error"
         class="mt-9 max-w-3xl rounded-box border border-primary/10 bg-base-100/95 p-8 text-center shadow-soft"
       >
         <UiIcon

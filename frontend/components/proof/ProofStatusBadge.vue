@@ -18,7 +18,7 @@ const statusConfig = computed(() => statuses[props.status])
 
 <template>
   <span
-    class="badge h-auto gap-1.5 border-0 px-3 py-1.5 font-medium"
+    class="badge h-auto shrink-0 gap-1.5 border-0 px-3 py-1.5 font-medium"
     :class="statusConfig.classes"
   >
     <span

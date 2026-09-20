@@ -45,7 +45,10 @@ export function useCompetencyWorkflow() {
   })
 
   const latestOutput = computed<CompetencyOutput | null>(() => {
-    const outputs = proof.value?.inputs.flatMap(input => input.outputs) ?? []
+    const latestInput = proof.value?.inputs.reduce<CompetencyInput | null>(
+      (latest, input) => !latest || input.id > latest.id ? input : latest, null,
+    )
+    const outputs = latestInput?.outputs ?? []
     return outputs.reduce<CompetencyOutput | null>(
       (latest, output) => !latest || output.id > latest.id ? output : latest,
       null,
@@ -99,6 +102,7 @@ export function useCompetencyWorkflow() {
   async function loadProof(proofId: number): Promise<void> {
     isLoading.value = true
     error.value = null
+    proof.value = null
     try {
       const options = requestOptions()
       const [proofResponse, curriculumResponse] = await Promise.all([
@@ -126,7 +130,12 @@ export function useCompetencyWorkflow() {
           body: input,
         },
       )
-      return response.input
+      const savedInput = { ...response.input, outputs: response.input.outputs ?? [] }
+      if (proof.value?.id === proofId) {
+        proof.value.inputs.push(savedInput)
+        if (proof.value.status === 4) proof.value.status = 1
+      }
+      return savedInput
     } catch (requestError) {
       if (!error.value) error.value = apiErrorMessage(requestError)
       throw requestError

@@ -5,6 +5,7 @@ import SelectCompetencyPage from '../pages/cards/new.vue'
 import DocumentationPage from '../pages/cards/[id]/index.vue'
 
 const fixture = vi.hoisted(() => ({
+  saving: false,
   curricula: [{
     id: 1,
     code: 'RLP-INF',
@@ -51,7 +52,8 @@ vi.mock('../composables/useCompetencyWorkflow', async () => {
       curricula: ref(fixture.curricula),
       proof: ref(fixture.proof),
       isLoading: ref(false),
-      isSaving: ref(false),
+      isSaving: ref(fixture.saving),
+      isChecking: ref(false),
       error: ref(null),
       loadCurricula: fixture.loadCurricula,
       createProof: fixture.createProof,
@@ -64,6 +66,7 @@ vi.mock('../composables/useCompetencyWorkflow', async () => {
 
 describe('Kompetenzauswahl und Dokumentation', () => {
   beforeEach(() => {
+    fixture.saving = false
     sessionStorage.setItem('kompcards.auth', JSON.stringify({
       token: 'jwt-token',
       expiresAt: Date.now() + 60_000,
@@ -74,6 +77,15 @@ describe('Kompetenzauswahl und Dokumentation', () => {
     fixture.loadProof.mockReset().mockResolvedValue(undefined)
     fixture.saveInput.mockReset().mockResolvedValue(undefined)
     fixture.triggerLlmCheck.mockReset().mockResolvedValue({ id: 5 })
+  })
+
+  it('sperrt Eingaben während des Speicherns', async () => {
+    fixture.saving = true
+    const wrapper = await mountSuspended(DocumentationPage, { route: '/cards/9' })
+    await flushPromises()
+    expect(wrapper.get('#user-role').attributes('disabled')).toBeDefined()
+    await wrapper.get('form').trigger('submit')
+    expect(fixture.triggerLlmCheck).not.toHaveBeenCalled()
   })
 
   it('führt hierarchisch zur gewählten Kompetenz und erstellt die Karte', async () => {

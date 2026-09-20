@@ -18,6 +18,23 @@ const Harness = defineComponent({
 })
 
 describe('useCompetencyWorkflow', () => {
+  it('zeigt nach neuer Eingabe keine Auswertung der alten Eingabe und aktualisiert den Status', async () => {
+    vi.mocked($fetch)
+      .mockResolvedValueOnce({ proof: { id: 9, status: 4, inputs: [{ id: 4, outputs: [{ id: 5 }] }] } })
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce({ input: { id: 6 } })
+    const wrapper = await mountSuspended(Harness)
+    const workflow = wrapper.vm as unknown as {
+      loadProof: (id: number) => Promise<void>
+      saveInput: (id: number, input: Record<string, string>) => Promise<void>
+      latestOutput: unknown
+      proof: { status: number }
+    }
+    await workflow.loadProof(9)
+    await workflow.saveInput(9, { userRole: '', what: '', how: '', why: '', environment: '' })
+    expect(workflow.latestOutput).toBeNull()
+    expect(workflow.proof.status).toBe(1)
+  })
   beforeEach(() => {
     clearNuxtState()
     vi.mocked($fetch).mockReset()

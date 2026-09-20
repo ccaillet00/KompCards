@@ -60,6 +60,8 @@ export function useAuth() {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
+  if (token.value && (!expiresAt.value || expiresAt.value <= Date.now())) clearSession()
+
   if (!token.value) {
     const storedSession = readStoredSession()
     if (storedSession) {

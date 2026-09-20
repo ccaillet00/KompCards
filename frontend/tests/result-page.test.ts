@@ -59,6 +59,14 @@ vi.mock('../composables/useCompetencyWorkflow', async () => {
 })
 
 describe('LLM-Auswertung', () => {
+  it.each([1, 2, 6] as const)('bietet für Status %s keine Aktionen auf alte Auswertungen an', async (status) => {
+    fixture.proof.status = status
+    const wrapper = await mountSuspended(ResultPage, { route: '/cards/9/result' })
+    await flushPromises()
+    expect(wrapper.find('[data-test="accept-output"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="show-retry"]').exists()).toBe(false)
+  })
+
   beforeEach(() => {
     sessionStorage.setItem('kompcards.auth', JSON.stringify({
       token: 'jwt-token',

@@ -13,7 +13,7 @@ const fixture = vi.hoisted(() => ({
       createdAt: '2026-09-10T08:00:00.000Z',
       updatedAt: '2026-09-18T08:00:00.000Z',
       competencyCode: 'B1.2',
-      competencyDescription: 'Anforderungen analysieren',
+      competencyDescription: 'Aus dem Unternehmensleitbild und der ICT-Strategie die Anforderungen und Rahmenbedingungen ableiten und in der technischen ICT-Organisationseinheit konkret umsetzen',
       areaCode: 'B1',
       areaTitle: 'Analyse & Design',
       curriculumTitle: 'Informatik HF',
@@ -58,6 +58,8 @@ describe('Dashboard und Meine Karten', () => {
     expect(wrapper.get('[data-test="created-count"]').text()).toContain('2')
     expect(wrapper.get('[data-test="completed-count"]').text()).toContain('1')
     expect(wrapper.get('[data-test="latest-card"]').text()).toContain('B1.2')
+    expect(wrapper.get('[data-test="dashboard-grid"]').classes()).toContain('lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.85fr)]')
+    expect(wrapper.get('[data-test="latest-card"]').classes()).toContain('min-w-0')
     expect(wrapper.html()).toContain('/images/fox-world/dashboard.webp')
   })
 
@@ -67,7 +69,7 @@ describe('Dashboard und Meine Karten', () => {
 
     expect(wrapper.get('h1').text()).toBe('Meine Karten')
     expect(wrapper.findAll('[data-test="proof-row"]')).toHaveLength(2)
-    expect(wrapper.text()).toContain('Anforderungen analysieren')
+    expect(wrapper.text()).toContain('ICT-Organisationseinheit')
     expect(wrapper.text()).toContain('Entwurf')
     expect(wrapper.text()).toContain('Abgeschlossen')
     expect(wrapper.findAll('[data-test="proof-row"]')[0]?.attributes('href')).toBe('/cards/3')
