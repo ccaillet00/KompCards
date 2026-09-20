@@ -66,10 +66,19 @@ Kurze Architektur-Entscheidungsrekorde (ADR) aus dem Requirements-Review. Status
   - Bestehende Kompetenznachweise schützen vor versehentlichem Datenverlust (409).
   - CSV-Dateien liegen in `backend/csv/` (Versionierung im Repo).
 
+## ADR-011: Qualitative Qualitätss Aussage (`quality_statement`)
+- **Kontext:** Die numerische Bewertung `quality` (1–4) gibt nur eine grobe Einordnung. Es fehlt eine qualitative Aussage, die die Qualität des Arbeitsergebnisses in Worten beschreibt und begründet — wichtig für das Bewusstsein der Studierenden, welche Qualität eine Tätigkeit/Handlung erhält.
+- **Entscheidung:** Neues Pflichtfeld `quality_statement` (TEXT, NOT NULL) in `competency_llm_output`. Das LLM formuliert zu jedem Arbeitsergebnis eine kurze qualitative Aussage (1–2 Sätze). Feld wird LLM-seitig gesetzt und persistent gespeichert.
+- **Konsequenz:**
+  - LLM-Zod-Schema, Prompt, Client-Mapping und Service-Insert werden um das Feld erweitert.
+  - Migration `0001_previous_sunspot.sql` (ALTER TABLE ADD COLUMN).
+  - `quality_statement` ist ein Pflichtfeld — das LLM muss immer eine Aussage liefern.
+
 ## Offene Entscheidungen
 
 Keine — alle Kernpunkte geschlossen:
 - **Nuxt:** Version **4.5.1** (bestätigt).
 - **Reverse Proxy / FE→BE-Kommunikation:** **Traefik** (ADR-009).
 - **`quality` / `overlap_curriculum`:** **LLM-seitig gesetzt** (bestätigt).
+- **`quality_statement`:** **LLM-seitig gesetzt, Pflichtfeld** (ADR-011).
 - **Curriculum-Import:** **CSV-Upload, Löschen & Neu** (ADR-010).

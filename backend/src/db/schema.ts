@@ -164,6 +164,8 @@ export const competencyLlmOutput = mysqlTable(
     quality: int('quality')
       .notNull(),
      // .$comment('1=very bad, 2=bad, 3=good, 4=very good (LLM-seitig gesetzt)'),
+    /** Qualitative Aussage des LLMs zur Qualität des Arbeitsergebnisses (LLM-seitig gesetzt) */
+    qualityStatement: text('quality_statement').notNull(),
     /** Which Model was used in this request */
     llmModel: varchar('llm_model', { length: 100 }).notNull(),
     /** Timestamp when the record was initially created */

@@ -40,6 +40,7 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
     return {
       workResult: object.work_result,
       quality: object.quality,
+      qualityStatement: object.quality_statement,
       overlapCurriculum: object.overlap_curriculum,
       noteImprovment: object.note_improvment,
     };

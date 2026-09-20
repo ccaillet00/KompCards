@@ -2,16 +2,19 @@ import { and, asc, eq } from 'drizzle-orm';
 
 import type { Database } from '../db/client.js';
 import {
+  areas,
+  competencies,
   competencyInput,
   competencyLlmOutput,
   competencyProof,
+  curriculum,
   type CompetencyInput,
   type CompetencyLlmOutput,
   type CompetencyProof,
 } from '../db/schema.js';
 import { ProofStatus } from '../status.js';
 
-import type { LlmClient, LlmRequest } from '../llm/types.js';
+import type { LlmClient, LlmContext, LlmRequest } from '../llm/types.js';
 import { ForbiddenError, NotFoundError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 
@@ -176,6 +179,8 @@ export class CompetencyService {
 
     await this.setProofStatus(proofId, ProofStatus.LlmCheck);
 
+    const context = await this.loadLlmContext(proof.competencyId);
+
     const llmRequest: LlmRequest = {
       userRole: latestInput.userRole,
       what: latestInput.what,
@@ -183,6 +188,7 @@ export class CompetencyService {
       why: latestInput.why,
       environment: latestInput.environment,
       subject: latestInput.subject,
+      context,
     };
 
     return this.runLlmCheck(proofId, latestInput.id, null, llmRequest);
@@ -228,6 +234,8 @@ export class CompetencyService {
 
     await this.setProofStatus(proofRow.id, ProofStatus.LlmCheck);
 
+    const context = await this.loadLlmContext(proofRow.competencyId);
+
     const llmRequest: LlmRequest = {
       userRole: inputRow.userRole,
       what: inputRow.what,
@@ -236,6 +244,7 @@ export class CompetencyService {
       environment: inputRow.environment,
       subject: inputRow.subject,
       userFeedback,
+      context,
     };
 
     const result = await this.runLlmCheck(
@@ -281,6 +290,44 @@ export class CompetencyService {
   }
 
   /**
+   * Lädt die Kompetenz-Kette (Kompetenz → Bereich → Lehrgang) für den LLM-Kontext.
+   */
+  private async loadLlmContext(competencyId: number): Promise<LlmContext> {
+    const [competency] = await this.db
+      .select()
+      .from(competencies)
+      .where(eq(competencies.id, competencyId))
+      .limit(1);
+    if (!competency) {
+      throw new NotFoundError('Kompetenz nicht gefunden');
+    }
+
+    const [area] = await this.db
+      .select()
+      .from(areas)
+      .where(eq(areas.id, competency.areaId))
+      .limit(1);
+    if (!area) {
+      throw new NotFoundError('Bereich nicht gefunden');
+    }
+
+    const [curriculumRow] = await this.db
+      .select()
+      .from(curriculum)
+      .where(eq(curriculum.id, area.curriculumId))
+      .limit(1);
+    if (!curriculumRow) {
+      throw new NotFoundError('Lehrgang nicht gefunden');
+    }
+
+    return {
+      competency: { code: competency.code, description: competency.description },
+      area: { code: area.code, titel: area.titel },
+      curriculum: { code: curriculumRow.code, titel: curriculumRow.titel },
+    };
+  }
+
+  /**
    * Führt den LLM-Call aus und persistiert das Ergebnis.
    * @returns der gespeicherte Output oder `null` bei Fehlschlag.
    */
@@ -301,6 +348,7 @@ export class CompetencyService {
           competencyInputId: inputId,
           workResult: result.workResult,
           quality: result.quality,
+          qualityStatement: result.qualityStatement,
           llmModel: this.llmModel,
           overlapCurriculum: result.overlapCurriculum,
           noteImprovment: result.noteImprovment,

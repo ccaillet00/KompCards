@@ -5,6 +5,7 @@ const SYSTEM_PROMPT = [
   'Gegeben ist eine strukturierte Beschreibung eines Arbeitsergebnisses (Rolle, Was, Wie, Warum, Umgebung, ggf. Vorgaben der Dozentin/des Dozenten).',
   'Erstelle daraus eine klare, fachlich korrekte Ausformulierung des Arbeitsergebnisses (work_result).',
   'Bewerte die Qualität des Nutzeingangs auf einer Skala von 1 bis 4 (1=very bad, 2=bad, 3=good, 4=very good).',
+  'Formuliere zusätzlich eine kurze qualitative Aussage (quality_statement) in 1–2 Sätzen, die die Qualität des Arbeitsergebnisses beschreibt und begründet.',
   'Gib an, ob das Arbeitsergebnis mit dem Rahmenlehrplan/Curriculum überlappt (overlap_curriculum).',
   'Formuliere konkrete Verbesserungshinweise (note_improvment); wenn keine nötig sind, gib null zurück.',
   'Antworte ausschließlich mit dem geforderten strukturierten Objekt.',
@@ -13,16 +14,29 @@ const SYSTEM_PROMPT = [
 /**
  * Baut den Prompt für einen LLM-Call aus der strukturierten Eingabe.
  * Bei einem Retry wird das `userFeedback` zusätzlich berücksichtigt.
+ * Der Kontext-Block (Lehrgang, Bereich, Kompetenz) steht immer oben.
  */
 export function buildPrompt(request: LlmRequest): string {
-  const lines = [
+  const lines: string[] = [];
+
+  if (request.context) {
+    lines.push(
+      'Kontext:',
+      `- Lehrgang: ${request.context.curriculum.code} (${request.context.curriculum.titel})`,
+      `- Bereich: ${request.context.area.code} (${request.context.area.titel})`,
+      `- Kompetenz: ${request.context.competency.code} (${request.context.competency.description})`,
+      '',
+    );
+  }
+
+  lines.push(
     'Strukturierte Eingabe des Studierenden:',
     `- Rolle im Unternehmen/Praktikum: ${request.userRole}`,
     `- Was: ${request.what}`,
     `- Wie: ${request.how}`,
     `- Warum: ${request.why}`,
     `- Umgebung/Kontext: ${request.environment}`,
-  ];
+  );
 
   if (request.subject) {
     lines.push(`- Vorgaben der Dozentin/des Dozenten: ${request.subject}`);

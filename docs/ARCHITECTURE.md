@@ -66,7 +66,7 @@ Handler ──(zod)──▶ Service ──(Drizzle)──▶ MySQL
 1. Student gibt competency_input ein (what/how/why/…)
 2. Service: competency_proof.status = llm_check (2)
 3. Service ruft LLM ab (AI SDK, provider-agnostisch)
-   → work_result, quality, overlap_curriculum, note_improvment
+   → work_result, quality, quality_statement, overlap_curriculum, note_improvment
 4. Success → status = llm_check_finished (4)
    Failure → status = llm_check_failed (3)
 5. LLM-Output wird als competency_llm_output gespeichert
@@ -80,9 +80,9 @@ Handler ──(zod)──▶ Service ──(Drizzle)──▶ MySQL
 
 - **Extern** (separate Maschine), nur die Anbindung ist in Scope.
 - **Vercel AI SDK**, **provider-agnostisch**; Endpoint + API-Key + Modell via **Env**.
-- **Annahme:** Das LLM liefert ein strukturiertes Ergebnis (`work_result`, `quality` 1–4, `overlap_curriculum`, `note_improvment`), validiert per **zod**; das verwendete Modell wird in `llm_model` gespeichert.
+- **Annahme:** Das LLM liefert ein strukturiertes Ergebnis (`work_result`, `quality` 1–4, `quality_statement`, `overlap_curriculum`, `note_improvment`), validiert per **zod**; das verwendete Modell wird in `llm_model` gespeichert.
 - **Kapselung:** Der LLM-Client steht hinter einem **Interface** und wird in Unit-Tests **gemockt** (deterministisch, kein echter LLM-Call).
-- **LLM-seitig gesetzt:** `quality` und `overlap_curriculum` werden vom LLM erzeugt (bestätigt).
+- **LLM-seitig gesetzt:** `quality`, `quality_statement` und `overlap_curriculum` werden vom LLM erzeugt (bestätigt).
 
 ## 6. Auth-Flow (JWT + serverseitige Session)
 

@@ -14,6 +14,8 @@ export const llmOutputSchema = z.object({
   work_result: z.string().min(1),
   /** 1=very bad, 2=bad, 3=good, 4=very good (LLM-seitig gesetzt) */
   quality: z.number().int().min(1).max(4),
+  /** Qualitative Aussage des LLMs zur Qualität des Arbeitsergebnisses (LLM-seitig gesetzt) */
+  quality_statement: z.string().min(1),
   /** Does the Output overlap with the curriculum (LLM-seitig gesetzt) */
   overlap_curriculum: z.boolean(),
   /** Note improvments from the LLM (optional) */
