@@ -76,7 +76,22 @@ export function competencyRouter(config: AppConfig, competencyService: Competenc
         return;
       }
       competencyService
-        .submitInput(req.user!.sub, proofId, parsed.data)
+        .saveInput(req.user!.sub, proofId, parsed.data)
+        .then((input) => res.status(201).json({ input }))
+        .catch(next);
+    },
+  );
+
+  router.post(
+    '/proofs/:proofId/llm-check',
+    (req: AuthRequest, res: Response, next: NextFunction) => {
+      const proofId = Number.parseInt(req.params.proofId ?? '', 10);
+      if (Number.isNaN(proofId)) {
+        res.status(400).json({ error: 'Ungültige proofId' });
+        return;
+      }
+      competencyService
+        .triggerLlmCheck(req.user!.sub, proofId)
         .then((output) =>
           res.status(201).json({
             output,
