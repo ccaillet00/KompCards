@@ -348,6 +348,7 @@ export class CompetencyService {
           competencyInputId: inputId,
           workResult: result.workResult,
           quality: result.quality,
+          qualityStatement: result.qualityStatement,
           llmModel: this.llmModel,
           overlapCurriculum: result.overlapCurriculum,
           noteImprovment: result.noteImprovment,

@@ -5,6 +5,7 @@ const SYSTEM_PROMPT = [
   'Gegeben ist eine strukturierte Beschreibung eines Arbeitsergebnisses (Rolle, Was, Wie, Warum, Umgebung, ggf. Vorgaben der Dozentin/des Dozenten).',
   'Erstelle daraus eine klare, fachlich korrekte Ausformulierung des Arbeitsergebnisses (work_result).',
   'Bewerte die Qualität des Nutzeingangs auf einer Skala von 1 bis 4 (1=very bad, 2=bad, 3=good, 4=very good).',
+  'Formuliere zusätzlich eine kurze qualitative Aussage (quality_statement) in 1–2 Sätzen, die die Qualität des Arbeitsergebnisses beschreibt und begründet.',
   'Gib an, ob das Arbeitsergebnis mit dem Rahmenlehrplan/Curriculum überlappt (overlap_curriculum).',
   'Formuliere konkrete Verbesserungshinweise (note_improvment); wenn keine nötig sind, gib null zurück.',
   'Antworte ausschließlich mit dem geforderten strukturierten Objekt.',

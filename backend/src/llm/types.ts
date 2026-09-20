@@ -39,6 +39,8 @@ export interface LlmResult {
   workResult: string;
   /** 1=very bad, 2=bad, 3=good, 4=very good */
   quality: number;
+  /** Qualitative Aussage des LLMs zur Qualität des Arbeitsergebnisses */
+  qualityStatement: string;
   /** Does the Output overlap with the curriculum */
   overlapCurriculum: boolean;
   /** Note improvments from the LLM */

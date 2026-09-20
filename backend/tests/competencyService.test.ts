@@ -27,6 +27,7 @@ const validPayload: SubmitInputPayload = {
 const mockLlmResult: LlmResult = {
   workResult: 'Gutes Arbeitsergebnis',
   quality: 3,
+  qualityStatement: 'Solide Umsetzung mit klarem Bezug zur Kompetenz.',
   overlapCurriculum: true,
   noteImprovment: 'Könnte noch detaillierter sein',
 };
@@ -40,7 +41,7 @@ function createMockLlm(): LlmClient & { generateCompetencyOutput: Mock } {
 interface MockDbOptions {
   proof?: { id: number; userId: string; status: number; competencyId?: number } | null;
   inputs?: Array<{ id: number; competencyProofId: number; userRole: string; what: string; how: string; why: string; environment: string; subject: string | null }>;
-  outputs?: Array<{ id: number; competencyInputId: number; workResult: string; quality: number; llmModel: string; overlapCurriculum: boolean; noteImprovment: string | null; isSaved: boolean; userFeedback: string | null; predecessor: number | null }>;
+  outputs?: Array<{ id: number; competencyInputId: number; workResult: string; quality: number; qualityStatement: string; llmModel: string; overlapCurriculum: boolean; noteImprovment: string | null; isSaved: boolean; userFeedback: string | null; predecessor: number | null }>;
   competency?: { id: number; areaId: number; code: string; description: string };
   area?: { id: number; curriculumId: number; code: string; titel: string };
   curriculumRow?: { id: number; code: string; titel: string };
@@ -129,6 +130,7 @@ function createMockDb(options: MockDbOptions = {}) {
               competencyInputId: (vals as { competencyInputId?: number }).competencyInputId,
               workResult: (vals as { workResult?: string }).workResult ?? '',
               quality: (vals as { quality?: number }).quality ?? 3,
+              qualityStatement: (vals as { qualityStatement?: string }).qualityStatement ?? '',
               llmModel: (vals as { llmModel?: string }).llmModel ?? 'test',
               overlapCurriculum: (vals as { overlapCurriculum?: boolean }).overlapCurriculum ?? false,
               noteImprovment: (vals as { noteImprovment?: string | null }).noteImprovment ?? null,
