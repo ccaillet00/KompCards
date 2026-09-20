@@ -115,7 +115,8 @@ export class CompetencyService {
   /**
    * Speichert die strukturierte Eingabe **ohne** LLM-Call.
    *
-   * Der Status der Karte bleibt unverändert (`draft`/`llm_check_failed`).
+   * Nach einer abgeschlossenen Prüfung wird die Karte wieder zum Entwurf;
+   * `draft` und `llm_check_failed` bleiben unverändert.
    * Die LLM-Prüfung wird separat via `triggerLlmCheck` ausgelöst.
    */
   async saveInput(
@@ -155,7 +156,10 @@ export class CompetencyService {
 
     await this.db
       .update(competencyProof)
-      .set({ updatedAt: new Date() })
+      .set({
+        updatedAt: new Date(),
+        ...(proof.status === ProofStatus.LlmCheckFinished ? { status: ProofStatus.Draft } : {}),
+      })
       .where(eq(competencyProof.id, proofId));
 
     return created;
