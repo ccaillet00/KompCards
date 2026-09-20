@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-
-type ProofStatus = 1 | 2 | 3 | 4 | 5 | 6
+import type { ProofStatus } from '../../types/proof'
 
 const props = defineProps<{ status: ProofStatus }>()
 
