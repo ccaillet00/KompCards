@@ -206,9 +206,9 @@ export class CompetencyService {
       );
     }
 
-    await this.setProofStatus(proofId, ProofStatus.LlmCheck);
-
     const context = await this.loadLlmContext(proof.competencyId);
+
+    await this.setProofStatus(proofId, ProofStatus.LlmCheck);
 
     const llmRequest: LlmRequest = {
       userRole: latestInput.userRole,
@@ -261,9 +261,9 @@ export class CompetencyService {
       throw new ForbiddenError('Kein Zugriff auf diese Karte');
     }
 
-    await this.setProofStatus(proofRow.id, ProofStatus.LlmCheck);
-
     const context = await this.loadLlmContext(proofRow.competencyId);
+
+    await this.setProofStatus(proofRow.id, ProofStatus.LlmCheck);
 
     const llmRequest: LlmRequest = {
       userRole: inputRow.userRole,

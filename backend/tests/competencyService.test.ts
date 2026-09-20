@@ -42,9 +42,9 @@ interface MockDbOptions {
   proof?: { id: number; userId: string; status: number; competencyId?: number } | null;
   inputs?: Array<{ id: number; competencyProofId: number; userRole: string; what: string; how: string; why: string; environment: string; subject: string | null }>;
   outputs?: Array<{ id: number; competencyInputId: number; workResult: string; quality: number; qualityStatement: string; llmModel: string; overlapCurriculum: boolean; noteImprovment: string | null; isSaved: boolean; userFeedback: string | null; predecessor: number | null }>;
-  competency?: { id: number; areaId: number; code: string; description: string };
-  area?: { id: number; curriculumId: number; code: string; titel: string };
-  curriculumRow?: { id: number; code: string; titel: string };
+  competency?: { id: number; areaId: number; code: string; description: string } | null;
+  area?: { id: number; curriculumId: number; code: string; titel: string } | null;
+  curriculumRow?: { id: number; code: string; titel: string } | null;
 }
 
 function createMockDb(options: MockDbOptions = {}) {
@@ -451,5 +451,66 @@ describe('CompetencyService.triggerLlmCheck', () => {
 
     await expect(service.triggerLlmCheck('user-1', 1)).rejects.toThrow(BadRequestError);
     expect(llm.generateCompetencyOutput).not.toHaveBeenCalled();
+  });
+
+  it('setzt Status nicht auf llm_check, wenn der Kontext nicht geladen werden kann', async () => {
+    const input = {
+      id: 1,
+      competencyProofId: 1,
+      userRole: 'Entwickler',
+      what: 'API implementieren',
+      how: 'mit REST und Express',
+      why: 'um Daten auszutauschen',
+      environment: 'Firma XY',
+      subject: null,
+    };
+    const db = createMockDb({ inputs: [input], competency: null });
+    const llm = createMockLlm();
+    const service = new CompetencyService(db as never, llm, 'test-model');
+
+    await expect(service.triggerLlmCheck('user-1', 1)).rejects.toThrow(NotFoundError);
+    expect(llm.generateCompetencyOutput).not.toHaveBeenCalled();
+    expect(db._statusUpdates).toHaveLength(0);
+  });
+});
+
+// ─── retryOutput ─────────────────────────────────────────────────────────────
+
+describe('CompetencyService.retryOutput', () => {
+  it('setzt Status nicht auf llm_check, wenn der Kontext nicht geladen werden kann', async () => {
+    const input = {
+      id: 1,
+      competencyProofId: 1,
+      userRole: 'Entwickler',
+      what: 'API implementieren',
+      how: 'mit REST und Express',
+      why: 'um Daten auszutauschen',
+      environment: 'Firma XY',
+      subject: null,
+    };
+    const output = {
+      id: 1,
+      competencyInputId: 1,
+      workResult: 'Ergebnis',
+      quality: 3,
+      qualityStatement: 'Solide',
+      llmModel: 'test',
+      overlapCurriculum: true,
+      noteImprovment: null,
+      isSaved: false,
+      userFeedback: null,
+      predecessor: null,
+    };
+    const db = createMockDb({
+      inputs: [input],
+      outputs: [output],
+      competency: null,
+    });
+    const llm = createMockLlm();
+    const service = new CompetencyService(db as never, llm, 'test-model');
+
+    await expect(service.retryOutput('user-1', 1, 'Bitte detaillierter')).rejects.toThrow(NotFoundError);
+    expect(llm.generateCompetencyOutput).not.toHaveBeenCalled();
+    expect(db._statusUpdates).toHaveLength(0);
   });
 });
