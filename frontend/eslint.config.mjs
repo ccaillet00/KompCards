@@ -25,6 +25,13 @@ export default tseslint.config(
     },
   },
   {
+    files: ['components/ui/UiIcon.vue'],
+    rules: {
+      // Icon markup is a curated, static subset of the installed Iconify dataset.
+      'vue/no-v-html': 'off',
+    },
+  },
+  {
     // Build-/Tool-Configs (CommonJS, *.config.cjs)
     files: ['**/*.cjs'],
     languageOptions: {

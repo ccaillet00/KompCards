@@ -23,6 +23,11 @@ export default defineNuxtConfig({
     head: {
       title: 'KompCards',
       htmlAttrs: { lang: 'de' },
+      bodyAttrs: { 'data-theme': 'kompcards' },
+      meta: [
+        { name: 'description', content: 'KompCards macht deine beruflichen Kompetenzen sichtbar.' },
+        { name: 'theme-color', content: '#fdfbf6' },
+      ],
     },
   },
 

@@ -1,3 +1,72 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply m-0 bg-base-100 font-sans text-base-content antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display text-primary;
+  }
+
+  ::selection {
+    @apply bg-primary/20 text-primary;
+  }
+
+  :focus-visible {
+    @apply outline outline-2 outline-offset-4 outline-primary;
+  }
+}
+
+@layer components {
+  .page-shell {
+    @apply mx-auto w-full max-w-page px-6 lg:px-10 xl:px-14;
+  }
+
+  .eyebrow {
+    @apply text-xs font-bold uppercase tracking-[0.2em] text-primary;
+  }
+
+  .display-title {
+    @apply font-display text-5xl font-bold leading-[1.02] tracking-[-0.025em] text-primary md:text-6xl xl:text-7xl;
+  }
+
+  .section-title {
+    @apply font-display text-4xl font-bold leading-tight text-primary md:text-5xl;
+  }
+
+  .form-control-input {
+    @apply input input-bordered h-12 w-full border-primary/20 bg-base-100 text-base-content placeholder:text-base-content/40 focus:border-primary focus:outline-none;
+  }
+
+  .form-control-textarea {
+    @apply textarea textarea-bordered min-h-28 w-full resize-y border-primary/20 bg-base-100 text-base-content placeholder:text-base-content/40 focus:border-primary focus:outline-none;
+  }
+
+  .form-control-select {
+    @apply select select-bordered h-12 w-full border-primary/20 bg-base-100 text-base-content focus:border-primary focus:outline-none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
