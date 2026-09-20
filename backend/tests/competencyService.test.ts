@@ -2,9 +2,12 @@ import { describe, expect, it, vi, type Mock } from 'vitest';
 
 import { CompetencyService, type SubmitInputPayload } from '../src/services/competencyService.js';
 import {
+  areas,
+  competencies,
   competencyInput,
   competencyLlmOutput,
   competencyProof,
+  curriculum,
 } from '../src/db/schema.js';
 import { ProofStatus } from '../src/status.js';
 import { ForbiddenError, NotFoundError } from '../src/utils/errors.js';
@@ -35,13 +38,23 @@ function createMockLlm(): LlmClient & { generateCompetencyOutput: Mock } {
 }
 
 interface MockDbOptions {
-  proof?: { id: number; userId: string; status: number } | null;
+  proof?: { id: number; userId: string; status: number; competencyId?: number } | null;
   inputs?: Array<{ id: number; competencyProofId: number; userRole: string; what: string; how: string; why: string; environment: string; subject: string | null }>;
   outputs?: Array<{ id: number; competencyInputId: number; workResult: string; quality: number; llmModel: string; overlapCurriculum: boolean; noteImprovment: string | null; isSaved: boolean; userFeedback: string | null; predecessor: number | null }>;
+  competency?: { id: number; areaId: number; code: string; description: string };
+  area?: { id: number; curriculumId: number; code: string; titel: string };
+  curriculumRow?: { id: number; code: string; titel: string };
 }
 
 function createMockDb(options: MockDbOptions = {}) {
-  const { proof = { id: 1, userId: 'user-1', status: ProofStatus.Draft }, inputs = [], outputs = [] } = options;
+  const {
+    proof = { id: 1, userId: 'user-1', status: ProofStatus.Draft, competencyId: 1 },
+    inputs = [],
+    outputs = [],
+    competency = { id: 1, areaId: 1, code: 'A1.1', description: 'Grundlagen der Informatik' },
+    area = { id: 1, curriculumId: 1, code: 'A1', titel: 'Grundlagen' },
+    curriculumRow = { id: 1, code: 'RLP_INF', titel: 'Informatik' },
+  } = options;
 
   const insertedInputs: unknown[] = [];
   const insertedOutputs: unknown[] = [];
@@ -69,6 +82,27 @@ function createMockDb(options: MockDbOptions = {}) {
                 // Return initial outputs + any newly inserted ones
                 return [...outputs, ...insertedOutputs];
               }),
+            })),
+          };
+        }
+        if (table === competencies) {
+          return {
+            where: vi.fn(() => ({
+              limit: vi.fn(async () => (competency ? [competency] : [])),
+            })),
+          };
+        }
+        if (table === areas) {
+          return {
+            where: vi.fn(() => ({
+              limit: vi.fn(async () => (area ? [area] : [])),
+            })),
+          };
+        }
+        if (table === curriculum) {
+          return {
+            where: vi.fn(() => ({
+              limit: vi.fn(async () => (curriculumRow ? [curriculumRow] : [])),
             })),
           };
         }
@@ -206,6 +240,11 @@ describe('CompetencyService.triggerLlmCheck', () => {
       why: 'um Daten auszutauschen',
       environment: 'Firma XY',
       subject: null,
+      context: {
+        competency: { code: 'A1.1', description: 'Grundlagen der Informatik' },
+        area: { code: 'A1', titel: 'Grundlagen' },
+        curriculum: { code: 'RLP_INF', titel: 'Informatik' },
+      },
     });
   });
 
@@ -313,6 +352,11 @@ describe('CompetencyService.triggerLlmCheck', () => {
       why: 'Neues warum',
       environment: 'Neue Umgebung',
       subject: 'Neues Thema',
+      context: {
+        competency: { code: 'A1.1', description: 'Grundlagen der Informatik' },
+        area: { code: 'A1', titel: 'Grundlagen' },
+        curriculum: { code: 'RLP_INF', titel: 'Informatik' },
+      },
     });
   });
 });

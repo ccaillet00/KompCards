@@ -13,16 +13,29 @@ const SYSTEM_PROMPT = [
 /**
  * Baut den Prompt für einen LLM-Call aus der strukturierten Eingabe.
  * Bei einem Retry wird das `userFeedback` zusätzlich berücksichtigt.
+ * Der Kontext-Block (Lehrgang, Bereich, Kompetenz) steht immer oben.
  */
 export function buildPrompt(request: LlmRequest): string {
-  const lines = [
+  const lines: string[] = [];
+
+  if (request.context) {
+    lines.push(
+      'Kontext:',
+      `- Lehrgang: ${request.context.curriculum.code} (${request.context.curriculum.titel})`,
+      `- Bereich: ${request.context.area.code} (${request.context.area.titel})`,
+      `- Kompetenz: ${request.context.competency.code} (${request.context.competency.description})`,
+      '',
+    );
+  }
+
+  lines.push(
     'Strukturierte Eingabe des Studierenden:',
     `- Rolle im Unternehmen/Praktikum: ${request.userRole}`,
     `- Was: ${request.what}`,
     `- Wie: ${request.how}`,
     `- Warum: ${request.why}`,
     `- Umgebung/Kontext: ${request.environment}`,
-  ];
+  );
 
   if (request.subject) {
     lines.push(`- Vorgaben der Dozentin/des Dozenten: ${request.subject}`);
