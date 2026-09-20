@@ -1,10 +1,20 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { definePageMeta, useRoute, useSeoMeta } from '#imports'
+import { useAuth } from '../composables/useAuth'
 import AuthLoginForm from '../components/auth/AuthLoginForm.vue'
 import AuthRegisterForm from '../components/auth/AuthRegisterForm.vue'
 
 definePageMeta({ layout: 'auth' })
+
+const auth = useAuth()
+const showForm = computed(() => !auth.isAuthenticated.value)
+
+onMounted(() => {
+  if (import.meta.client && auth.isAuthenticated.value) {
+    window.location.href = '/dashboard'
+  }
+})
 
 const route = useRoute()
 const isRegister = computed(() => route.query.mode === 'register')
@@ -29,6 +39,7 @@ useSeoMeta({ title: () => `${title.value} – KompCards` })
     </p>
 
     <Transition
+      v-if="showForm"
       name="auth-form"
       mode="out-in"
     >
