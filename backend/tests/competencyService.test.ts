@@ -10,7 +10,7 @@ import {
   curriculum,
 } from '../src/db/schema.js';
 import { ProofStatus } from '../src/status.js';
-import { ForbiddenError, NotFoundError } from '../src/utils/errors.js';
+import { BadRequestError, ForbiddenError, NotFoundError } from '../src/utils/errors.js';
 import type { LlmClient, LlmResult } from '../src/llm/types.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -42,9 +42,9 @@ interface MockDbOptions {
   proof?: { id: number; userId: string; status: number; competencyId?: number } | null;
   inputs?: Array<{ id: number; competencyProofId: number; userRole: string; what: string; how: string; why: string; environment: string; subject: string | null }>;
   outputs?: Array<{ id: number; competencyInputId: number; workResult: string; quality: number; qualityStatement: string; llmModel: string; overlapCurriculum: boolean; noteImprovment: string | null; isSaved: boolean; userFeedback: string | null; predecessor: number | null }>;
-  competency?: { id: number; areaId: number; code: string; description: string };
-  area?: { id: number; curriculumId: number; code: string; titel: string };
-  curriculumRow?: { id: number; code: string; titel: string };
+  competency?: { id: number; areaId: number; code: string; description: string } | null;
+  area?: { id: number; curriculumId: number; code: string; titel: string } | null;
+  curriculumRow?: { id: number; code: string; titel: string } | null;
 }
 
 function createMockDb(options: MockDbOptions = {}) {
@@ -60,6 +60,7 @@ function createMockDb(options: MockDbOptions = {}) {
   const insertedInputs: unknown[] = [];
   const insertedOutputs: unknown[] = [];
   const statusUpdates: Array<{ proofId: number; status: number }> = [];
+  const updatedAtUpdates: Array<{ proofId: number }> = [];
 
   const db = {
     select: vi.fn(() => ({
@@ -73,7 +74,12 @@ function createMockDb(options: MockDbOptions = {}) {
         }
         if (table === competencyInput) {
           return {
-            where: vi.fn(async () => inputs),
+            where: vi.fn(() => {
+              const result = [...inputs, ...insertedInputs];
+              return Object.assign(Promise.resolve(result), {
+                limit: async () => result,
+              });
+            }),
           };
         }
         if (table === competencyLlmOutput) {
@@ -118,8 +124,18 @@ function createMockDb(options: MockDbOptions = {}) {
       values: vi.fn((vals: unknown) => ({
         $returningId: vi.fn(async () => {
           if (table === competencyInput) {
-            const id = inputs.length + 1;
-            insertedInputs.push(vals);
+            const id = inputs.length + insertedInputs.length + 1;
+            const inputRow = {
+              id,
+              competencyProofId: (vals as { competencyProofId?: number }).competencyProofId,
+              userRole: (vals as { userRole?: string }).userRole ?? '',
+              what: (vals as { what?: string }).what ?? '',
+              how: (vals as { how?: string }).how ?? '',
+              why: (vals as { why?: string }).why ?? '',
+              environment: (vals as { environment?: string }).environment ?? '',
+              subject: (vals as { subject?: string | null }).subject ?? null,
+            };
+            insertedInputs.push(inputRow);
             return [{ id }];
           }
           if (table === competencyLlmOutput) {
@@ -145,10 +161,15 @@ function createMockDb(options: MockDbOptions = {}) {
       })),
     })),
     update: vi.fn((table: unknown) => ({
-      set: vi.fn((vals: { status?: number; isSaved?: boolean }) => ({
+      set: vi.fn((vals: { status?: number; isSaved?: boolean; updatedAt?: Date }) => ({
         where: vi.fn(async () => {
-          if (table === competencyProof && vals.status !== undefined) {
-            statusUpdates.push({ proofId: proof?.id ?? 1, status: vals.status });
+          if (table === competencyProof) {
+            if (vals.status !== undefined) {
+              statusUpdates.push({ proofId: proof?.id ?? 1, status: vals.status });
+            }
+            if (vals.updatedAt !== undefined) {
+              updatedAtUpdates.push({ proofId: proof?.id ?? 1 });
+            }
           }
           return [];
         }),
@@ -157,6 +178,7 @@ function createMockDb(options: MockDbOptions = {}) {
     _insertedInputs: insertedInputs,
     _insertedOutputs: insertedOutputs,
     _statusUpdates: statusUpdates,
+    _updatedAtUpdates: updatedAtUpdates,
   };
 
   return db;
@@ -201,6 +223,16 @@ describe('CompetencyService.saveInput', () => {
     const service = new CompetencyService(db as never, llm, 'test-model');
 
     await expect(service.saveInput('user-1', 1, validPayload)).rejects.toThrow(ForbiddenError);
+  });
+
+  it('aktualisiert updatedAt der Karte beim Speichern', async () => {
+    const db = createMockDb();
+    const llm = createMockLlm();
+    const service = new CompetencyService(db as never, llm, 'test-model');
+
+    await service.saveInput('user-1', 1, validPayload);
+
+    expect(db._updatedAtUpdates).toEqual([{ proofId: 1 }]);
   });
 });
 
@@ -360,5 +392,125 @@ describe('CompetencyService.triggerLlmCheck', () => {
         curriculum: { code: 'RLP_INF', titel: 'Informatik' },
       },
     });
+  });
+
+  it('wirft BadRequestError wenn Pflichtfelder leer sind', async () => {
+    const input = {
+      id: 1,
+      competencyProofId: 1,
+      userRole: '',
+      what: 'API implementieren',
+      how: 'mit REST und Express',
+      why: 'um Daten auszutauschen',
+      environment: 'Firma XY',
+      subject: null,
+    };
+    const db = createMockDb({ inputs: [input] });
+    const llm = createMockLlm();
+    const service = new CompetencyService(db as never, llm, 'test-model');
+
+    await expect(service.triggerLlmCheck('user-1', 1)).rejects.toThrow(BadRequestError);
+    expect(llm.generateCompetencyOutput).not.toHaveBeenCalled();
+  });
+
+  it('wirft BadRequestError wenn mehrere Pflichtfelder leer sind', async () => {
+    const input = {
+      id: 1,
+      competencyProofId: 1,
+      userRole: '',
+      what: '',
+      how: 'mit REST und Express',
+      why: '',
+      environment: 'Firma XY',
+      subject: null,
+    };
+    const db = createMockDb({ inputs: [input] });
+    const llm = createMockLlm();
+    const service = new CompetencyService(db as never, llm, 'test-model');
+
+    await expect(service.triggerLlmCheck('user-1', 1)).rejects.toThrow(
+      /userRole, what, why/,
+    );
+    expect(llm.generateCompetencyOutput).not.toHaveBeenCalled();
+  });
+
+  it('wirft BadRequestError wenn Felder nur Whitespace enthalten', async () => {
+    const input = {
+      id: 1,
+      competencyProofId: 1,
+      userRole: '   ',
+      what: 'API implementieren',
+      how: 'mit REST und Express',
+      why: 'um Daten auszutauschen',
+      environment: 'Firma XY',
+      subject: null,
+    };
+    const db = createMockDb({ inputs: [input] });
+    const llm = createMockLlm();
+    const service = new CompetencyService(db as never, llm, 'test-model');
+
+    await expect(service.triggerLlmCheck('user-1', 1)).rejects.toThrow(BadRequestError);
+    expect(llm.generateCompetencyOutput).not.toHaveBeenCalled();
+  });
+
+  it('setzt Status nicht auf llm_check, wenn der Kontext nicht geladen werden kann', async () => {
+    const input = {
+      id: 1,
+      competencyProofId: 1,
+      userRole: 'Entwickler',
+      what: 'API implementieren',
+      how: 'mit REST und Express',
+      why: 'um Daten auszutauschen',
+      environment: 'Firma XY',
+      subject: null,
+    };
+    const db = createMockDb({ inputs: [input], competency: null });
+    const llm = createMockLlm();
+    const service = new CompetencyService(db as never, llm, 'test-model');
+
+    await expect(service.triggerLlmCheck('user-1', 1)).rejects.toThrow(NotFoundError);
+    expect(llm.generateCompetencyOutput).not.toHaveBeenCalled();
+    expect(db._statusUpdates).toHaveLength(0);
+  });
+});
+
+// ─── retryOutput ─────────────────────────────────────────────────────────────
+
+describe('CompetencyService.retryOutput', () => {
+  it('setzt Status nicht auf llm_check, wenn der Kontext nicht geladen werden kann', async () => {
+    const input = {
+      id: 1,
+      competencyProofId: 1,
+      userRole: 'Entwickler',
+      what: 'API implementieren',
+      how: 'mit REST und Express',
+      why: 'um Daten auszutauschen',
+      environment: 'Firma XY',
+      subject: null,
+    };
+    const output = {
+      id: 1,
+      competencyInputId: 1,
+      workResult: 'Ergebnis',
+      quality: 3,
+      qualityStatement: 'Solide',
+      llmModel: 'test',
+      overlapCurriculum: true,
+      noteImprovment: null,
+      isSaved: false,
+      userFeedback: null,
+      predecessor: null,
+    };
+    const db = createMockDb({
+      inputs: [input],
+      outputs: [output],
+      competency: null,
+    });
+    const llm = createMockLlm();
+    const service = new CompetencyService(db as never, llm, 'test-model');
+
+    await expect(service.retryOutput('user-1', 1, 'Bitte detaillierter')).rejects.toThrow(NotFoundError);
+    expect(llm.generateCompetencyOutput).not.toHaveBeenCalled();
+    expect(db._statusUpdates).toHaveLength(0);
   });
 });
