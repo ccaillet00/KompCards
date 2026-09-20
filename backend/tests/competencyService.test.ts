@@ -73,7 +73,12 @@ function createMockDb(options: MockDbOptions = {}) {
         }
         if (table === competencyInput) {
           return {
-            where: vi.fn(async () => inputs),
+            where: vi.fn(() => {
+              const result = [...inputs, ...insertedInputs];
+              return Object.assign(Promise.resolve(result), {
+                limit: async () => result,
+              });
+            }),
           };
         }
         if (table === competencyLlmOutput) {
@@ -118,8 +123,18 @@ function createMockDb(options: MockDbOptions = {}) {
       values: vi.fn((vals: unknown) => ({
         $returningId: vi.fn(async () => {
           if (table === competencyInput) {
-            const id = inputs.length + 1;
-            insertedInputs.push(vals);
+            const id = inputs.length + insertedInputs.length + 1;
+            const inputRow = {
+              id,
+              competencyProofId: (vals as { competencyProofId?: number }).competencyProofId,
+              userRole: (vals as { userRole?: string }).userRole ?? '',
+              what: (vals as { what?: string }).what ?? '',
+              how: (vals as { how?: string }).how ?? '',
+              why: (vals as { why?: string }).why ?? '',
+              environment: (vals as { environment?: string }).environment ?? '',
+              subject: (vals as { subject?: string | null }).subject ?? null,
+            };
+            insertedInputs.push(inputRow);
             return [{ id }];
           }
           if (table === competencyLlmOutput) {

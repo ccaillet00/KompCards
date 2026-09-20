@@ -144,7 +144,15 @@ export class CompetencyService {
       throw new Error('Insert competency_input: keine ID zurückgegeben');
     }
 
-    return inputResult as CompetencyInput;
+    const [created] = await this.db
+      .select()
+      .from(competencyInput)
+      .where(eq(competencyInput.id, inputResult.id))
+      .limit(1);
+    if (!created) {
+      throw new Error('Insert competency_input: Zeile nicht gefunden');
+    }
+    return created;
   }
 
   /**
