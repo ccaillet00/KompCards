@@ -15,7 +15,7 @@ import {
 import { ProofStatus } from '../status.js';
 
 import type { LlmClient, LlmContext, LlmRequest } from '../llm/types.js';
-import { ForbiddenError, NotFoundError } from '../utils/errors.js';
+import { BadRequestError, ForbiddenError, NotFoundError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 
 export interface CreateProofInput {
@@ -124,7 +124,7 @@ export class CompetencyService {
     payload: SubmitInputPayload,
   ): Promise<CompetencyInput> {
     const proof = await this.assertOwnProof(userId, proofId);
-    if (proof.status !== ProofStatus.Draft && proof.status !== ProofStatus.LlmCheckFailed) {
+    if (proof.status !== ProofStatus.Draft && proof.status !== ProofStatus.LlmCheckFailed && proof.status !== ProofStatus.LlmCheckFinished) {
       throw new ForbiddenError('Karte ist nicht in einem speicherbaren Zustand');
     }
 
@@ -144,7 +144,21 @@ export class CompetencyService {
       throw new Error('Insert competency_input: keine ID zurückgegeben');
     }
 
-    return inputResult as CompetencyInput;
+    const [created] = await this.db
+      .select()
+      .from(competencyInput)
+      .where(eq(competencyInput.id, inputResult.id))
+      .limit(1);
+    if (!created) {
+      throw new Error('Insert competency_input: Zeile nicht gefunden');
+    }
+
+    await this.db
+      .update(competencyProof)
+      .set({ updatedAt: new Date() })
+      .where(eq(competencyProof.id, proofId));
+
+    return created;
   }
 
   /**
@@ -177,9 +191,24 @@ export class CompetencyService {
     // Neueste Eingabe (höchste ID) verwenden
     const latestInput = inputs.reduce((a, b) => (a.id > b.id ? a : b));
 
-    await this.setProofStatus(proofId, ProofStatus.LlmCheck);
+    // Alle Pflichtfelder müssen befüllt sein, bevor der LLM-Check startet
+    const requiredFields: Array<[string, string]> = [
+      ['userRole', latestInput.userRole],
+      ['what', latestInput.what],
+      ['how', latestInput.how],
+      ['why', latestInput.why],
+      ['environment', latestInput.environment],
+    ];
+    const emptyFields = requiredFields.filter(([, value]) => value.trim() === '');
+    if (emptyFields.length > 0) {
+      throw new BadRequestError(
+        `Folgende Felder sind nicht befüllt: ${emptyFields.map(([name]) => name).join(', ')}`,
+      );
+    }
 
     const context = await this.loadLlmContext(proof.competencyId);
+
+    await this.setProofStatus(proofId, ProofStatus.LlmCheck);
 
     const llmRequest: LlmRequest = {
       userRole: latestInput.userRole,
@@ -232,9 +261,9 @@ export class CompetencyService {
       throw new ForbiddenError('Kein Zugriff auf diese Karte');
     }
 
-    await this.setProofStatus(proofRow.id, ProofStatus.LlmCheck);
-
     const context = await this.loadLlmContext(proofRow.competencyId);
+
+    await this.setProofStatus(proofRow.id, ProofStatus.LlmCheck);
 
     const llmRequest: LlmRequest = {
       userRole: inputRow.userRole,

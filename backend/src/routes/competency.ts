@@ -11,12 +11,12 @@ const createProofSchema = z.object({
 });
 
 const submitInputSchema = z.object({
-  userRole: z.string().min(1),
-  what: z.string().min(1),
-  how: z.string().min(1),
-  why: z.string().min(1),
-  environment: z.string().min(1),
-  subject: z.string().min(1).nullable().optional(),
+  userRole: z.string(),
+  what: z.string(),
+  how: z.string(),
+  why: z.string(),
+  environment: z.string(),
+  subject: z.string().nullable().optional(),
 });
 
 const retrySchema = z.object({
