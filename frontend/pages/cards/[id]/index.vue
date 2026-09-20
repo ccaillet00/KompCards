@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { definePageMeta, useRoute, useSeoMeta } from '#imports'
-import ProofStatusBadge from '../../components/proof/ProofStatusBadge.vue'
-import UiButton from '../../components/ui/UiButton.vue'
-import UiIcon from '../../components/ui/UiIcon.vue'
-import CompetencySummary from '../../components/workflow/CompetencySummary.vue'
-import DocumentationField from '../../components/workflow/DocumentationField.vue'
-import WorkflowSteps from '../../components/workflow/WorkflowSteps.vue'
-import { useCompetencyWorkflow } from '../../composables/useCompetencyWorkflow'
-import type { CompetencyInputPayload } from '../../types/proof'
+import { definePageMeta, useRoute, useRouter, useSeoMeta } from '#imports'
+import ProofStatusBadge from '../../../components/proof/ProofStatusBadge.vue'
+import UiButton from '../../../components/ui/UiButton.vue'
+import UiIcon from '../../../components/ui/UiIcon.vue'
+import CompetencySummary from '../../../components/workflow/CompetencySummary.vue'
+import DocumentationField from '../../../components/workflow/DocumentationField.vue'
+import WorkflowSteps from '../../../components/workflow/WorkflowSteps.vue'
+import { useCompetencyWorkflow } from '../../../composables/useCompetencyWorkflow'
+import type { CompetencyInputPayload } from '../../../types/proof'
 
 definePageMeta({ middleware: 'auth' })
 useSeoMeta({ title: 'Arbeit dokumentieren – KompCards' })
 
 const route = useRoute()
+const router = useRouter()
 const proofId = Number.parseInt(String(route.params.id), 10)
 const {
   proof,
@@ -35,7 +36,6 @@ const form = reactive<CompetencyInputPayload>({
 })
 const errors = reactive<Partial<Record<keyof CompetencyInputPayload, string>>>({})
 const savedMessage = ref<string | null>(null)
-const checkMessage = ref<string | null>(null)
 const lastSavedSnapshot = ref<string | null>(null)
 const hydrated = ref(false)
 const editable = computed(() => proof.value ? [1, 3, 4].includes(proof.value.status) : false)
@@ -63,7 +63,6 @@ function validateForCheck(): boolean {
 async function saveDraft(): Promise<boolean> {
   if (!editable.value) return false
   savedMessage.value = null
-  checkMessage.value = null
   try {
     await saveInput(proofId, { ...form })
     lastSavedSnapshot.value = snapshot()
@@ -76,7 +75,6 @@ async function saveDraft(): Promise<boolean> {
 
 async function checkWithLlm(): Promise<void> {
   savedMessage.value = null
-  checkMessage.value = null
   if (!validateForCheck() || !editable.value) return
 
   const mustSave = snapshot() !== lastSavedSnapshot.value || proof.value?.status === 4
@@ -84,7 +82,7 @@ async function checkWithLlm(): Promise<void> {
 
   try {
     const output = await triggerLlmCheck(proofId)
-    if (output) checkMessage.value = 'Die LLM-Prüfung wurde abgeschlossen.'
+    if (output) await router.push(`/cards/${proofId}/result`)
   } catch {
     // Der Workflow-Service stellt die API-Fehlermeldung bereit.
   }
@@ -93,7 +91,6 @@ async function checkWithLlm(): Promise<void> {
 watch(form, () => {
   if (!hydrated.value) return
   savedMessage.value = null
-  checkMessage.value = null
 }, { deep: true })
 
 onMounted(async () => {
@@ -167,17 +164,6 @@ onMounted(async () => {
               :size="20"
             /> {{ savedMessage }}
           </div>
-          <div
-            v-if="checkMessage"
-            role="status"
-            class="alert mt-7 border border-success/20 bg-success/10 text-success"
-          >
-            <UiIcon
-              name="circle-check"
-              :size="20"
-            /> {{ checkMessage }}
-          </div>
-
           <div
             v-if="isLoading"
             class="mt-8 space-y-5"

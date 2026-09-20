@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import SelectCompetencyPage from '../pages/cards/new.vue'
-import DocumentationPage from '../pages/cards/[id].vue'
+import DocumentationPage from '../pages/cards/[id]/index.vue'
 
 const fixture = vi.hoisted(() => ({
   curricula: [{
@@ -113,11 +113,12 @@ describe('Kompetenzauswahl und Dokumentation', () => {
   it('übergibt eine vollständig gespeicherte Dokumentation an die LLM-Prüfung', async () => {
     const wrapper = await mountSuspended(DocumentationPage, { route: '/cards/9' })
     await flushPromises()
+    const push = vi.spyOn(wrapper.vm.$router, 'push')
 
     await wrapper.get('form').trigger('submit')
     await flushPromises()
 
     expect(fixture.triggerLlmCheck).toHaveBeenCalledWith(9)
-    expect(wrapper.text()).toContain('Die LLM-Prüfung wurde abgeschlossen.')
+    expect(push).toHaveBeenCalledWith('/cards/9/result')
   })
 })

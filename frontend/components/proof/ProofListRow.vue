@@ -1,15 +1,19 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { ProofCard } from '../../types/proof'
 import { formatProofDate } from '../../utils/proofStatus'
 import ProofStatusBadge from './ProofStatusBadge.vue'
 import UiIcon from '../ui/UiIcon.vue'
 
-defineProps<{ card: ProofCard }>()
+const props = defineProps<{ card: ProofCard }>()
+const target = computed(() => [4, 5].includes(props.card.status)
+  ? `/cards/${props.card.id}/result`
+  : `/cards/${props.card.id}`)
 </script>
 
 <template>
   <NuxtLink
-    :to="`/cards/${card.id}`"
+    :to="target"
     class="group grid min-w-[58rem] grid-cols-[minmax(20rem,2fr)_minmax(10rem,1fr)_minmax(12rem,1.1fr)_10rem_2rem] items-center gap-5 border-t border-primary/10 px-5 py-3 transition-colors hover:bg-secondary/55"
     data-test="proof-row"
   >

@@ -86,4 +86,36 @@ describe('useCompetencyWorkflow', () => {
     })
     expect(output).toMatchObject({ id: 5 })
   })
+
+  it('verwendet die vorhandenen Endpunkte für Überarbeiten, Akzeptieren und Verwerfen', async () => {
+    const revisedOutput = { id: 6, workResult: 'Überarbeitete Auswertung' }
+    vi.mocked($fetch)
+      .mockResolvedValueOnce({ output: revisedOutput })
+      .mockResolvedValueOnce({ output: { ...revisedOutput, isSaved: true } })
+      .mockResolvedValueOnce({ proof: { id: 9, status: 6 } })
+    const wrapper = await mountSuspended(Harness)
+    const workflow = wrapper.vm as unknown as {
+      retryOutput: (outputId: number, feedback: string) => Promise<{ id: number }>
+      acceptOutput: (outputId: number) => Promise<{ id: number }>
+      discardProof: (proofId: number) => Promise<void>
+    }
+
+    await workflow.retryOutput(5, 'Beschreibe den Praxisbezug genauer.')
+    await workflow.acceptOutput(6)
+    await workflow.discardProof(9)
+
+    expect($fetch).toHaveBeenNthCalledWith(1, '/api/competency/outputs/5/retry', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer jwt-token' },
+      body: { userFeedback: 'Beschreibe den Praxisbezug genauer.' },
+    })
+    expect($fetch).toHaveBeenNthCalledWith(2, '/api/competency/outputs/6/accept', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer jwt-token' },
+    })
+    expect($fetch).toHaveBeenNthCalledWith(3, '/api/competency/proofs/9', {
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer jwt-token' },
+    })
+  })
 })

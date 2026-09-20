@@ -44,6 +44,14 @@ export function useCompetencyWorkflow() {
     return null
   })
 
+  const latestOutput = computed<CompetencyOutput | null>(() => {
+    const outputs = proof.value?.inputs.flatMap(input => input.outputs) ?? []
+    return outputs.reduce<CompetencyOutput | null>(
+      (latest, output) => !latest || output.id > latest.id ? output : latest,
+      null,
+    )
+  })
+
   function requestOptions() {
     if (!auth.token.value) {
       error.value = 'Deine Sitzung ist nicht mehr gültig. Bitte melde dich erneut an.'
@@ -151,10 +159,72 @@ export function useCompetencyWorkflow() {
     }
   }
 
+  async function retryOutput(outputId: number, userFeedback: string): Promise<CompetencyOutput> {
+    isChecking.value = true
+    error.value = null
+    try {
+      const response = await $fetch<{ output: CompetencyOutput }>(
+        `${config.public.apiBase}/competency/outputs/${outputId}/retry`,
+        {
+          ...requestOptions(),
+          method: 'POST',
+          body: { userFeedback },
+        },
+      )
+      return response.output
+    } catch (requestError) {
+      if (!error.value) error.value = apiErrorMessage(requestError)
+      throw requestError
+    } finally {
+      isChecking.value = false
+    }
+  }
+
+  async function acceptOutput(outputId: number): Promise<CompetencyOutput> {
+    isSaving.value = true
+    error.value = null
+    try {
+      const response = await $fetch<{ output: CompetencyOutput }>(
+        `${config.public.apiBase}/competency/outputs/${outputId}/accept`,
+        {
+          ...requestOptions(),
+          method: 'POST',
+        },
+      )
+      return response.output
+    } catch (requestError) {
+      if (!error.value) error.value = apiErrorMessage(requestError)
+      throw requestError
+    } finally {
+      isSaving.value = false
+    }
+  }
+
+  async function discardProof(proofId: number): Promise<CompetencyProof> {
+    isSaving.value = true
+    error.value = null
+    try {
+      const response = await $fetch<{ proof: CompetencyProof }>(
+        `${config.public.apiBase}/competency/proofs/${proofId}`,
+        {
+          ...requestOptions(),
+          method: 'DELETE',
+        },
+      )
+      return response.proof
+    } catch (requestError) {
+      if (!error.value) error.value = apiErrorMessage(requestError)
+      throw requestError
+    } finally {
+      isSaving.value = false
+    }
+  }
+
   return {
     curricula,
     proof,
     competencyContext,
+    latestOutput,
     isLoading,
     isSaving,
     isChecking,
@@ -164,5 +234,8 @@ export function useCompetencyWorkflow() {
     loadProof,
     saveInput,
     triggerLlmCheck,
+    retryOutput,
+    acceptOutput,
+    discardProof,
   }
 }

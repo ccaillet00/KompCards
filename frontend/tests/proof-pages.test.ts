@@ -70,6 +70,8 @@ describe('Dashboard und Meine Karten', () => {
     expect(wrapper.text()).toContain('Anforderungen analysieren')
     expect(wrapper.text()).toContain('Entwurf')
     expect(wrapper.text()).toContain('Abgeschlossen')
+    expect(wrapper.findAll('[data-test="proof-row"]')[0]?.attributes('href')).toBe('/cards/3')
+    expect(wrapper.findAll('[data-test="proof-row"]')[1]?.attributes('href')).toBe('/cards/2/result')
 
     await wrapper.get('[data-test="status-filter-5"]').trigger('click')
     expect(wrapper.findAll('[data-test="proof-row"]')).toHaveLength(1)

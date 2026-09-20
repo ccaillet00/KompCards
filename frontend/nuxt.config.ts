@@ -37,4 +37,18 @@ export default defineNuxtConfig({
       apiBase: process.env.NUXT_PUBLIC_API_BASE ?? '/api',
     },
   },
+
+  // Dev-Proxy: /api → Backend (localhost:4000).
+  // Bildet die Produktions-Architektur (Traefik, same-origin) lokal ab —
+  // der Browser spricht nur mit dem Nuxt-Dev-Server, kein CORS nötig.
+  vite: {
+    server: {
+      proxy: {
+        '/api': {
+          target: 'http://localhost:4000',
+          changeOrigin: true,
+        },
+      },
+    },
+  },
 })
