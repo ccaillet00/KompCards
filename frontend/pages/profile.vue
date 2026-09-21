@@ -37,12 +37,18 @@ onMounted(() => {
 
 <template>
   <div class="relative isolate min-h-[calc(100vh-5rem)] overflow-hidden">
-    <img
-      src="/images/fox-world/dashboard.webp"
-      alt="Fuchs mit Rucksack vor einer Berglandschaft"
-      class="absolute inset-y-0 right-0 -z-20 hidden h-full w-[48%] object-cover object-center opacity-80 lg:block"
+    <figure
+      data-test="page-artwork"
+      aria-hidden="true"
+      class="absolute inset-0 -z-20 overflow-hidden"
     >
-    <div class="absolute inset-0 -z-10 bg-gradient-to-r from-base-100 via-base-100/95 to-base-100/40" />
+      <img
+        src="/images/fox-world/dashboard.webp"
+        alt=""
+        class="fox-world-page-image absolute inset-y-0 right-0 hidden h-full w-auto max-w-none object-contain object-right lg:block"
+      >
+    </figure>
+    <div class="fox-world-page-blend absolute inset-0 -z-10" />
 
     <div class="page-shell py-12 xl:py-14">
       <header class="max-w-2xl">

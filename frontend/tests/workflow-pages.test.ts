@@ -93,6 +93,7 @@ describe('Kompetenzauswahl und Dokumentation', () => {
     await flushPromises()
 
     expect(wrapper.get('h1').text()).toBe('Kompetenzkarte erstellen')
+    expect(wrapper.get('[data-test="page-artwork"] img').classes()).toContain('fox-world-page-image')
     await wrapper.get('#curriculum').setValue('1')
     await wrapper.get('#area').setValue('3')
     await wrapper.get('#competency').setValue('11')
@@ -109,6 +110,7 @@ describe('Kompetenzauswahl und Dokumentation', () => {
 
     expect(fixture.loadProof).toHaveBeenCalledWith(9)
     expect(wrapper.get('h1').text()).toBe('Arbeit dokumentieren')
+    expect(wrapper.get('[data-test="page-artwork"] img').classes()).toContain('fox-world-page-image')
     expect((wrapper.get('#user-role').element as HTMLTextAreaElement).value).toBe('Entwickler')
 
     await wrapper.get('[data-test="save-draft"]').trigger('click')

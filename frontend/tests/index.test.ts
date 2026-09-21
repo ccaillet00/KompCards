@@ -20,6 +20,36 @@ describe('Landing Page', () => {
     expect(html).not.toContain('docs/design/references')
   })
 
+  it('zeigt die Fuchswelt im Hero als eigenstaendige, unbeschnittene Bildkomposition', async () => {
+    const wrapper = await mountSuspended(IndexPage)
+    const artwork = wrapper.get('[data-test="hero-artwork"]')
+    const image = artwork.get('img')
+
+    expect(artwork.attributes('aria-hidden')).toBe('true')
+    expect(image.classes()).toContain('hero-artwork-image')
+    expect(image.classes()).toContain('object-contain')
+    expect(image.classes()).not.toContain('object-cover')
+  })
+
+  it('integriert die Fuchswelt im Abschlussbereich als vollflaechiges Banner', async () => {
+    const wrapper = await mountSuspended(IndexPage)
+    const artwork = wrapper.get('[data-test="cta-artwork"]')
+    const image = artwork.get('img')
+
+    expect(artwork.attributes('aria-hidden')).toBe('true')
+    expect(image.classes()).toContain('object-cover')
+    expect(image.classes()).toContain('size-full')
+  })
+
+  it('haelt die Hero-Ueberschrift auch auf breiten Bildschirmen kompakt', async () => {
+    const wrapper = await mountSuspended(IndexPage)
+    const heading = wrapper.get('h1')
+
+    expect(heading.classes()).toContain('xl:max-w-2xl')
+    expect(heading.classes()).toContain('xl:text-6xl')
+    expect(heading.get('span').classes()).toContain('block')
+  })
+
   it('beschreibt den Ablauf in vier Schritten', async () => {
     const wrapper = await mountSuspended(IndexPage)
     const steps = wrapper.findAll('[data-test="process-step"]')

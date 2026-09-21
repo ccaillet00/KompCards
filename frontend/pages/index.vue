@@ -28,22 +28,28 @@ const benefits = [
   <div>
     <section
       id="ueber-kompcards"
-      class="relative isolate min-h-[650px] overflow-hidden border-b border-primary/10 bg-base-100"
+      class="relative isolate min-h-[680px] overflow-hidden border-b border-primary/10 bg-base-100"
     >
-      <img
-        src="/images/fox-world/landing-hero.webp"
-        alt="Ein Fuchs blickt über eine Berglandschaft auf seinen weiteren Weg"
-        class="absolute inset-y-0 right-0 -z-20 h-full w-full object-cover object-[62%_center] lg:w-[68%]"
+      <figure
+        data-test="hero-artwork"
+        aria-hidden="true"
+        class="fox-world-artwork absolute inset-0 -z-20 overflow-hidden"
       >
-      <div class="absolute inset-0 -z-10 bg-gradient-to-r from-base-100 via-base-100/95 via-45% to-base-100/5 lg:to-transparent" />
+        <img
+          src="/images/fox-world/landing-hero.webp"
+          alt=""
+          class="hero-artwork-image absolute inset-y-0 right-0 h-full w-auto max-w-none object-contain object-right"
+        >
+      </figure>
+      <div class="hero-artwork-blend absolute inset-0 -z-10" />
 
-      <div class="page-shell flex min-h-[650px] items-center py-20">
-        <div class="max-w-2xl">
+      <div class="page-shell flex min-h-[680px] items-center py-20">
+        <div class="relative z-10 max-w-2xl lg:max-w-[39rem] xl:max-w-[42rem]">
           <p class="eyebrow mb-5">
             Deine Arbeit. Deine Kompetenz. Deine Zukunft.
           </p>
-          <h1 class="display-title max-w-xl">
-            Kompetenzen sichtbar machen.
+          <h1 class="display-title max-w-xl xl:max-w-2xl xl:text-6xl">
+            Kompetenzen <span class="block">sichtbar machen.</span>
           </h1>
           <p class="mt-6 max-w-lg text-lg leading-8 text-base-content/80 md:text-xl">
             Dokumentiere deine Arbeit, lass dir daraus mit KI eine strukturierte Kompetenzkarte erstellen und zeige, was du kannst.
@@ -72,7 +78,7 @@ const benefits = [
             </UiButton>
           </div>
 
-          <div class="mt-12 grid max-w-2xl gap-4 border-t border-primary/10 pt-6 text-sm sm:grid-cols-3">
+          <div class="mt-12 grid max-w-2xl gap-4 border-t border-primary/15 pt-6 text-sm sm:grid-cols-3">
             <div class="flex items-center gap-3">
               <UiIcon
                 name="graduation-cap"
@@ -162,14 +168,20 @@ const benefits = [
       </div>
     </section>
 
-    <section class="relative isolate min-h-[430px] overflow-hidden">
-      <img
-        src="/images/fox-world/landing-hero.webp"
-        alt=""
-        class="absolute inset-0 -z-20 size-full object-cover object-[center_66%]"
+    <section class="relative isolate min-h-[460px] overflow-hidden bg-base-100">
+      <figure
+        data-test="cta-artwork"
+        aria-hidden="true"
+        class="fox-world-cta-artwork absolute inset-0 -z-20 overflow-hidden"
       >
-      <div class="absolute inset-0 -z-10 bg-gradient-to-r from-base-100 via-base-100/90 to-base-100/10" />
-      <div class="page-shell flex min-h-[430px] items-center py-16">
+        <img
+          src="/images/fox-world/landing-hero.webp"
+          alt=""
+          class="absolute inset-0 size-full object-cover object-[center_62%]"
+        >
+      </figure>
+      <div class="cta-artwork-blend absolute inset-0 -z-10" />
+      <div class="page-shell flex min-h-[460px] items-center py-16">
         <div class="max-w-xl">
           <p class="eyebrow">
             Schritt für Schritt weiter

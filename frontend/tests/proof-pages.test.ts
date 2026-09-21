@@ -61,6 +61,7 @@ describe('Dashboard und Meine Karten', () => {
     expect(wrapper.get('[data-test="dashboard-grid"]').classes()).toContain('lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.85fr)]')
     expect(wrapper.get('[data-test="latest-card"]').classes()).toContain('min-w-0')
     expect(wrapper.html()).toContain('/images/fox-world/dashboard.webp')
+    expect(wrapper.get('[data-test="page-artwork"] img').classes()).toContain('fox-world-page-image')
   })
 
   it('listet Karten mit fachlichen Statusbezeichnungen und Statusfiltern', async () => {
@@ -74,6 +75,7 @@ describe('Dashboard und Meine Karten', () => {
     expect(wrapper.text()).toContain('Abgeschlossen')
     expect(wrapper.findAll('[data-test="proof-row"]')[0]?.attributes('href')).toBe('/cards/3')
     expect(wrapper.findAll('[data-test="proof-row"]')[1]?.attributes('href')).toBe('/cards/2/result')
+    expect(wrapper.get('[data-test="page-artwork"] img').classes()).toContain('fox-world-page-image')
 
     await wrapper.get('[data-test="status-filter-5"]').trigger('click')
     expect(wrapper.findAll('[data-test="proof-row"]')).toHaveLength(1)

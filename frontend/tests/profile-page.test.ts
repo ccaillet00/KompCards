@@ -34,6 +34,7 @@ describe('Profil', () => {
     const wrapper = await mountSuspended(ProfilePage, { route: '/profile' })
 
     expect(wrapper.get('h1').text()).toBe('Dein Profil')
+    expect(wrapper.get('[data-test="page-artwork"] img').classes()).toContain('fox-world-page-image')
     expect(wrapper.text()).toContain('Ada Lovelace')
     expect(wrapper.text()).toContain('ada@example.ch')
     expect(wrapper.text()).toContain('Profiländerungen sind derzeit noch nicht verfügbar')

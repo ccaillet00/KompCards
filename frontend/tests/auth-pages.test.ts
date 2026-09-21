@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import AuthLayout from '../layouts/auth.vue'
 import LoginPage from '../pages/login.vue'
 
 const auth = vi.hoisted(() => ({
@@ -21,6 +22,16 @@ describe('Authentifizierungsseiten', () => {
     auth.register.mockReset()
     auth.error.value = null
     auth.isAuthenticated.value = false
+  })
+
+  it('integriert die Fuchswelt unbeschnitten und mit einem weichen Uebergang', async () => {
+    const wrapper = await mountSuspended(AuthLayout)
+    const image = wrapper.get('[data-test="auth-artwork"] img')
+
+    expect(image.classes()).toContain('auth-artwork-image')
+    expect(image.classes()).toContain('object-contain')
+    expect(image.classes()).not.toContain('object-cover')
+    expect(wrapper.find('.auth-artwork-blend').exists()).toBe(true)
   })
 
   it('zeigt nur die vom Backend unterstützte Login-Methode', async () => {
