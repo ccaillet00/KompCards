@@ -93,4 +93,5 @@ Die **SQL-Kommentare** (insb. Status-/Quality-Bedeutungen) bleiben **Single Sour
 - Tech-Stack: [TECH_STACK.md](./TECH_STACK.md)
 - Entwicklung: [DEVELOPMENT.md](./DEVELOPMENT.md)
 - Entscheidungen: [DECISIONS.md](./DECISIONS.md)
+- Frontend-Design und Fortführungsregeln: [design/DESIGN.md](./design/DESIGN.md)
 - Datenmodell (Quelle): `SQL/create_tables.sql`
