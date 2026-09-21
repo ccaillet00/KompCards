@@ -10,7 +10,7 @@ export default defineNuxtConfig({
   // @nuxt/test-utils: aktiviert nur im Test-Umfeld (vitest-environment-nuxt).
   modules: ['@nuxt/test-utils/module'],
 
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css', '~/assets/css/transitions.css'],
 
   postcss: {
     plugins: {
@@ -19,7 +19,16 @@ export default defineNuxtConfig({
     },
   },
 
+  // View Transitions API: root-übergreifender Crossfade beim Seitenwechsel.
+  // Kombiniert mit der Vue-Page-Transition (s. assets/css/transitions.css).
+  experimental: {
+    viewTransition: true,
+  },
+
   app: {
+    // Dezente, globale Übergänge (CSS in assets/css/transitions.css).
+    pageTransition: { name: 'page', mode: 'out-in' },
+    layoutTransition: { name: 'layout', mode: 'out-in' },
     head: {
       title: 'KompCards',
       htmlAttrs: { lang: 'de' },

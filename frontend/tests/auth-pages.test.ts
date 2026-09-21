@@ -85,11 +85,13 @@ describe('Authentifizierungsseiten', () => {
   })
 
   describe('guestOnly-Verhalten', () => {
-    it('versteckt das Login-Formular für authentifizierte User', async () => {
+    it('zeigt authentifizierten Usern vor der Weiterleitung einen Ladebildschirm', async () => {
       auth.isAuthenticated.value = true
       const wrapper = await mountSuspended(LoginPage, { route: '/login' })
 
       expect(wrapper.find('form').exists()).toBe(false)
+      expect(wrapper.get('[role="status"]').text()).toContain('Willkommen zurück')
+      expect(wrapper.get('[role="status"]').text()).toContain('Dashboard wird vorbereitet')
     })
 
     it('zeigt das Login-Formular für nicht-authentifizierte User', async () => {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { definePageMeta, useRoute, useSeoMeta } from '#imports'
 import { useAuth } from '../composables/useAuth'
 import AuthLoginForm from '../components/auth/AuthLoginForm.vue'
@@ -8,12 +8,27 @@ import AuthRegisterForm from '../components/auth/AuthRegisterForm.vue'
 definePageMeta({ layout: 'auth' })
 
 const auth = useAuth()
-const showForm = computed(() => !auth.isAuthenticated.value)
+const showForm = ref(true)
+const isRedirecting = ref(false)
+const min = 1000;
+const max = 1500;
+const step = 100;
+const randomNumber = Math.floor(Math.random() * ((max - min) / step + 1)) * step + min;
+const REDIRECT_DELAY_MS = randomNumber
+let redirectTimer: ReturnType<typeof setTimeout> | undefined
 
 onMounted(() => {
   if (import.meta.client && auth.isAuthenticated.value) {
-    window.location.href = '/dashboard'
+    showForm.value = false
+    isRedirecting.value = true
+    redirectTimer = window.setTimeout(() => {
+      window.location.href = '/dashboard'
+    }, REDIRECT_DELAY_MS)
   }
+})
+
+onBeforeUnmount(() => {
+  if (redirectTimer) window.clearTimeout(redirectTimer)
 })
 
 const route = useRoute()
@@ -46,6 +61,26 @@ useSeoMeta({ title: () => `${title.value} – KompCards` })
       <AuthRegisterForm v-if="isRegister" />
       <AuthLoginForm v-else />
     </Transition>
+
+    <div
+      v-else-if="isRedirecting"
+      class="mt-10 flex max-w-lg items-center gap-4 rounded-2xl border border-primary/15 bg-base-100/75 p-5 shadow-sm"
+      role="status"
+      aria-live="polite"
+    >
+      <span
+        class="loading loading-spinner loading-md shrink-0 text-primary"
+        aria-hidden="true"
+      />
+      <div>
+        <p class="font-display text-lg font-semibold text-primary">
+          Willkommen zurück
+        </p>
+        <p class="mt-1 text-sm text-base-content/65">
+          Dein Dashboard wird vorbereitet …
+        </p>
+      </div>
+    </div>
   </section>
 </template>
 
