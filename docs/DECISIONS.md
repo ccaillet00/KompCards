@@ -74,6 +74,12 @@ Kurze Architektur-Entscheidungsrekorde (ADR) aus dem Requirements-Review. Status
   - Migration `0001_previous_sunspot.sql` (ALTER TABLE ADD COLUMN).
   - `quality_statement` ist ein Pflichtfeld — das LLM muss immer eine Aussage liefern.
 
+## ADR-012: Auswahl einer LLM-Auswertungsrevision
+
+- **Kontext:** Eine `competency_input` kann durch Retries mehrere `competency_llm_output`-Revisionen besitzen. Die Prüfungsseite muss zwischen ihnen navigieren und genau eine Auswahl dauerhaft merken können. Das bestehende Schema enthält bereits `competency_input_id`, `predecessor` und `is_saved`.
+- **Entscheidung:** Keine Schemaänderung. `competency_input_id` grenzt die zusammengehörenden Outputs ab; `predecessor` bestimmt die Reihenfolge vom Ursprung zur Revision. Ungültige oder zyklische Verweise werden im Frontend stabil über `created_at` und `id` aufgefangen. `is_saved = true` kennzeichnet den bestätigten Output. Die Bestätigung setzt innerhalb derselben Eingabe zunächst alle Markierungen auf `false` und danach die gewählte auf `true` (Transaktion). Eine Auswahl darf vorerst auch im Kartenstatus `saved` geändert werden.
+- **Konsequenz:** Voransicht und Persistenz sind getrennt. Ein Reload öffnet die gespeicherte Auswahl, andernfalls die neueste Revision. Ältere Revisionen dürfen ausgewählt, aber nicht als Ausgangspunkt eines neuen Retries verwendet werden; die bestehende lineare Neuerstellungslogik bleibt unverändert.
+
 ## Offene Entscheidungen
 
 Keine — alle Kernpunkte geschlossen:
@@ -82,3 +88,4 @@ Keine — alle Kernpunkte geschlossen:
 - **`quality` / `overlap_curriculum`:** **LLM-seitig gesetzt** (bestätigt).
 - **`quality_statement`:** **LLM-seitig gesetzt, Pflichtfeld** (ADR-011).
 - **Curriculum-Import:** **CSV-Upload, Löschen & Neu** (ADR-010).
+- **LLM-Auswahl:** `is_saved` markiert genau eine auswählbare Revision der aktuellen Eingabe; erneute Auswahl ist vorerst erlaubt (ADR-012).

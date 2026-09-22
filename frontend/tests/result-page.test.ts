@@ -18,6 +18,20 @@ const fixture = vi.hoisted(() => ({
     isSaved: false,
     userFeedback: null,
   },
+  olderOutput: {
+    id: 3,
+    predecessor: null,
+    competencyInputId: 4,
+    workResult: 'Die erste Auswertung.',
+    quality: 2 as const,
+    qualityStatement: 'Die erste Begründung.',
+    llmModel: 'test-model',
+    createdAt: '2026-09-19T08:00:00.000Z',
+    overlapCurriculum: false,
+    noteImprovment: 'Erster Hinweis.',
+    isSaved: false,
+    userFeedback: null,
+  },
   proof: {
     id: 9,
     userId: 'user-1',
@@ -74,6 +88,8 @@ describe('LLM-Auswertung', () => {
       user: { id: 'user-1', name: 'Ada', email: 'ada@example.ch' },
     }))
     fixture.proof.status = 4
+    fixture.output.isSaved = false
+    fixture.olderOutput.isSaved = false
     fixture.proof.inputs = [{
       id: 4,
       competencyProofId: 9,
@@ -103,6 +119,51 @@ describe('LLM-Auswertung', () => {
     expect(wrapper.text()).toContain('Das Datenmodell wurde fachlich korrekt umgesetzt.')
     expect(wrapper.get('[data-test="quality-score"]').text()).toContain('4 / 4')
     expect(wrapper.text()).toContain('Beschreibe die Validierung noch genauer.')
+  })
+
+  it('blättert vollständig zwischen mehreren Auswertungen, ohne eine Auswahl zu speichern', async () => {
+    fixture.proof.inputs[0]!.outputs = [fixture.output, fixture.olderOutput]
+    const wrapper = await mountSuspended(ResultPage, { route: '/cards/9/result' })
+    await flushPromises()
+
+    expect(wrapper.get('[data-test="output-position"]').text()).toContain('2 / 2')
+    expect(wrapper.text()).toContain('Das Datenmodell wurde fachlich korrekt umgesetzt.')
+    expect(wrapper.get('[data-test="next-output"]').attributes('disabled')).toBeDefined()
+
+    await wrapper.get('[data-test="previous-output"]').trigger('click')
+
+    expect(wrapper.get('[data-test="output-position"]').text()).toContain('1 / 2')
+    expect(wrapper.get('[data-test="previous-output"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).toContain('Die erste Auswertung.')
+    expect(wrapper.text()).toContain('Die erste Begründung.')
+    expect(wrapper.text()).toContain('Erster Hinweis.')
+    expect(wrapper.get('[data-test="quality-score"]').text()).toContain('2 / 4')
+    expect(fixture.acceptOutput).not.toHaveBeenCalled()
+  })
+
+  it('zeigt keine Navigation bei genau einer Auswertung', async () => {
+    const wrapper = await mountSuspended(ResultPage, { route: '/cards/9/result' })
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="output-navigation"]').exists()).toBe(false)
+  })
+
+  it('öffnet standardmässig die bestätigte Auswertung und erlaubt eine neue Auswahl', async () => {
+    fixture.proof.status = 5
+    fixture.olderOutput.isSaved = true
+    fixture.proof.inputs[0]!.outputs = [fixture.output, fixture.olderOutput]
+    const wrapper = await mountSuspended(ResultPage, { route: '/cards/9/result' })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Die erste Auswertung.')
+    expect(wrapper.get('[data-test="selected-output"]').text()).toContain('Ausgewählt')
+
+    await wrapper.get('[data-test="next-output"]').trigger('click')
+    expect(wrapper.find('[data-test="selected-output"]').exists()).toBe(false)
+    await wrapper.get('[data-test="accept-output"]').trigger('click')
+    await flushPromises()
+
+    expect(fixture.acceptOutput).toHaveBeenCalledWith(5)
   })
 
   it('generiert mit echtem Benutzerfeedback eine neue Revision', async () => {

@@ -76,6 +76,14 @@ Handler ──(zod)──▶ Service ──(Drizzle)──▶ MySQL
 7. Verwerfen → proof → discarded (6)
 ```
 
+### Auswahl einer LLM-Auswertung
+
+- Alle Auswertungen derselben Erstellungskette teilen dieselbe `competency_input_id`.
+- `predecessor` beschreibt innerhalb dieser Eingabe die Revisionsreihenfolge vom ersten zum neuesten Output. Bei fehlenden oder ungültigen Verweisen bleiben die über `competency_input_id` verfügbaren Outputs sichtbar und werden stabil nach `created_at`, danach `id`, eingeordnet.
+- Der bestätigte Output ist der innerhalb der Eingabe mit `is_saved = true`. Beim Bestätigen werden die bisherigen Markierungen derselben Eingabe in einer Transaktion entfernt und genau der gewählte Output markiert.
+- Bis zu einer abweichenden Produktentscheidung darf eine bestätigte Auswahl geändert werden. Die Karte bleibt dabei im Status `saved` (5).
+- Ohne Bestätigung zeigt das Frontend standardmässig den neuesten Output; mit Bestätigung den markierten Output.
+
 ## 5. LLM-Anbindung
 
 - **Extern** (separate Maschine), nur die Anbindung ist in Scope.

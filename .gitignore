@@ -5,3 +5,4 @@ drizzle/
 *.log
 .DS_Store
 *.csv
+traefik/

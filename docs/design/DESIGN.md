@@ -157,6 +157,8 @@ Die Auswertung zeigt nur tatsächlich vom Backend gelieferte Informationen:
 
 `QualityRating` stellt vier Stufen dar: 1 Schwach, 2 Verbesserungsbedürftig, 3 Gut, 4 Sehr gut. Der Nutzer kann das Ergebnis im Rahmen der vorhandenen API speichern, überarbeiten oder verwerfen.
 
+Wenn mehrere Revisionen zur aktuellen Eingabe vorhanden sind, zeigt der Kopf der Auswertung eine kompakte Vor-/Zurück-Navigation mit Positionsanzeige. Das Blättern ist nur eine lokale Vorschau. Eine Auswertung wird erst durch die ausdrückliche Auswahlaktion gespeichert; die gespeicherte Auswertung trägt zusätzlich eine textliche Kennzeichnung und wird beim erneuten Öffnen zuerst angezeigt.
+
 ### Meine Karten und Status
 
 Alle vom Backend gelieferten Karten werden kompakt als Liste angezeigt und können über Statusfilter eingegrenzt werden. Es gelten folgende nutzerfreundliche Bezeichnungen:

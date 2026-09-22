@@ -61,6 +61,7 @@ function createMockDb(options: MockDbOptions = {}) {
   const insertedOutputs: unknown[] = [];
   const statusUpdates: Array<{ proofId: number; status: number }> = [];
   const updatedAtUpdates: Array<{ proofId: number }> = [];
+  const savedUpdates: boolean[] = [];
 
   const db = {
     select: vi.fn(() => ({
@@ -172,6 +173,9 @@ function createMockDb(options: MockDbOptions = {}) {
               updatedAtUpdates.push({ proofId: proof?.id ?? 1 });
             }
           }
+          if (table === competencyLlmOutput && vals.isSaved !== undefined) {
+            savedUpdates.push(vals.isSaved);
+          }
           return [];
         }),
       })),
@@ -180,7 +184,12 @@ function createMockDb(options: MockDbOptions = {}) {
     _insertedOutputs: insertedOutputs,
     _statusUpdates: statusUpdates,
     _updatedAtUpdates: updatedAtUpdates,
+    _savedUpdates: savedUpdates,
   };
+
+  Object.assign(db, {
+    transaction: vi.fn(async (callback: (tx: typeof db) => Promise<unknown>) => callback(db)),
+  });
 
   return db;
 }
@@ -569,6 +578,21 @@ describe('Auswertungsaktionen auf veralteten Karten', () => {
     expect(db._statusUpdates).toContainEqual({ proofId: 1, status: ProofStatus.Saved });
   });
 
+  it('erlaubt die Auswahl einer älteren Revision und entfernt die bisherige Auswahl', async () => {
+    const selected = { ...output, id: 2, predecessor: 1, isSaved: true };
+    const db = createMockDb({
+      proof: { id: 1, userId: 'user-1', status: ProofStatus.Saved, competencyId: 1 },
+      inputs: [{ id: 1, competencyProofId: 1, ...validPayload }],
+      outputs: [output, selected],
+    });
+    const service = new CompetencyService(db as never, createMockLlm(), 'test');
+
+    await service.acceptOutput('user-1', 1);
+
+    expect(db._savedUpdates).toEqual([false, true]);
+    expect(db._statusUpdates).toContainEqual({ proofId: 1, status: ProofStatus.Saved });
+  });
+
   it.each([ProofStatus.LlmCheckFinished, ProofStatus.LlmCheckFailed])('erlaubt Retry der aktuellen Revision bei Status %s', async (status) => {
     const db = createMockDb({
       proof: { id: 1, userId: 'user-1', status, competencyId: 1 },
@@ -580,7 +604,7 @@ describe('Auswertungsaktionen auf veralteten Karten', () => {
     expect(llm.generateCompetencyOutput).toHaveBeenCalledWith(expect.objectContaining({ userFeedback: 'Genauer erklären' }));
   });
 
-  it.each([ProofStatus.Draft, ProofStatus.LlmCheck, ProofStatus.Saved, ProofStatus.Discarded])(
+  it.each([ProofStatus.Draft, ProofStatus.LlmCheck, ProofStatus.Discarded])(
     'verhindert Übernahme und Retry bei Status %s', async (status) => {
       const db = createMockDb({
         proof: { id: 1, userId: 'user-1', status, competencyId: 1 },
@@ -595,18 +619,33 @@ describe('Auswertungsaktionen auf veralteten Karten', () => {
     },
   );
 
-  it.each(['input', 'output'])('verhindert Aktionen auf überholtem %s', async (newer) => {
+  it('verhindert Aktionen auf Outputs einer überholten Eingabe', async () => {
     const input = { id: 1, competencyProofId: 1, ...validPayload };
     const db = createMockDb({
       proof: { id: 1, userId: 'user-1', status: ProofStatus.LlmCheckFinished, competencyId: 1 },
-      inputs: newer === 'input' ? [input, { ...input, id: 2 }] : [input],
-      outputs: newer === 'output' ? [output, { ...output, id: 2 }] : [output],
+      inputs: [input, { ...input, id: 2 }],
+      outputs: [output],
     });
     const llm = createMockLlm();
     const service = new CompetencyService(db as never, llm, 'test');
     await expect(service.acceptOutput('user-1', 1)).rejects.toThrow(ForbiddenError);
     await expect(service.retryOutput('user-1', 1, 'Feedback')).rejects.toThrow(ForbiddenError);
     expect(db.update).not.toHaveBeenCalled();
+    expect(llm.generateCompetencyOutput).not.toHaveBeenCalled();
+  });
+
+  it('erlaubt die Auswahl, aber keinen Retry einer älteren Revision derselben Eingabe', async () => {
+    const input = { id: 1, competencyProofId: 1, ...validPayload };
+    const db = createMockDb({
+      proof: { id: 1, userId: 'user-1', status: ProofStatus.LlmCheckFinished, competencyId: 1 },
+      inputs: [input],
+      outputs: [output, { ...output, id: 2, predecessor: 1 }],
+    });
+    const llm = createMockLlm();
+    const service = new CompetencyService(db as never, llm, 'test');
+
+    await expect(service.acceptOutput('user-1', 1)).resolves.toMatchObject({ id: 1, isSaved: true });
+    await expect(service.retryOutput('user-1', 1, 'Feedback')).rejects.toThrow(ForbiddenError);
     expect(llm.generateCompetencyOutput).not.toHaveBeenCalled();
   });
 });

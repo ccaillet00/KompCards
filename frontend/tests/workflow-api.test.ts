@@ -135,4 +135,19 @@ describe('useCompetencyWorkflow', () => {
       headers: { Authorization: 'Bearer jwt-token' },
     })
   })
+
+  it('stellt einen Fehler beim Bestätigen verständlich bereit und beendet den Ladezustand', async () => {
+    vi.mocked($fetch).mockRejectedValueOnce({ data: { error: 'Auswahl konnte nicht gespeichert werden.' } })
+    const wrapper = await mountSuspended(Harness)
+    const workflow = wrapper.vm as unknown as {
+      acceptOutput: (outputId: number) => Promise<unknown>
+      error: string | null
+      isSaving: boolean
+    }
+
+    await expect(workflow.acceptOutput(5)).rejects.toBeDefined()
+
+    expect(workflow.error).toBe('Auswahl konnte nicht gespeichert werden.')
+    expect(workflow.isSaving).toBe(false)
+  })
 })
