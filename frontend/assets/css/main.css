@@ -1,3 +1,127 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply m-0 bg-base-100 font-sans text-base-content antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display text-primary;
+  }
+
+  ::selection {
+    @apply bg-primary/20 text-primary;
+  }
+
+  :focus-visible {
+    @apply outline outline-2 outline-offset-4 outline-primary;
+  }
+}
+
+@layer components {
+  .page-shell {
+    @apply mx-auto w-full max-w-page px-6 lg:px-10 xl:px-14;
+  }
+
+  .eyebrow {
+    @apply text-xs font-bold uppercase tracking-[0.2em] text-primary;
+  }
+
+  .display-title {
+    @apply font-display text-5xl font-bold leading-[1.02] tracking-[-0.025em] text-primary md:text-6xl xl:text-7xl;
+  }
+
+  .section-title {
+    @apply font-display text-4xl font-bold leading-tight text-primary md:text-5xl;
+  }
+
+  .hero-artwork-image {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.12) 10%, #000 36%);
+    mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.12) 10%, #000 36%);
+  }
+
+  .auth-artwork-image,
+  .fox-world-page-image {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.12) 10%, #000 38%);
+    mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.12) 10%, #000 38%);
+  }
+
+  .auth-artwork-blend {
+    background:
+      linear-gradient(to bottom, transparent 78%, rgba(253, 251, 246, 0.18)),
+      linear-gradient(to right, #fdfbf6 0%, #fdfbf6 27%, rgba(253, 251, 246, 0.97) 38%, rgba(253, 251, 246, 0.68) 50%, rgba(253, 251, 246, 0.14) 67%, transparent 79%);
+  }
+
+  .fox-world-page-blend {
+    background:
+      linear-gradient(to bottom, transparent 76%, rgba(253, 251, 246, 0.34) 94%, #fdfbf6 100%),
+      linear-gradient(to right, #fdfbf6 0%, #fdfbf6 25%, rgba(253, 251, 246, 0.96) 37%, rgba(253, 251, 246, 0.68) 51%, rgba(253, 251, 246, 0.16) 69%, transparent 81%);
+  }
+
+  .hero-artwork-blend {
+    background:
+      linear-gradient(to bottom, transparent 72%, rgba(253, 251, 246, 0.82) 91%, #fdfbf6 100%),
+      linear-gradient(to right, #fdfbf6 0%, #fdfbf6 31%, rgba(253, 251, 246, 0.96) 40%, rgba(253, 251, 246, 0.72) 50%, rgba(253, 251, 246, 0.16) 67%, transparent 79%);
+  }
+
+  .cta-artwork-blend {
+    background:
+      linear-gradient(to bottom, rgba(253, 251, 246, 0.12), transparent 24%, transparent 76%, rgba(253, 251, 246, 0.18)),
+      linear-gradient(to right, #fdfbf6 0%, #fdfbf6 27%, rgba(253, 251, 246, 0.96) 38%, rgba(253, 251, 246, 0.74) 49%, rgba(253, 251, 246, 0.24) 64%, transparent 78%);
+  }
+
+  .form-control-input {
+    @apply input input-bordered h-12 w-full border-primary/20 bg-base-100 text-base-content placeholder:text-base-content/40 focus:border-primary focus:outline-none;
+  }
+
+  .form-control-textarea {
+    @apply textarea textarea-bordered min-h-28 w-full resize-y border-primary/20 bg-base-100 text-base-content placeholder:text-base-content/40 focus:border-primary focus:outline-none;
+  }
+
+  .form-control-select {
+    @apply select select-bordered h-12 w-full border-primary/20 bg-base-100 text-base-content focus:border-primary focus:outline-none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .fox-world-artwork,
+  .fox-world-cta-artwork,
+  .fox-world-page-image {
+    opacity: 0.66;
+  }
+
+  .hero-artwork-blend {
+    background:
+      linear-gradient(to bottom, transparent 68%, rgba(253, 251, 246, 0.88) 91%, #fdfbf6 100%),
+      linear-gradient(to right, #fdfbf6 0%, rgba(253, 251, 246, 0.98) 43%, rgba(253, 251, 246, 0.78) 63%, rgba(253, 251, 246, 0.3) 100%);
+  }
+
+  .cta-artwork-blend {
+    background:
+      linear-gradient(to bottom, rgba(253, 251, 246, 0.08), transparent 65%, rgba(253, 251, 246, 0.32)),
+      linear-gradient(to right, #fdfbf6 0%, rgba(253, 251, 246, 0.97) 48%, rgba(253, 251, 246, 0.62) 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

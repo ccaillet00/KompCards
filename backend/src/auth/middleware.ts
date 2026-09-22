@@ -4,6 +4,7 @@ import type { AppConfig } from '../config.js';
 import { getDb } from '../db/client.js';
 import { userSession } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
+import jwt from 'jsonwebtoken';
 
 import { UnauthorizedError } from '../utils/errors.js';
 import { hashToken, verifyToken, type JwtPayload } from './jwt.js';
@@ -56,7 +57,9 @@ export function requireAuth(config: AppConfig) {
       req.user = payload;
       next();
     } catch (err) {
-      next(err);
+      next(err instanceof jwt.JsonWebTokenError
+        ? new UnauthorizedError('Sitzung ungültig oder abgelaufen. Bitte erneut anmelden.')
+        : err);
     }
   };
 }

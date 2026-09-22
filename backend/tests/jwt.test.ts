@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { hashToken, signToken, verifyToken } from '../src/auth/jwt.js';
 
@@ -6,6 +6,14 @@ const config = { jwtSecret: 'test-secret', jwtTtlSeconds: 3600 };
 const user = { id: '11111111-1111-1111-1111-111111111111', email: 'a@b.c' };
 
 describe('signToken / verifyToken', () => {
+  it('erzeugt auch bei zwei Logins in derselben Sekunde getrennte Sessions', () => {
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(1_800_000_000_000);
+    try {
+      expect(signToken(config, user)).not.toBe(signToken(config, user));
+    } finally {
+      clock.mockRestore();
+    }
+  });
   it('erzeugt ein Token, das sich verifizieren lässt', () => {
     const token = signToken(config, user);
     const payload = verifyToken(config, token);

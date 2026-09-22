@@ -265,6 +265,8 @@ export class CompetencyService {
       throw new ForbiddenError('Kein Zugriff auf diese Karte');
     }
 
+    await this.assertCurrentOutput(proofRow, previous, true);
+
     const context = await this.loadLlmContext(proofRow.competencyId);
 
     await this.setProofStatus(proofRow.id, ProofStatus.LlmCheck);
@@ -293,26 +295,33 @@ export class CompetencyService {
     return result;
   }
 
-  /** Akzeptiert einen LLM-Output (`is_saved = true`) und speichert die Karte. */
+  /**
+   * Wählt einen LLM-Output verbindlich aus und speichert die Karte.
+   *
+   * Pro Eingabe ist genau ein Output ausgewählt. Eine bestehende Auswahl darf
+   * geändert werden, solange der Output zur neuesten Eingabe der Karte gehört.
+   */
   async acceptOutput(userId: string, outputId: number): Promise<CompetencyLlmOutput> {
-    const { proofId } = await this.loadOwnOutput(userId, outputId);
+    const { proofId, output } = await this.loadOwnOutput(userId, outputId);
+    const proof = await this.assertOwnProof(userId, proofId);
+    await this.assertSelectableOutput(proof, output);
 
-    await this.db
-      .update(competencyLlmOutput)
-      .set({ isSaved: true })
-      .where(eq(competencyLlmOutput.id, outputId));
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(competencyLlmOutput)
+        .set({ isSaved: false })
+        .where(eq(competencyLlmOutput.competencyInputId, output.competencyInputId));
+      await tx
+        .update(competencyLlmOutput)
+        .set({ isSaved: true })
+        .where(eq(competencyLlmOutput.id, outputId));
+      await tx
+        .update(competencyProof)
+        .set({ status: ProofStatus.Saved })
+        .where(eq(competencyProof.id, proofId));
+    });
 
-    await this.setProofStatus(proofId, ProofStatus.Saved);
-
-    const [updated] = await this.db
-      .select()
-      .from(competencyLlmOutput)
-      .where(eq(competencyLlmOutput.id, outputId))
-      .limit(1);
-    if (!updated) {
-      throw new NotFoundError('LLM-Output nicht gefunden');
-    }
-    return updated;
+    return { ...output, isSaved: true };
   }
 
   /** Verwirft eine Karte (Status: `discarded`). */
@@ -408,6 +417,46 @@ export class CompetencyService {
       logger.error({ err }, 'LLM-Prüfung fehlgeschlagen');
       await this.setProofStatus(proofId, ProofStatus.LlmCheckFailed);
       return null;
+    }
+  }
+
+  /** Verhindert Aktionen auf abgeschlossenen Karten oder überholten Revisionen. */
+  private async assertCurrentOutput(
+    proof: CompetencyProof,
+    output: CompetencyLlmOutput,
+    allowFailedRetry = false,
+  ): Promise<void> {
+    if (proof.status !== ProofStatus.LlmCheckFinished
+      && !(allowFailedRetry && proof.status === ProofStatus.LlmCheckFailed)) {
+      throw new ForbiddenError('Diese Auswertung kann im aktuellen Kartenstatus nicht verändert werden.');
+    }
+    const inputs = await this.db.select().from(competencyInput)
+      .where(eq(competencyInput.competencyProofId, proof.id));
+    const latestInput = inputs.reduce<typeof inputs[number] | undefined>(
+      (latest, input) => !latest || input.id > latest.id ? input : latest, undefined,
+    );
+    const outputs = await this.db.select().from(competencyLlmOutput)
+      .where(eq(competencyLlmOutput.competencyInputId, output.competencyInputId));
+    if (latestInput?.id !== output.competencyInputId || outputs.some(item => item.id > output.id)) {
+      throw new ForbiddenError('Die Auswertung ist nicht mehr aktuell. Bitte lade die Karte erneut.');
+    }
+  }
+
+  /** Erlaubt die Auswahl jeder Revision der neuesten Eingabe, auch nach einer früheren Auswahl. */
+  private async assertSelectableOutput(
+    proof: CompetencyProof,
+    output: CompetencyLlmOutput,
+  ): Promise<void> {
+    if (proof.status !== ProofStatus.LlmCheckFinished && proof.status !== ProofStatus.Saved) {
+      throw new ForbiddenError('Diese Auswertung kann im aktuellen Kartenstatus nicht ausgewählt werden.');
+    }
+    const inputs = await this.db.select().from(competencyInput)
+      .where(eq(competencyInput.competencyProofId, proof.id));
+    const latestInput = inputs.reduce<typeof inputs[number] | undefined>(
+      (latest, input) => !latest || input.id > latest.id ? input : latest, undefined,
+    );
+    if (latestInput?.id !== output.competencyInputId) {
+      throw new ForbiddenError('Die Auswertung gehört nicht zur aktuellen Eingabe. Bitte lade die Karte erneut.');
     }
   }
 

@@ -1,0 +1,97 @@
+/* KompCards — Page- & Layout-Transitions
+ *
+ * Globale, dezente Übergänge für Seiten- und Layoutwechsel.
+ * Wird über nuxt.config.ts (css) eingebunden.
+ *
+ * Kombination mit der View Transitions API:
+ * - Vue-Page-Transition (`.page-*`) läuft für den Content-Wechsel.
+ * - View Transitions API (`::view-transition-*`) übernimmt den
+ *   root-übergreifenden Crossfade. Beide sind bewusst kurz gehalten,
+ *   damit sie sich nicht doppelt aufschaukeln.
+ */
+
+/* ---------- Page-Transition (Vue) ---------- */
+.page-enter-active,
+.page-leave-active {
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease,
+    filter 0.35s ease;
+  will-change: opacity, transform, filter;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+  filter: blur(4px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-12px);
+  filter: blur(4px);
+}
+
+/* ---------- Layout-Transition (Vue) ---------- */
+/* Nur ein kurzer, reiner Fade — das Layout soll stabil bleiben. */
+.layout-enter-active,
+.layout-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.layout-enter-from,
+.layout-leave-to {
+  opacity: 0;
+}
+
+/* ---------- Slide-Transition (optional, pro Seite) ---------- */
+/* z. B. Login → Dashboard: dezente horizontale Bewegung. */
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease;
+}
+
+.slide-left-enter-from {
+  opacity: 0;
+  transform: translateX(24px);
+}
+
+.slide-left-leave-to {
+  opacity: 0;
+  transform: translateX(-24px);
+}
+
+/* ---------- View Transitions API ---------- */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.4s;
+  animation-timing-function: ease;
+}
+
+/* ---------- Accessibility: reduzierte Bewegung ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active,
+  .page-leave-active,
+  .layout-enter-active,
+  .layout-leave-active,
+  .slide-left-enter-active,
+  .slide-left-leave-active {
+    transition: none;
+  }
+
+  .page-enter-from,
+  .page-leave-to,
+  .slide-left-enter-from,
+  .slide-left-leave-to {
+    transform: none;
+    filter: none;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
+}

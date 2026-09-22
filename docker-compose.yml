@@ -15,20 +15,6 @@
 name: kompcards
 
 services:
-  traefik:
-    image: traefik:v3.6
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8080:8080" # Dashboard (nur lokal)
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-      - traefik-letsencrypt:/letsencrypt
-    networks:
-      - kompcards
-    restart: unless-stopped
-
   backend:
     build:
       context: ./backend
@@ -45,30 +31,34 @@ services:
       db:
         condition: service_healthy
     networks:
-      - kompcards
+      - proxy
     restart: unless-stopped
     labels:
       - traefik.enable=true
       - traefik.http.routers.backend.rule=PathPrefix(`/api`)
-      - traefik.http.routers.backend.entrypoints=web
+      - traefik.http.routers.backend.entrypoints=web-secure
+      - traefik.http.routers.backend.tls=true
+      - traefik.http.routers.backend.tls.certresolver=cloudflare
       - traefik.http.routers.backend.priority=10
       - traefik.http.services.backend.loadbalancer.server.port=4000
 
   # Frontend (Nuxt 4.5.1) — aktivieren, sobald frontend/ gescaffoldet ist.
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #   environment:
-  #     NUXT_API_BASE: /api
-  #   networks:
-  #     - kompcards
-  #   restart: unless-stopped
-  #   labels:
-  #     - traefik.enable=true
-  #     - traefik.http.routers.frontend.rule=PathPrefix(`/`)
-  #     - traefik.http.routers.frontend.entrypoints=web
-  #     - traefik.http.routers.frontend.priority=1
-  #     - traefik.http.services.frontend.loadbalancer.server.port=3000
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      NUXT_API_BASE: /api
+    networks:
+      - proxy
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend.entrypoints=web-secure
+      - traefik.http.routers.frontend.rule=Host(`kompcards.ccdevlab.ch`)
+      - traefik.http.routers.frontend.tls=true
+      - traefik.http.routers.frontend.tls.certresolver=cloudflare
+      - traefik.http.routers.frontend.priority=1
+      - traefik.http.services.frontend.loadbalancer.server.port=3000
 
   db:
     image: mysql:9.7.2
@@ -86,15 +76,15 @@ services:
       timeout: 5s
       retries: 20
     ports:
-      - "3306:3306" # Nur für lokale Entwicklung; in Produktion entfernen.
-    # networks:
-    #   - kompcards
+       - "3306:3306" # Nur für lokale Entwicklung; in Produktion entfernen.
+    #networks:
+     # - proxy
     restart: unless-stopped
     # Kein `ports:` — DB ist intern, nicht öffentlich exponiert.
 
 networks:
-  kompcards:
-    driver: bridge
+  proxy:
+    external: true
 
 volumes:
   db-data:

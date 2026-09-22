@@ -73,6 +73,7 @@ Regeln:
 
 - **Namen:** DB-Objekte exakt wie im SQL (inkl. `note_improvment`, `userTable`, `userSession`).
 - **Domänen-Wissen:** Spalten-/Status-Bedeutungen im TS-Schema via `.$comment()`/JSDoc dokumentieren.
+- **Frontend-Design:** Verbindliche Tokens, Assets, Komponenten- und Bildregeln stehen in [`design/DESIGN.md`](./design/DESIGN.md). Mockups unter `design/references/` sind nur visuelle Referenzen und keine Runtime-Assets.
 - [Annahme] API = REST/JSON; `/api`-Proxy im Frontend.
 - [Annahme] LLM-Endpoint/Key/Modell ausschließlich via Env.
 
