@@ -25,7 +25,7 @@ export interface LoginInput {
 }
 
 export interface LoginResult {
-  /** Signiertes JWT (im `Authorization: Bearer <token>`-Header senden). */
+  /** Signiertes JWT, das die Auth-Route als HttpOnly-Cookie setzt. */
   token: string;
   /** Gültigkeitsdauer in Sekunden. */
   expiresInSeconds: number;
@@ -109,6 +109,19 @@ export class AuthService {
       expiresInSeconds: this.config.jwtTtlSeconds,
       user: { id: user.id, name: user.name, email: user.email },
     };
+  }
+
+  async getUserById(id: string): Promise<Pick<User, 'id' | 'name' | 'email'>> {
+    const rows = await this.db
+      .select({ id: userTable.id, name: userTable.name, email: userTable.email })
+      .from(userTable)
+      .where(eq(userTable.id, id))
+      .limit(1);
+    const user = rows[0];
+    if (!user) {
+      throw new UnauthorizedError('Nutzer nicht gefunden');
+    }
+    return user;
   }
 
   /**

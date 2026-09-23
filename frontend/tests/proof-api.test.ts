@@ -5,7 +5,7 @@ import { defineComponent } from 'vue'
 import { $fetch } from 'ofetch'
 import { useProofs } from '../composables/useProofs'
 
-const auth = vi.hoisted(() => ({ token: { value: 'jwt-token' } }))
+const auth = vi.hoisted(() => ({ isAuthenticated: { value: true } }))
 
 vi.mock('ofetch', () => ({ $fetch: vi.fn() }))
 vi.mock('../composables/useAuth', () => ({ useAuth: () => auth }))
@@ -52,10 +52,10 @@ describe('useProofs', () => {
     await (wrapper.vm as unknown as { load: () => Promise<void> }).load()
 
     expect($fetch).toHaveBeenNthCalledWith(1, '/api/competency/proofs', {
-      headers: { Authorization: 'Bearer jwt-token' },
+      credentials: 'include',
     })
     expect($fetch).toHaveBeenNthCalledWith(2, '/api/curriculum', {
-      headers: { Authorization: 'Bearer jwt-token' },
+      credentials: 'include',
     })
     expect((wrapper.vm as unknown as { cards: Array<Record<string, unknown>> }).cards[0]).toMatchObject({
       id: 7,
@@ -67,13 +67,13 @@ describe('useProofs', () => {
   })
 
   it('sendet ohne Sitzung keine geschützte Anfrage', async () => {
-    auth.token.value = null as unknown as string
+    auth.isAuthenticated.value = false
     const wrapper = await mountSuspended(Harness)
 
     await (wrapper.vm as unknown as { load: () => Promise<void> }).load()
 
     expect($fetch).not.toHaveBeenCalled()
     expect((wrapper.vm as unknown as { error: string | null }).error).toContain('Sitzung')
-    auth.token.value = 'jwt-token'
+    auth.isAuthenticated.value = true
   })
 })

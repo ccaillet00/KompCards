@@ -1,9 +1,10 @@
 # KompCards — Gesamtsystem (siehe docs/ARCHITECTURE.md)
 #
 # Traefik ist die einzige öffentlich exponierte Kante.
-# Routing (path-basiert, same-origin ⇒ kein CORS):
-#   /     → Frontend (Nuxt)
-#   /api  → Backend (Express)
+# Routing (host-basiert, same-origin ⇒ kein CORS):
+#   kompcards.ccdevlab.ch          → Public Frontend (Nuxt)
+#   service.kompcards.ccdevlab.ch  → SaaS Frontend (Nuxt)
+#   service.kompcards.ccdevlab.ch/api → Backend (Express)
 # DB ist intern (nur Backend → DB), nicht öffentlich exponiert.
 #
 # Das DB-Schema wird NICHT aus SQL-Dateien erzeugt, sondern beim Backend-Start
@@ -35,30 +36,52 @@ services:
     restart: unless-stopped
     labels:
       - traefik.enable=true
-      - traefik.http.routers.backend.rule=PathPrefix(`/api`)
+      - traefik.http.routers.backend.rule=Host(`service.kompcards.ccdevlab.ch`) && PathPrefix(`/api`)
       - traefik.http.routers.backend.entrypoints=web-secure
       - traefik.http.routers.backend.tls=true
       - traefik.http.routers.backend.tls.certresolver=cloudflare
       - traefik.http.routers.backend.priority=10
       - traefik.http.services.backend.loadbalancer.server.port=4000
 
-  # Frontend (Nuxt 4.5.1) — aktivieren, sobald frontend/ gescaffoldet ist.
-  frontend:
+  # Öffentliches Frontend (Landingpage).
+  frontend-public:
     build:
       context: ./frontend
     environment:
-      NUXT_API_BASE: /api
+      NUXT_PUBLIC_API_BASE: /api
+      NUXT_PUBLIC_APP_MODE: public
+      NUXT_PUBLIC_SERVICE_URL: https://service.kompcards.ccdevlab.ch
     networks:
       - proxy
     restart: unless-stopped
     labels:
       - traefik.enable=true
-      - traefik.http.routers.frontend.entrypoints=web-secure
-      - traefik.http.routers.frontend.rule=Host(`kompcards.ccdevlab.ch`)
-      - traefik.http.routers.frontend.tls=true
-      - traefik.http.routers.frontend.tls.certresolver=cloudflare
-      - traefik.http.routers.frontend.priority=1
-      - traefik.http.services.frontend.loadbalancer.server.port=3000
+      - traefik.http.routers.frontend-public.entrypoints=web-secure
+      - traefik.http.routers.frontend-public.rule=Host(`kompcards.ccdevlab.ch`)
+      - traefik.http.routers.frontend-public.tls=true
+      - traefik.http.routers.frontend-public.tls.certresolver=cloudflare
+      - traefik.http.routers.frontend-public.priority=1
+      - traefik.http.services.frontend-public.loadbalancer.server.port=3000
+
+  # SaaS-Frontend (Login, Dashboard und Kompetenzkarten).
+  frontend-service:
+    build:
+      context: ./frontend
+    environment:
+      NUXT_PUBLIC_API_BASE: /api
+      NUXT_PUBLIC_APP_MODE: service
+      NUXT_PUBLIC_SERVICE_URL: https://service.kompcards.ccdevlab.ch
+    networks:
+      - proxy
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend-service.entrypoints=web-secure
+      - traefik.http.routers.frontend-service.rule=Host(`service.kompcards.ccdevlab.ch`)
+      - traefik.http.routers.frontend-service.tls=true
+      - traefik.http.routers.frontend-service.tls.certresolver=cloudflare
+      - traefik.http.routers.frontend-service.priority=1
+      - traefik.http.services.frontend-service.loadbalancer.server.port=3000
 
   db:
     image: mysql:9.7.2

@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { definePageMeta, useSeoMeta } from '#imports'
+import { definePageMeta, useRuntimeConfig, useSeoMeta } from '#imports'
 import UiButton from '../components/ui/UiButton.vue'
 import UiIcon from '../components/ui/UiIcon.vue'
 
-definePageMeta({ layout: 'public' })
+definePageMeta({ layout: 'public', middleware: 'public-only' })
+
+const config = useRuntimeConfig()
 
 useSeoMeta({
   title: 'KompCards – Kompetenzen sichtbar machen',
@@ -56,7 +58,7 @@ const benefits = [
           </p>
           <div class="mt-8 flex flex-wrap gap-4">
             <UiButton
-              to="/register"
+              :to="`${config.public.serviceUrl}/register`"
               size="lg"
             >
               KompCards entdecken
@@ -66,7 +68,7 @@ const benefits = [
               />
             </UiButton>
             <UiButton
-              to="/login"
+              :to="`${config.public.serviceUrl}/login`"
               variant="secondary"
               size="lg"
             >
@@ -193,7 +195,7 @@ const benefits = [
             Erstelle deine erste Kompetenzkarte und mach deinen Fortschritt sichtbar.
           </p>
           <UiButton
-            to="/register"
+            :to="`${config.public.serviceUrl}/register`"
             size="lg"
             class="mt-7"
           >

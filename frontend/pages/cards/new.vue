@@ -8,7 +8,7 @@ import UiIcon from '../../components/ui/UiIcon.vue'
 import UiSelect from '../../components/ui/UiSelect.vue'
 import { useCompetencyWorkflow } from '../../composables/useCompetencyWorkflow'
 
-definePageMeta({ middleware: 'auth' })
+definePageMeta({ middleware: ['service-only', 'auth'] })
 useSeoMeta({ title: 'Kompetenzkarte erstellen – KompCards' })
 
 const { curricula, isLoading, isSaving, error, loadCurricula, createProof } = useCompetencyWorkflow()

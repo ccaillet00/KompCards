@@ -10,7 +10,7 @@ import WorkflowSteps from '../../../components/workflow/WorkflowSteps.vue'
 import { useCompetencyWorkflow } from '../../../composables/useCompetencyWorkflow'
 import { orderOutputRevisions } from '../../../utils/outputRevisions'
 
-definePageMeta({ middleware: 'auth' })
+definePageMeta({ middleware: ['service-only', 'auth'] })
 useSeoMeta({ title: 'LLM-Auswertung – KompCards' })
 
 const route = useRoute()

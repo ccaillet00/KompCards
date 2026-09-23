@@ -5,7 +5,7 @@ import { useAuth } from '../composables/useAuth'
 import AuthLoginForm from '../components/auth/AuthLoginForm.vue'
 import AuthRegisterForm from '../components/auth/AuthRegisterForm.vue'
 
-definePageMeta({ layout: 'auth' })
+definePageMeta({ layout: 'auth', middleware: 'service-only' })
 
 const auth = useAuth()
 const showForm = ref(true)
@@ -15,9 +15,10 @@ const max = 1500;
 const step = 100;
 const randomNumber = Math.floor(Math.random() * ((max - min) / step + 1)) * step + min;
 const REDIRECT_DELAY_MS = randomNumber
-let redirectTimer: ReturnType<typeof setTimeout> | undefined
+let redirectTimer: number | undefined
 
-onMounted(() => {
+onMounted(async () => {
+  await auth.restoreSession(true)
   if (import.meta.client && auth.isAuthenticated.value) {
     showForm.value = false
     isRedirecting.value = true

@@ -16,7 +16,7 @@ describe('requireAuth', () => {
     'meldet ungültige oder abgelaufene Tokens als 401', async (token) => {
       const next = vi.fn();
       await requireAuth(config)(
-        { headers: { authorization: `Bearer ${token}` } } as AuthRequest,
+        { headers: {}, cookies: { access_token: token } } as unknown as AuthRequest,
         {} as Response, next,
       );
       expect(next).toHaveBeenCalledWith(expect.any(UnauthorizedError));

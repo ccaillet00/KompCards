@@ -44,6 +44,9 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE ?? '/api',
+      appMode: process.env.NUXT_PUBLIC_APP_MODE
+        ?? (process.env.NODE_ENV === 'test' ? 'test' : 'public'),
+      serviceUrl: process.env.NUXT_PUBLIC_SERVICE_URL ?? 'https://service.kompcards.ccdevlab.ch',
     },
   },
 

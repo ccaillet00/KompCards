@@ -116,10 +116,11 @@ Logout / Revocation
 
 **Vorgabe:** Ein **Traefik Reverse Proxy** ist die zentrale Kante und regelt das Routing.
 
-- **User → Frontend:** Traefik leitet die Web-App-Requests an Nuxt weiter (`PathPrefix(/)`).
-- **Frontend → Backend:** API-Calls des Frontends (`/api/…`) laufen zurück durch Traefik an Express (`PathPrefix(/api)`).
+- **Public-Frontend:** `Host(kompcards.ccdevlab.ch)` → Nuxt im `public`-Modus (Landingpage).
+- **SaaS-Frontend:** `Host(service.kompcards.ccdevlab.ch)` → Nuxt im `service`-Modus (Login, Dashboard, Kompetenzkarten).
+- **Frontend → Backend:** API-Calls des SaaS-Frontends (`/api/…`) laufen same-origin über `Host(service.kompcards.ccdevlab.ch) && PathPrefix(/api)` an Express.
 - **Backend → DB:** intern auf dem Docker-Netz, **nicht** öffentlich exponiert.
-- **Routing-Basis:** path-basiert (`/`, `/api`) als Voreinstellung → Frontend & API sind same-origin ⇒ **kein CORS** nötig (alternativ host-basiert).
+- **Routing-Basis:** host-basiert; beide Frontends werden aus derselben Nuxt-Codebasis mit unterschiedlichen `NUXT_PUBLIC_APP_MODE`-Werten gebaut. SaaS-Frontend und API bleiben same-origin ⇒ **kein CORS** nötig.
 - **Kante/TLS:** Terminierung am Traefik (z. B. Let's Encrypt); DB & LLM bleiben hinter der Kante.
 - **Annahme:** API-Style = REST/JSON.
 

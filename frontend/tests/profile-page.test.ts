@@ -8,6 +8,7 @@ const fixture = vi.hoisted(() => ({
   expiresAt: new Date('2026-09-21T08:00:00.000Z').getTime(),
   error: null as string | null,
   logout: vi.fn(),
+  restoreSession: vi.fn(),
 }))
 
 vi.mock('../composables/useAuth', async () => {
@@ -20,6 +21,7 @@ vi.mock('../composables/useAuth', async () => {
       isLoading: ref(false),
       error: ref(fixture.error),
       logout: fixture.logout,
+      restoreSession: fixture.restoreSession,
     }),
   }
 })
@@ -27,6 +29,7 @@ vi.mock('../composables/useAuth', async () => {
 describe('Profil', () => {
   beforeEach(() => {
     fixture.logout.mockReset().mockResolvedValue(undefined)
+    fixture.restoreSession.mockReset().mockResolvedValue(undefined)
     fixture.error = null
   })
 

@@ -26,11 +26,10 @@ export interface AuthRequest extends Request {
 export function requireAuth(config: AppConfig) {
   return async (req: AuthRequest, _res: Response, next: NextFunction): Promise<void> => {
     try {
-      const header = req.headers.authorization;
-      if (!header || !header.startsWith('Bearer ')) {
-        throw new UnauthorizedError('Fehlendes Bearer-Token');
+      const token = req.cookies?.access_token;
+      if (!token) {
+        throw new UnauthorizedError('Fehlendes Auth-Cookie');
       }
-      const token = header.slice('Bearer '.length).trim();
 
       // 1. JWT signatur-/zeitmäßig prüfen
       const payload = verifyToken(config, token);
