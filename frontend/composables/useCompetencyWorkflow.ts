@@ -56,11 +56,11 @@ export function useCompetencyWorkflow() {
   })
 
   function requestOptions() {
-    if (!auth.token.value) {
+    if (!auth.isAuthenticated.value) {
       error.value = 'Deine Sitzung ist nicht mehr gültig. Bitte melde dich erneut an.'
-      throw new Error('Missing auth token')
+      throw new Error('Missing auth session')
     }
-    return { headers: { Authorization: `Bearer ${auth.token.value}` } }
+    return { credentials: 'include' as const }
   }
 
   async function loadCurricula(): Promise<void> {

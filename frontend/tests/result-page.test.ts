@@ -72,6 +72,16 @@ vi.mock('../composables/useCompetencyWorkflow', async () => {
   }
 })
 
+vi.mock('../composables/useAuth', async () => {
+  const { ref } = await import('vue')
+  return {
+    useAuth: () => ({
+      isAuthenticated: ref(true),
+      restoreSession: vi.fn().mockResolvedValue(undefined),
+    }),
+  }
+})
+
 describe('LLM-Auswertung', () => {
   it.each([1, 2, 6] as const)('bietet für Status %s keine Aktionen auf alte Auswertungen an', async (status) => {
     fixture.proof.status = status
@@ -82,11 +92,6 @@ describe('LLM-Auswertung', () => {
   })
 
   beforeEach(() => {
-    sessionStorage.setItem('kompcards.auth', JSON.stringify({
-      token: 'jwt-token',
-      expiresAt: Date.now() + 60_000,
-      user: { id: 'user-1', name: 'Ada', email: 'ada@example.ch' },
-    }))
     fixture.proof.status = 4
     fixture.output.isSaved = false
     fixture.olderOutput.isSaved = false

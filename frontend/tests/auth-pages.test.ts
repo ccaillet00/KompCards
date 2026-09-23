@@ -10,6 +10,7 @@ const auth = vi.hoisted(() => ({
   isLoading: { value: false },
   error: { value: null as string | null },
   isAuthenticated: { value: false },
+  restoreSession: vi.fn(),
 }))
 
 vi.mock('../composables/useAuth', () => ({
@@ -22,6 +23,7 @@ describe('Authentifizierungsseiten', () => {
     auth.register.mockReset()
     auth.error.value = null
     auth.isAuthenticated.value = false
+    auth.restoreSession.mockReset().mockResolvedValue(undefined)
   })
 
   it('integriert die Fuchswelt unbeschnitten und mit einem weichen Uebergang', async () => {
@@ -99,6 +101,7 @@ describe('Authentifizierungsseiten', () => {
     it('zeigt authentifizierten Usern vor der Weiterleitung einen Ladebildschirm', async () => {
       auth.isAuthenticated.value = true
       const wrapper = await mountSuspended(LoginPage, { route: '/login' })
+      await flushPromises()
 
       expect(wrapper.find('form').exists()).toBe(false)
       expect(wrapper.get('[role="status"]').text()).toContain('Willkommen zurück')
@@ -108,6 +111,7 @@ describe('Authentifizierungsseiten', () => {
     it('zeigt das Login-Formular für nicht-authentifizierte User', async () => {
       auth.isAuthenticated.value = false
       const wrapper = await mountSuspended(LoginPage, { route: '/login' })
+      await flushPromises()
 
       expect(wrapper.find('form').exists()).toBe(true)
     })

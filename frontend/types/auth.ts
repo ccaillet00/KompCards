@@ -14,17 +14,15 @@ export interface RegisterInput extends LoginInput {
 }
 
 export interface LoginResponse {
-  token: string
   expiresInSeconds: number
   user: AuthUser
 }
 
-export interface RegisterResponse {
+export interface MeResponse {
+  expiresAt: number
   user: AuthUser
 }
 
-export interface StoredAuthSession {
-  token: string
-  expiresAt: number
+export interface RegisterResponse {
   user: AuthUser
 }

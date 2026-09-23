@@ -5,7 +5,7 @@ import { defineComponent } from 'vue'
 import { $fetch } from 'ofetch'
 import { useCompetencyWorkflow } from '../composables/useCompetencyWorkflow'
 
-const auth = vi.hoisted(() => ({ token: { value: 'jwt-token' } }))
+const auth = vi.hoisted(() => ({ isAuthenticated: { value: true } }))
 
 vi.mock('ofetch', () => ({ $fetch: vi.fn() }))
 vi.mock('../composables/useAuth', () => ({ useAuth: () => auth }))
@@ -54,11 +54,11 @@ describe('useCompetencyWorkflow', () => {
     const proof = await workflow.createProof(11)
 
     expect($fetch).toHaveBeenNthCalledWith(1, '/api/curriculum', {
-      headers: { Authorization: 'Bearer jwt-token' },
+      credentials: 'include',
     })
     expect($fetch).toHaveBeenNthCalledWith(2, '/api/competency/proofs', {
       method: 'POST',
-      headers: { Authorization: 'Bearer jwt-token' },
+      credentials: 'include',
       body: { competencyId: 11 },
     })
     expect(proof.id).toBe(9)
@@ -90,16 +90,16 @@ describe('useCompetencyWorkflow', () => {
     const output = await workflow.triggerLlmCheck(9)
 
     expect($fetch).toHaveBeenNthCalledWith(1, '/api/competency/proofs/9', {
-      headers: { Authorization: 'Bearer jwt-token' },
+      credentials: 'include',
     })
     expect($fetch).toHaveBeenNthCalledWith(3, '/api/competency/proofs/9/input', {
       method: 'POST',
-      headers: { Authorization: 'Bearer jwt-token' },
+      credentials: 'include',
       body: input,
     })
     expect($fetch).toHaveBeenNthCalledWith(4, '/api/competency/proofs/9/llm-check', {
       method: 'POST',
-      headers: { Authorization: 'Bearer jwt-token' },
+      credentials: 'include',
     })
     expect(output).toMatchObject({ id: 5 })
   })
@@ -123,16 +123,16 @@ describe('useCompetencyWorkflow', () => {
 
     expect($fetch).toHaveBeenNthCalledWith(1, '/api/competency/outputs/5/retry', {
       method: 'POST',
-      headers: { Authorization: 'Bearer jwt-token' },
+      credentials: 'include',
       body: { userFeedback: 'Beschreibe den Praxisbezug genauer.' },
     })
     expect($fetch).toHaveBeenNthCalledWith(2, '/api/competency/outputs/6/accept', {
       method: 'POST',
-      headers: { Authorization: 'Bearer jwt-token' },
+      credentials: 'include',
     })
     expect($fetch).toHaveBeenNthCalledWith(3, '/api/competency/proofs/9', {
       method: 'DELETE',
-      headers: { Authorization: 'Bearer jwt-token' },
+      credentials: 'include',
     })
   })
 

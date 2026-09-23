@@ -62,14 +62,14 @@ export function useProofs() {
   const error = ref<string | null>(null)
 
   async function load(): Promise<void> {
-    if (!auth.token.value) {
+    if (!auth.isAuthenticated.value) {
       error.value = 'Deine Sitzung ist nicht mehr gültig. Bitte melde dich erneut an.'
       return
     }
 
     isLoading.value = true
     error.value = null
-    const options = { headers: { Authorization: `Bearer ${auth.token.value}` } }
+    const options = { credentials: 'include' as const }
     try {
       const [proofsResponse, curriculumResponse] = await Promise.all([
         $fetch<ProofsResponse>(`${config.public.apiBase}/competency/proofs`, options),

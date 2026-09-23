@@ -1,4 +1,5 @@
 import express, { type Express, type NextFunction, type Request, type Response } from 'express';
+import cookieParser from 'cookie-parser';
 import { ZodError } from 'zod';
 
 import type { AppConfig } from './config.js';
@@ -28,6 +29,7 @@ export function createApp(
   const app = express();
 
   app.use(express.json());
+  app.use(cookieParser());
 
   // Health-Check (für Traefik / Monitoring)
   app.get('/api/health', (_req: Request, res: Response) => {

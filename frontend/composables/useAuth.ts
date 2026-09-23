@@ -5,41 +5,10 @@ import type {
   AuthUser,
   LoginInput,
   LoginResponse,
+  MeResponse,
   RegisterInput,
   RegisterResponse,
-  StoredAuthSession,
 } from '../types/auth'
-
-const SESSION_KEY = 'kompcards.auth'
-
-function readStoredSession(): StoredAuthSession | null {
-  if (!import.meta.client) return null
-
-  const value = sessionStorage.getItem(SESSION_KEY)
-  if (!value) return null
-
-  try {
-    const session = JSON.parse(value) as Partial<StoredAuthSession>
-    const hasUser = typeof session.user === 'object'
-      && session.user !== null
-      && typeof session.user.id === 'string'
-      && typeof session.user.name === 'string'
-      && typeof session.user.email === 'string'
-
-    if (typeof session.token !== 'string' || typeof session.expiresAt !== 'number' || !hasUser) {
-      sessionStorage.removeItem(SESSION_KEY)
-      return null
-    }
-    if (session.expiresAt <= Date.now()) {
-      sessionStorage.removeItem(SESSION_KEY)
-      return null
-    }
-    return session as StoredAuthSession
-  } catch {
-    sessionStorage.removeItem(SESSION_KEY)
-    return null
-  }
-}
 
 function apiErrorMessage(error: unknown): string {
   if (typeof error === 'object' && error !== null && 'data' in error) {
@@ -54,35 +23,30 @@ function apiErrorMessage(error: unknown): string {
 
 export function useAuth() {
   const config = useRuntimeConfig()
-  const token = useState<string | null>('auth.token', () => null)
   const user = useState<AuthUser | null>('auth.user', () => null)
   const expiresAt = useState<number | null>('auth.expiresAt', () => null)
+  const initialized = useState('auth.initialized', () => false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  if (token.value && (!expiresAt.value || expiresAt.value <= Date.now())) clearSession()
-
-  if (!token.value) {
-    const storedSession = readStoredSession()
-    if (storedSession) {
-      token.value = storedSession.token
-      user.value = storedSession.user
-      expiresAt.value = storedSession.expiresAt
-    }
-  }
-
-  function persistSession(session: StoredAuthSession): void {
-    token.value = session.token
-    user.value = session.user
-    expiresAt.value = session.expiresAt
-    if (import.meta.client) sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
-  }
-
   function clearSession(): void {
-    token.value = null
     user.value = null
     expiresAt.value = null
-    if (import.meta.client) sessionStorage.removeItem(SESSION_KEY)
+  }
+
+  async function restoreSession(force = false): Promise<void> {
+    if (initialized.value && !force) return
+    try {
+      const response = await $fetch<MeResponse>(`${config.public.apiBase}/auth/me`, {
+        credentials: 'include',
+      })
+      user.value = response.user
+      expiresAt.value = response.expiresAt
+    } catch {
+      clearSession()
+    } finally {
+      initialized.value = true
+    }
   }
 
   async function login(input: LoginInput): Promise<void> {
@@ -92,12 +56,11 @@ export function useAuth() {
       const response = await $fetch<LoginResponse>(`${config.public.apiBase}/auth/login`, {
         method: 'POST',
         body: input,
+        credentials: 'include',
       })
-      persistSession({
-        token: response.token,
-        user: response.user,
-        expiresAt: Date.now() + response.expiresInSeconds * 1000,
-      })
+      user.value = response.user
+      expiresAt.value = Date.now() + response.expiresInSeconds * 1000
+      initialized.value = true
     } catch (requestError) {
       error.value = apiErrorMessage(requestError)
       throw requestError
@@ -123,16 +86,13 @@ export function useAuth() {
   }
 
   async function logout(): Promise<void> {
-    const currentToken = token.value
     isLoading.value = true
     error.value = null
     try {
-      if (currentToken) {
-        await $fetch<void>(`${config.public.apiBase}/auth/logout`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${currentToken}` },
-        })
-      }
+      await $fetch<void>(`${config.public.apiBase}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      })
     } catch (requestError) {
       error.value = apiErrorMessage(requestError)
     } finally {
@@ -142,12 +102,13 @@ export function useAuth() {
   }
 
   return {
-    token,
     user,
     expiresAt,
+    initialized,
     isLoading,
     error,
-    isAuthenticated: computed(() => Boolean(token.value && expiresAt.value && expiresAt.value > Date.now())),
+    isAuthenticated: computed(() => Boolean(user.value && expiresAt.value && expiresAt.value > Date.now())),
+    restoreSession,
     login,
     register,
     logout,

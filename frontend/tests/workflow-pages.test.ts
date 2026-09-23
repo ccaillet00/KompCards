@@ -64,14 +64,19 @@ vi.mock('../composables/useCompetencyWorkflow', async () => {
   }
 })
 
+vi.mock('../composables/useAuth', async () => {
+  const { ref } = await import('vue')
+  return {
+    useAuth: () => ({
+      isAuthenticated: ref(true),
+      restoreSession: vi.fn().mockResolvedValue(undefined),
+    }),
+  }
+})
+
 describe('Kompetenzauswahl und Dokumentation', () => {
   beforeEach(() => {
     fixture.saving = false
-    sessionStorage.setItem('kompcards.auth', JSON.stringify({
-      token: 'jwt-token',
-      expiresAt: Date.now() + 60_000,
-      user: { id: 'user-1', name: 'Ada', email: 'ada@example.ch' },
-    }))
     fixture.loadCurricula.mockReset()
     fixture.createProof.mockReset().mockResolvedValue({ id: 9 })
     fixture.loadProof.mockReset().mockResolvedValue(undefined)
