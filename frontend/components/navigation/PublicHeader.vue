@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { useRuntimeConfig } from '#imports'
 import BrandLogo from '../brand/BrandLogo.vue'
 import UiButton from '../ui/UiButton.vue'
 import UiIcon from '../ui/UiIcon.vue'
+
+const config = useRuntimeConfig()
 </script>
 
 <template>
@@ -26,7 +29,7 @@ import UiIcon from '../ui/UiIcon.vue'
         >Für Studierende</a>
       </nav>
       <UiButton
-        to="/login"
+        :to="`${config.public.serviceUrl}/login`"
         size="sm"
       >
         <UiIcon

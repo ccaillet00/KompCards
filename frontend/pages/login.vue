@@ -5,7 +5,7 @@ import { useAuth } from '../composables/useAuth'
 import AuthLoginForm from '../components/auth/AuthLoginForm.vue'
 import AuthRegisterForm from '../components/auth/AuthRegisterForm.vue'
 
-definePageMeta({ layout: 'auth' })
+definePageMeta({ layout: 'auth', middleware: 'service-only' })
 
 const auth = useAuth()
 const showForm = ref(true)

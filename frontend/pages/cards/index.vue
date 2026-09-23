@@ -8,7 +8,7 @@ import { useProofs } from '../../composables/useProofs'
 import type { ProofStatus } from '../../types/proof'
 import { proofStatuses } from '../../utils/proofStatus'
 
-definePageMeta({ middleware: 'auth' })
+definePageMeta({ middleware: ['service-only', 'auth'] })
 useSeoMeta({ title: 'Meine Karten – KompCards' })
 
 const PAGE_SIZE = 10

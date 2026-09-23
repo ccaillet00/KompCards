@@ -80,6 +80,12 @@ Kurze Architektur-Entscheidungsrekorde (ADR) aus dem Requirements-Review. Status
 - **Entscheidung:** Keine Schemaänderung. `competency_input_id` grenzt die zusammengehörenden Outputs ab; `predecessor` bestimmt die Reihenfolge vom Ursprung zur Revision. Ungültige oder zyklische Verweise werden im Frontend stabil über `created_at` und `id` aufgefangen. `is_saved = true` kennzeichnet den bestätigten Output. Die Bestätigung setzt innerhalb derselben Eingabe zunächst alle Markierungen auf `false` und danach die gewählte auf `true` (Transaktion). Eine Auswahl darf vorerst auch im Kartenstatus `saved` geändert werden.
 - **Konsequenz:** Voransicht und Persistenz sind getrennt. Ein Reload öffnet die gespeicherte Auswahl, andernfalls die neueste Revision. Ältere Revisionen dürfen ausgewählt, aber nicht als Ausgangspunkt eines neuen Retries verwendet werden; die bestehende lineare Neuerstellungslogik bleibt unverändert.
 
+## ADR-013: Host-basierte Trennung von Public- und SaaS-Frontend
+
+- **Kontext:** Landingpage und eingeloggte SaaS-Oberfläche sollen unter getrennten Subdomains erreichbar sein, ohne Frontend-Code zu duplizieren.
+- **Entscheidung:** Beide Deployments verwenden dieselbe Nuxt-Codebasis mit unterschiedlichen `NUXT_PUBLIC_APP_MODE`-Werten. `kompcards.ccdevlab.ch` dient dem Public-Frontend, `service.kompcards.ccdevlab.ch` dem SaaS-Frontend. Die API bleibt unter `/api` same-origin auf dem Service-Host.
+- **Konsequenz:** Traefik routet host-basiert zu zwei Frontend-Services; Service- und Public-Middleware verhindern falsche Host-/Modus-Zugriffe. Der Auth-Cookie bleibt host-only auf dem Service-Host.
+
 ## Offene Entscheidungen
 
 Keine — alle Kernpunkte geschlossen:

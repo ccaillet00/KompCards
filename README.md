@@ -163,11 +163,12 @@ Schematische Skizze des Karteneditors:
 
 ## 5. Architektur
 
-3-Tier — **Frontend / Backend / MySQL** — mit **Traefik** als einziger externer Kante (path-basiertes Routing, same-origin ⇒ kein CORS):
+3-Tier — **Frontend / Backend / MySQL** — mit **Traefik** als einziger externer Kante (host-basiertes Routing, same-origin auf dem SaaS-Host ⇒ kein CORS):
 
 ```
-User ──> Traefik ──┬── /     ──> Frontend (Nuxt)
-                   └── /api  ──> Backend (Express on Bun) ──> MySQL (intern)
+User ──> Traefik ──┬── kompcards.ccdevlab.ch         ──> Public Frontend (Nuxt)
+                   ├── service.kompcards.ccdevlab.ch ──> SaaS Frontend (Nuxt)
+                   └── service.kompcards.ccdevlab.ch/api ──> Backend (Express on Bun) ──> MySQL (intern)
 ```
 
 - **Frontend:** Nuxt 4.5.1, Tailwind, daisyUI, Iconify

@@ -60,5 +60,7 @@ LLM_MODEL=...
 PORT=4000
 
 # Frontend
-NUXT_API_BASE=/api      # same-origin; Traefik leitet /api an Backend weiter
+NUXT_PUBLIC_API_BASE=/api       # same-origin auf service.kompcards.ccdevlab.ch
+NUXT_PUBLIC_APP_MODE=public     # public oder service
+NUXT_PUBLIC_SERVICE_URL=...     # Zielhost für Login/Registrierung von der Landingpage
 ```

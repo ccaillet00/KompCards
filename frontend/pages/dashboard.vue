@@ -9,7 +9,7 @@ import UiSurfaceCard from '../components/ui/UiSurfaceCard.vue'
 import { useProofs } from '../composables/useProofs'
 import { formatProofDate } from '../utils/proofStatus'
 
-definePageMeta({ middleware: 'auth' })
+definePageMeta({ middleware: ['service-only', 'auth'] })
 useSeoMeta({ title: 'Dashboard – KompCards' })
 
 const TARGET_COUNT = 45

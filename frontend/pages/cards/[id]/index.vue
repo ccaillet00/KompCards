@@ -10,7 +10,7 @@ import WorkflowSteps from '../../../components/workflow/WorkflowSteps.vue'
 import { useCompetencyWorkflow } from '../../../composables/useCompetencyWorkflow'
 import type { CompetencyInputPayload } from '../../../types/proof'
 
-definePageMeta({ middleware: 'auth' })
+definePageMeta({ middleware: ['service-only', 'auth'] })
 useSeoMeta({ title: 'Arbeit dokumentieren – KompCards' })
 
 const route = useRoute()

@@ -25,7 +25,8 @@ Web-App für HF-Studierende: Kompetenzkarten strukturiert erfassen; ein LLM erze
   - `backend/` — Express on Bun (eigene `package.json`)
 - `docs/design/` — verbindliche Designgrundlage + Mockup-Referenzen
 - `frontend/public/` — produktive Logo- und Bildassets
-- `traefik/` + `docker-compose.yml` — Reverse Proxy & Container
+- `docker-compose.yml` — Backend-, Frontend- & DB-Container. Traefik läuft **ausserhalb** des Repos (externes Netzwerk `proxy`, Routing via Labels); kein `traefik/`-Ordner im Repo
+- `backend/drizzle/` — Drizzle-Migrationen (Schema wird beim Backend-Start gepusht, nicht aus SQL-Dateien)
 - `.github/workflows/` **und** `.gitlab-ci.yml` — CI (beide pflegen!)
 
 ## Stack
@@ -38,9 +39,9 @@ Web-App für HF-Studierende: Kompetenzkarten strukturiert erfassen; ein LLM erze
 3. **Datenmodell ist fix:** den dokumentierten und implementierten Schema-Stand **1:1** erhalten — inkl. Typos (`note_improvment`) und Namen (`userTable`, `userSession`). `status` **nur 1–6**, `quality` **1–4**. Nicht „korrigieren"; siehe Schema-Hinweis oben.
 4. **LLM:** extern, Client **hinter Interface**, in Tests **gemockt** (nie echter LLM-Call). Config nur via Env (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`). `quality`/`overlap_curriculum` = LLM-seitig.
 5. **Auth:** Single JWT + serverseitige Session (Hash in `userSession.token_hash`, Expiry/Revocation serverseitig). Hashing: **bcryptjs**, nicht natives `bcrypt`.
-6. **Routing:** Traefik, path-basiert (`/` → Frontend, `/api` → Backend). DB intern, nicht exponieren.
+6. **Routing:** Traefik (läuft extern, Routing via Labels im Compose), host-basiert (`kompcards.ccdevlab.ch` → Public-Frontend, `service.kompcards.ccdevlab.ch` → SaaS-Frontend und `/api` → Backend). DB intern; Compose-Mapping `3306:3306` nur für lokale Entwicklung, in Produktion entfernen.
 7. **Nur TypeScript** im Backend.
-8. **Nicht auf GitHub pushen** — der Nutzer pusht.
+8. **Nicht pushen und nicht committen** — der Nutzer committet und pusht.
 
 ## Verbindliche Designregeln
 
@@ -57,8 +58,8 @@ Web-App für HF-Studierende: Kompetenzkarten strukturiert erfassen; ein LLM erze
 
 ## Kommandos (je Tier; Scripts in `package.json`)
 - `frontend/`: `bun run dev` · `bun run lint` · `bun run test` · `bun run typecheck` · `bun run build`
-- `backend/`: dito
-- Gesamtsystem: `docker compose up` (Traefik + Frontend + Backend + DB)
+- `backend/`: dito, zusätzlich `bun run db:generate` / `db:push` / `db:studio` (Drizzle)
+- Gesamtsystem: `docker compose up` (Frontend + Backend + DB; Traefik extern)
 
 ## Konventionen
 - DB-Objekt-/Spaltennamen **exakt** wie im dokumentierten und implementierten Schema; siehe Schema-Hinweis oben.

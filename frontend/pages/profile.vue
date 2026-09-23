@@ -6,7 +6,7 @@ import UiIcon from '../components/ui/UiIcon.vue'
 import UiSurfaceCard from '../components/ui/UiSurfaceCard.vue'
 import { useAuth } from '../composables/useAuth'
 
-definePageMeta({ middleware: 'auth' })
+definePageMeta({ middleware: ['service-only', 'auth'] })
 useSeoMeta({ title: 'Profil – KompCards' })
 
 const router = useRouter()
