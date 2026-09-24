@@ -28,7 +28,7 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
       name: 'kompcards-llm',
     });
   }
-
+  
   async generateCompetencyOutput(request: LlmRequest): Promise<LlmResult> {
     const { object } = await generateObject({
       model: this.provider(this.config.llmModel),
@@ -36,6 +36,7 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
       system: SYSTEM_PROMPT,
       prompt: buildPrompt(request),
       temperature: 0.1,
+      mode: 'json',
       maxTokens: 800,
     });
 
