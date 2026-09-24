@@ -98,14 +98,14 @@ Diese Entscheidung wurde durch ADR-014 ersetzt. `userTable` und `userSession` bl
 - **Erweiterungen:** Passwort-Reset ist hinter einer Mail-Schnittstelle vorbereitet, bleibt ohne Provider unsichtbar. GitHub, E-Mail-Verifizierung und Passkeys folgen separat und müssen dieselbe `auth_user.id` weiterverwenden.
 - **Betrieb:** Migrationen laufen explizit vor dem Backend-Start. Die lokale Entwicklung beginnt mit einer leeren Datenbank.
 
-## ADR-014: Prägnante, evidenzbasierte Kompetenzformulierungen
+## ADR-015: Prägnante, evidenzbasierte Kompetenzformulierungen
 
 - **Kontext:** Der bisherige Systemprompt trennt Vorgehen, Zweck und erreichtes Ergebnis zu wenig. Die Eingaben sollen stichwortartig bleiben und für alle HF-Studiengänge geeignet sein.
 - **Entscheidung:** `work_result` verwendet Ich-Form und Perfekt in 1–2 Sätzen mit höchstens 60 Wörtern. `quality_statement` beschreibt ein berichtetes Ergebnis in genau einem Satz mit höchstens 30 Wörtern; ohne Ergebnisnachweis benennt es die fehlende Information. Dies präzisiert die bisherige Längenregel aus ADR-011. Keine erfundenen Methoden, Messwerte, Abnahmen oder Erfolge; Widersprüche werden zur Klärung benannt.
 - **Bewertung:** `quality` bleibt eine Bewertung der Aussagekraft der Eingabe (1–4), keine Leistungsnote. Stufe 1: keine Handlung oder wesentlicher Widerspruch; 2: Handlung, aber Methode oder Zweck unklar; 3: Handlung, Methode und Zweck nachvollziehbar; 4: zusätzlich überprüfbares Ergebnis. Stichwortstil wird nicht abgewertet, negative Ergebnisse können Stufe 4 erfüllen.
 - **Konsequenz:** Schema und Feldnamen bleiben unverändert. Ohne Kompetenzbeschreibung wird `overlap_curriculum = false` mit einem Hinweis auf die fehlende Beurteilbarkeit ausgegeben; das bestehende Boolean unterscheidet unbekannten und fehlenden Bezug nicht. Prompt-Vertragstests sichern die Anweisungen; die tatsächliche Modelltreue muss separat evaluiert werden.
 
-## ADR-015: Separater, providerunabhängiger Eval-Runner
+## ADR-016: Separater, providerunabhängiger Eval-Runner
 
 - **Kontext:** Prompt- und Modelländerungen sollen mit demselben synthetischen Kompetenzkarten-Set auf vLLM und Online-Modellen vergleichbar werden.
 - **Entscheidung:** Ein explizit gestarteter TypeScript-CLI-Runner unter `backend/src/eval/` nutzt den aktuellen Systemprompt und `buildPrompt()`, ein gemeinsames Transport-Schema und die bestehende lokale Zod-Validierung. Provideradapter für vLLM/OpenAI-kompatible Chat-Completions und Anthropic Messages verwenden ein in Tests gemocktes Transport-Interface. Standard ist ein Dry-run; reale Aufrufe erfolgen nur mit `--run`, sequenziell und ohne Retry oder Reparatur.
