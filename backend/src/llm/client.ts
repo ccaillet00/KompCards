@@ -35,6 +35,8 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
       schema: llmOutputSchema,
       system: SYSTEM_PROMPT,
       prompt: buildPrompt(request),
+      temperature: 0.1,
+      maxTokens: 800,
     });
 
     return {
