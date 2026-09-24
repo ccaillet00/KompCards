@@ -1,11 +1,13 @@
 import { drizzle, type MySql2Database } from 'drizzle-orm/mysql2';
 import { migrate } from 'drizzle-orm/mysql2/migrator';
+import { rm } from 'node:fs/promises';
 import mysql from 'mysql2/promise';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type { AppConfig } from '../config.js';
 import * as schema from './schema.js';
+import { createMigrationPhaseFolder } from './migrationPhases.js';
 
 export type Database = MySql2Database<typeof schema>;
 
@@ -53,15 +55,20 @@ export function initDb(config: AppConfig): Database {
  * Das DB-Schema wird ausschließlich aus dem Drizzle-Schema erzeugt — nicht aus
  * SQL-Dateien. `migrate()` ist idempotent: Bereits angewendete Migrationen
  * werden in der Tabelle `__drizzle_migrations` nachgehalten und übersprungen.
- * Auf einer frischen DB erzeugt der Aufruf das komplette Schema; auf einer
- * bestehenden DB passiert nichts.
+ * Dieser Aufruf erfolgt ausschließlich über die expliziten phasenbezogenen
+ * Migrationsscripts, nie beim normalen Anwendungsstart.
  */
-export async function migrateDb(): Promise<void> {
+export async function migrateDb(throughIndex: number): Promise<void> {
   const database = getDb();
   // Migrationsordner relativ zu diesem Modul (src/db → ../../drizzle).
   const currentDir = path.dirname(fileURLToPath(import.meta.url));
   const migrationsFolder = path.join(currentDir, '..', '..', 'drizzle');
-  await migrate(database, { migrationsFolder });
+  const phaseFolder = await createMigrationPhaseFolder(migrationsFolder, throughIndex);
+  try {
+    await migrate(database, { migrationsFolder: phaseFolder });
+  } finally {
+    await rm(phaseFolder, { recursive: true, force: true });
+  }
 }
 
 /** Injiziert einen DB-Client (für Tests). */

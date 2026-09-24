@@ -175,7 +175,7 @@ User ──> Traefik ──┬── kompcards.ccdevlab.ch         ──> Publi
 - **Backend:** Bun, Express, ausschließlich TypeScript, zod, Drizzle ORM, Vercel AI SDK, bcryptjs, pino
 - **DB:** MySQL (utf8mb4); Schema fix, Single Source of Truth via `docs/ARCHITECTURE.md` bzw. Drizzle-Schema
 - **Schichten:** dünner Handler (zod-Validierung + Response) → Service (Business Logic + Drizzle-Queries) → DB. **Kein** DB-Zugriff im Handler.
-- **Auth:** Single JWT + serverseitige Session (Hash in `userSession.token_hash`, Expiry/Revocation serverseitig).
+- **Auth:** Better Auth 1.7.5 mit E-Mail/Passwort, 12-Stunden-DB-Sessions und Admin-Plugin. Für die lokale Entwicklung wird eine leere Datenbank verwendet.
 
 ## 6. Repo-Layout
 
@@ -201,7 +201,8 @@ Voraussetzungen: **Docker** + **docker compose**, **Bun**.
 # Umgebungsvariablen anlegen
 cp .env.example .env
 
-# Gesamtsystem starten (Traefik + Backend + DB)
+# Nach dem lokalen Schema-Setup gemäß docs/AUTH_LOCAL_SETUP.md:
+# Gesamtsystem starten
 docker compose up --build
 ```
 
@@ -209,7 +210,8 @@ Umgebungsvariablen (`.env`, Details in `docs/TECH_STACK.md`):
 
 | Variable | Bedeutung |
 |---|---|
-| `JWT_SECRET` | JWT-Signierung (langer zufälliger String) |
+| `BETTER_AUTH_SECRET` | Better-Auth-Signatursecret (mindestens 32 zufällige Zeichen) |
+| `BETTER_AUTH_URL` | Öffentliche Origin des SaaS-Frontends |
 | `LLM_BASE_URL` | externer LLM-Endpoint |
 | `LLM_API_KEY` | LLM-API-Key |
 | `LLM_MODEL` | LLM-Modell |

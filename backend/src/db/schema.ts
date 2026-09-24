@@ -8,6 +8,7 @@ import {
   text,
   varchar,
 } from 'drizzle-orm/mysql-core';
+import { authUser } from './authSchema.js';
 
 /**
  * Drizzle-Schema — **1:1** aus `SQL/create_tables.sql` (Single Source of Truth).
@@ -67,8 +68,8 @@ export const competencyProof = mysqlTable(
   {
     /** Unique indentifier for each record */
     id: int('id', { unsigned: true }).autoincrement().primaryKey(),
-    /** FK -> userTable.id (CASCADE) */
-    userId: varchar('user_id', { length: 36 }).notNull().references(() => userTable.id, {
+    /** FK -> auth_user.id (CASCADE); bestehende UUID-Werte bleiben unverändert. */
+    userId: varchar('user_id', { length: 36 }).notNull().references(() => authUser.id, {
       onDelete: 'cascade',
     }),
     /** FK -> competencies.id (NO ACTION) */
@@ -208,8 +209,8 @@ export const userTable = mysqlTable('userTable', {
 });
 
 /**
- * userSession — Session / JWT-Hash (UUID).
- * Ein JWT pro Login; Expiry + Revocation serverseitig (ADR-002).
+ * userSession — Legacy-Session / JWT-Hash (UUID).
+ * Bleibt für Rollback und Nachvollziehbarkeit bestehen, wird nach ADR-014 aber nicht mehr verwendet.
  */
 export const userSession = mysqlTable('userSession', {
   /** Unique indentifier for each record (UUID) */
@@ -241,3 +242,5 @@ export type CompetencyInput = typeof competencyInput.$inferSelect;
 export type CompetencyLlmOutput = typeof competencyLlmOutput.$inferSelect;
 export type User = typeof userTable.$inferSelect;
 export type UserSession = typeof userSession.$inferSelect;
+
+export * from './authSchema.js';

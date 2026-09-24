@@ -8,10 +8,12 @@ Kurze Architektur-Entscheidungsrekorde (ADR) aus dem Requirements-Review. Status
 - **Entscheidung:** **1 Repository, 2 Verzeichnisse** `frontend/` + `backend/`, je eigene `package.json`, root `docker-compose.yml`. **Kein** Shared-Workspace (kein pnpm-workspace/turbo).
 - **Konsequenz:** Eigenständige Builds/Installs pro Tier; CI muss beide Verzeichnisse abdecken.
 
-## ADR-002: Auth — Single JWT + serverseitige Session
+## ADR-002: Auth — Single JWT + serverseitige Session (ersetzt)
 - **Kontext:** Fixe Tabelle `userSession` (`token_hash`, `expires_at`, `revoked_at`); Anforderungen ohne Token-Strategie.
 - **Entscheidung:** **Ein JWT pro Login**; Hash in `userSession.token_hash`; Expiry + Revocation **serverseitig** geprüft.
 - **Konsequenz:** Stateful-Prüfung pro Request (Lookup auf `token_hash`); Revocation möglich. Kein Refresh-Token (würde das Schema verletzen).
+
+Diese Entscheidung wurde durch ADR-014 ersetzt. `userTable` und `userSession` bleiben als Legacy-Struktur bestehen.
 
 ## ADR-003: Test-Framework
 - **Kontext:** „Strikt TDD" + „Tests in CI", aber kein Framework benannt.
@@ -57,7 +59,7 @@ Kurze Architektur-Entscheidungsrekorde (ADR) aus dem Requirements-Review. Status
   - **Validierung:** Spaltennamen, Pflichtwerte und numerische IDs werden vor dem Import geprüft (400 bei Fehlern). BOM wird entfernt.
   - **FK-Schutz:** 409 Conflict, falls `competency_proof`-Zeilen existieren (NO ACTION-FK würde sonst verletzt).
   - **ID-Mapping:** CSV-IDs → neue AUTO_INCREMENT-IDs (in-memory Map), da die DB-IDs neu generiert werden.
-  - **Auth:** Bestehendes `requireAuth` + `requireUser` (kein separates Admin-Role, da kein Role-System vorhanden).
+  - **Auth:** Better-Auth-Session plus explizite Admin-Rolle (`requireAuth` + `requireUser` + `requireAdmin`).
   - **Bibliotheken:** `csv-parse/sync` (synchrones CSV-Parsing), `multer` (multipart-Upload, memory storage, 5 MB Limit pro Datei).
   - **Response:** `200 { imported: { curriculum: n, areas: n, competencies: n } }`.
 - **Konsequenz:**
@@ -85,6 +87,16 @@ Kurze Architektur-Entscheidungsrekorde (ADR) aus dem Requirements-Review. Status
 - **Kontext:** Landingpage und eingeloggte SaaS-Oberfläche sollen unter getrennten Subdomains erreichbar sein, ohne Frontend-Code zu duplizieren.
 - **Entscheidung:** Beide Deployments verwenden dieselbe Nuxt-Codebasis mit unterschiedlichen `NUXT_PUBLIC_APP_MODE`-Werten. `kompcards.ccdevlab.ch` dient dem Public-Frontend, `service.kompcards.ccdevlab.ch` dem SaaS-Frontend. Die API bleibt unter `/api` same-origin auf dem Service-Host.
 - **Konsequenz:** Traefik routet host-basiert zu zwei Frontend-Services; Service- und Public-Middleware verhindern falsche Host-/Modus-Zugriffe. Der Auth-Cookie bleibt host-only auf dem Service-Host.
+
+## ADR-014: Better Auth mit stabiler KompCards-Identität
+
+- **Kontext:** Die MVP-Authentifizierung aus `userTable`, JWT und `userSession` wird für den produktiven Betrieb durch eine erweiterbare Auth-Lösung ersetzt. Bestehende Kompetenzkarten müssen unverändert ihren Eigentümern zugeordnet bleiben.
+- **Entscheidung:** Better Auth **1.7.5** mit Drizzle/MySQL, E-Mail/Passwort, DB-Sessions und Admin-Plugin. Neue Tabellen laufen parallel: `auth_user`, `auth_account`, `auth_session`, `auth_verification`. Bestehende UUIDs werden 1:1 nach `auth_user.id` und `auth_account.user_id` übernommen; der Credential-Account verwendet in dieser Version `provider_id = credential` und `account_id = auth_user.id`. Das fachliche Identitätsfeld bleibt `auth_user.id`; `account_id` ist kein KompCards-Vertrag. `competency_proof.user_id` wird nicht verändert, nur sein FK-Ziel wechselt auf `auth_user.id` mit `ON DELETE CASCADE`.
+- **Sessions:** 12 Stunden, DB-basiert, kein Cookie-Cache und keine Übernahme alter JWT-Sessions. Nach dem Cutover werden JWTs nicht mehr akzeptiert.
+- **Passwörter:** Bestehende bcryptjs-Hashes mit Kostenfaktor 10 bleiben gültig. Ein späterer Hashwechsel ist eine eigene Migration.
+- **Admin:** Erste Administratoren werden ausschließlich über explizite UUIDs beim Benutzerimport festgelegt. Curriculum-Import benötigt `admin`. Admins erhalten keinen impliziten Zugriff auf fremde Kompetenzkarten. Löschen und Impersonation sind deaktiviert.
+- **Erweiterungen:** Passwort-Reset ist hinter einer Mail-Schnittstelle vorbereitet, bleibt ohne Provider unsichtbar. GitHub, E-Mail-Verifizierung und Passkeys folgen separat und müssen dieselbe `auth_user.id` weiterverwenden.
+- **Betrieb:** Migrationen laufen explizit vor dem Backend-Start. Die lokale Entwicklung beginnt mit einer leeren Datenbank.
 
 ## Offene Entscheidungen
 

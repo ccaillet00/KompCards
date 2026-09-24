@@ -72,6 +72,7 @@ Regeln:
 ## 8. Konventionen
 
 - **Namen:** DB-Objekte exakt wie im SQL (inkl. `note_improvment`, `userTable`, `userSession`).
+- **Auth-Setup:** Lokale Datenbanken werden gemäß [`AUTH_LOCAL_SETUP.md`](./AUTH_LOCAL_SETUP.md) leer aufgebaut. Der normale Backend-Start verändert das DB-Schema nicht.
 - **Domänen-Wissen:** Spalten-/Status-Bedeutungen im TS-Schema via `.$comment()`/JSDoc dokumentieren.
 - **Frontend-Design:** Verbindliche Tokens, Assets, Komponenten- und Bildregeln stehen in [`design/DESIGN.md`](./design/DESIGN.md). Mockups unter `design/references/` sind nur visuelle Referenzen und keine Runtime-Assets.
 - [Annahme] API = REST/JSON; `/api`-Proxy im Frontend.

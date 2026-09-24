@@ -1,6 +1,6 @@
 /**
  * Zentrale Konfiguration — ausschließlich via Env (siehe docs/TECH_STACK.md).
- * Kein Hardcoding von DB-, JWT- oder LLM-Werten.
+ * Kein Hardcoding von DB-, Auth- oder LLM-Werten.
  */
 
 export interface AppConfig {
@@ -9,10 +9,10 @@ export interface AppConfig {
   nodeEnv: 'development' | 'test' | 'production';
   /** MySQL-Verbindungsstring, z. B. `mysql://user:pass@db:3306/kompcards_db`. */
   databaseUrl: string;
-  /** Secret für die JWT-Signatur. */
-  jwtSecret: string;
-  /** Gültigkeitsdauer eines JWT in Sekunden (serverseitige Session). */
-  jwtTtlSeconds: number;
+  /** Signatur-Secret für Better Auth. */
+  betterAuthSecret: string;
+  /** Öffentliche Origin des SaaS-Frontends, z. B. https://service.example.ch. */
+  betterAuthUrl: string;
   /** Basis-URL des externen LLM (OpenAI-kompatible API). */
   llmBaseUrl: string;
   /** API-Key des externen LLM. */
@@ -28,7 +28,8 @@ export interface AppConfig {
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const required: Record<string, string | undefined> = {
     DATABASE_URL: env.DATABASE_URL,
-    JWT_SECRET: env.JWT_SECRET,
+    BETTER_AUTH_SECRET: env.BETTER_AUTH_SECRET,
+    BETTER_AUTH_URL: env.BETTER_AUTH_URL,
     LLM_BASE_URL: env.LLM_BASE_URL,
     LLM_API_KEY: env.LLM_API_KEY,
     LLM_MODEL: env.LLM_MODEL,
@@ -42,6 +43,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new Error(`Fehlende Umgebungsvariablen: ${missing.join(', ')}`);
   }
 
+  if ((required.BETTER_AUTH_SECRET as string).length < 32) {
+    throw new Error('BETTER_AUTH_SECRET muss mindestens 32 Zeichen lang sein');
+  }
+
   const nodeEnvRaw = env.NODE_ENV ?? 'development';
   const nodeEnv =
     nodeEnvRaw === 'production' || nodeEnvRaw === 'test' ? nodeEnvRaw : 'development';
@@ -50,10 +55,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     port: env.PORT ? Number.parseInt(env.PORT, 10) : 4000,
     nodeEnv,
     databaseUrl: required.DATABASE_URL as string,
-    jwtSecret: required.JWT_SECRET as string,
-    jwtTtlSeconds: env.JWT_TTL_SECONDS
-      ? Number.parseInt(env.JWT_TTL_SECONDS, 10)
-      : 43200,
+    betterAuthSecret: required.BETTER_AUTH_SECRET as string,
+    betterAuthUrl: required.BETTER_AUTH_URL as string,
     llmBaseUrl: required.LLM_BASE_URL as string,
     llmApiKey: required.LLM_API_KEY as string,
     llmModel: required.LLM_MODEL as string,

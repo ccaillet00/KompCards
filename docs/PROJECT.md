@@ -65,7 +65,7 @@ Maschinelle Auswertung/Ausformulierung des Arbeitsergebnisses:
 ## 3. Anforderungen
 
 ### Funktionale (Vorgabe)
-- Nutzer können sich registrieren und authentifizieren (JWT + serverseitige Session).
+- Nutzer können sich mit E-Mail und Passwort über Better Auth registrieren und authentifizieren (DB-Session mit HttpOnly-Cookie).
 - Nutzer können eine Kompetenzkarte für eine Kompetenz anlegen (Status: `draft`).
 - Nutzer können strukturierte Eingaben (what/how/why/…) zu einer Karte erfassen.
 - Das System löst die LLM-Prüfung aus (Status-Transition `llm_check` → `llm_check_finished`/`llm_check_failed`).
@@ -73,7 +73,7 @@ Maschinelle Auswertung/Ausformulierung des Arbeitsergebnisses:
 - Nutzer können den Output akzeptieren (`is_saved`) oder mit Feedback neu erzeugen (Revision).
 - Karten können gespeichert (`saved`) oder verworfen (`discarded`) werden.
 - Karten können als **Duplikat einer eigenen Karte** kopiert werden.
-- Referenzdaten (Rahmenlehrplan: curriculum, areas, competencies) können per **CSV-Upload** importiert werden (`POST /api/curriculum/import`, auth-geschützt).
+- Administratoren können Referenzdaten (Rahmenlehrplan: curriculum, areas, competencies) per **CSV-Upload** importieren (`POST /api/curriculum/import`, Admin-Rolle erforderlich).
 
 ### Nicht-funktionale (Vorgabe)
 - 3-Tier-Architektur (Frontend / Backend / DB); **keine** Direkt-DB-Zugriffe im API-Handler.

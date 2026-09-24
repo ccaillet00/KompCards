@@ -7,8 +7,8 @@
 #   service.kompcards.ccdevlab.ch/api → Backend (Express)
 # DB ist intern (nur Backend → DB), nicht öffentlich exponiert.
 #
-# Das DB-Schema wird NICHT aus SQL-Dateien erzeugt, sondern beim Backend-Start
-# über Drizzle-Migrationen gepusht (nur, wenn es noch nicht existiert).
+# DB-Migrationen werden vor dem Backend-Start explizit ausgeführt; der normale
+# Start verändert das Schema nicht (siehe docs/AUTH_MIGRATION.md).
 #
 # Start:  docker compose up --build
 # Hinweis: Frontend-Service ist auskommentiert, bis frontend/ gescaffoldet ist.
@@ -21,8 +21,8 @@ services:
       context: ./backend
     environment:
       DATABASE_URL: mysql://kompcards:kompcards@db:3306/kompcards_db
-      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-string}
-      JWT_TTL_SECONDS: "43200"
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET must be set}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-https://service.kompcards.ccdevlab.ch}
       LLM_BASE_URL: ${LLM_BASE_URL:-http://llm:8000/v1}
       LLM_API_KEY: ${LLM_API_KEY:-change-me}
       LLM_MODEL: ${LLM_MODEL:-your-model}

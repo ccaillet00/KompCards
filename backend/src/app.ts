@@ -1,12 +1,11 @@
 import express, { type Express, type NextFunction, type Request, type Response } from 'express';
-import cookieParser from 'cookie-parser';
+import { toNodeHandler } from 'better-auth/node';
 import { ZodError } from 'zod';
 
 import type { AppConfig } from './config.js';
-import { authRouter } from './routes/auth.js';
+import type { BetterAuthInstance } from './auth/betterAuth.js';
 import { competencyRouter } from './routes/competency.js';
 import { curriculumRouter } from './routes/curriculum.js';
-import type { AuthService } from './services/authService.js';
 import type { CompetencyService } from './services/competencyService.js';
 import type { CurriculumService } from './services/curriculumService.js';
 import { AppError } from './utils/errors.js';
@@ -19,17 +18,18 @@ import { logger } from './utils/logger.js';
  * mit gemockten Services/DB/LLM aufbauen, ohne echte Abhängigkeiten.
  */
 export function createApp(
-  config: AppConfig,
+  _config: AppConfig,
+  auth: BetterAuthInstance,
   services: {
-    auth: AuthService;
     competency: CompetencyService;
     curriculum: CurriculumService;
   },
 ): Express {
   const app = express();
 
+  // Better Auth muss den unverarbeiteten Request-Body vor express.json() erhalten.
+  app.all('/api/auth/*', toNodeHandler(auth));
   app.use(express.json());
-  app.use(cookieParser());
 
   // Health-Check (für Traefik / Monitoring)
   app.get('/api/health', (_req: Request, res: Response) => {
@@ -37,9 +37,8 @@ export function createApp(
   });
 
   // API-Routen (Traefik leitet /api an dieses Backend weiter)
-  app.use('/api/auth', authRouter(config, services.auth));
-  app.use('/api/competency', competencyRouter(config, services.competency));
-  app.use('/api/curriculum', curriculumRouter(config, services.curriculum));
+  app.use('/api/competency', competencyRouter(auth.api, services.competency));
+  app.use('/api/curriculum', curriculumRouter(auth.api, services.curriculum));
 
   // 404 für unbekannte API-Pfade
   app.use((_req: Request, res: Response) => {

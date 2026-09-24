@@ -26,6 +26,7 @@
 | ORM | **Drizzle ORM** | Vorgabe; baut das SQL-Schema nach |
 | Datenbank | **MySQL** | Vorgabe (utf8mb4) |
 | DB-Treiber | **mysql2** | [Annahme] Drizzle-MySQL-Standard |
+| Authentifizierung | **Better Auth 1.7.5** | Drizzle-Adapter für MySQL, E-Mail/Passwort, DB-Sessions und Admin-Plugin |
 | Passwort-Hashing | **bcryptjs** | Vorgabe **abgeändert**: natives `bcrypt` ist unter Bun unzuverlässig → Pure-JS `bcryptjs` (gleiches 60-Char-Format). Siehe ADR-004. |
 | Logging | **pino** | Vorgabe |
 | Linter | **ESLint** | Vorgabe |
@@ -53,7 +54,8 @@
 ```
 # Backend
 DATABASE_URL=mysql://user:pass@db:3306/kompcards_db
-JWT_SECRET=...
+BETTER_AUTH_SECRET=...  # mindestens 32 zufällige Zeichen
+BETTER_AUTH_URL=https://service.kompcards.ccdevlab.ch
 LLM_BASE_URL=...        # externer LLM (aus Scope)
 LLM_API_KEY=...
 LLM_MODEL=...

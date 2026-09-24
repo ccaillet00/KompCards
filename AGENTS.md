@@ -38,7 +38,7 @@ Web-App für HF-Studierende: Kompetenzkarten strukturiert erfassen; ein LLM erze
 2. **Schichten:** dünner Handler (zod-Validierung + Response) → Service (Business Logic **und** Drizzle-Queries) → MySQL. **Kein** DB-Zugriff im Handler. **Keine** Repository-Ebene.
 3. **Datenmodell ist fix:** den dokumentierten und implementierten Schema-Stand **1:1** erhalten — inkl. Typos (`note_improvment`) und Namen (`userTable`, `userSession`). `status` **nur 1–6**, `quality` **1–4**. Nicht „korrigieren"; siehe Schema-Hinweis oben.
 4. **LLM:** extern, Client **hinter Interface**, in Tests **gemockt** (nie echter LLM-Call). Config nur via Env (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`). `quality`/`overlap_curriculum` = LLM-seitig.
-5. **Auth:** Single JWT + serverseitige Session (Hash in `userSession.token_hash`, Expiry/Revocation serverseitig). Hashing: **bcryptjs**, nicht natives `bcrypt`.
+5. **Auth:** Better Auth 1.7.5 mit Drizzle/MySQL, E-Mail/Passwort, 12-Stunden-DB-Sessions und Admin-Plugin. Legacy-Tabellen `userTable`/`userSession` bleiben bestehen, werden aber nicht mehr für Auth verwendet. Hashing: **bcryptjs**, nicht natives `bcrypt`.
 6. **Routing:** Traefik (läuft extern, Routing via Labels im Compose), host-basiert (`kompcards.ccdevlab.ch` → Public-Frontend, `service.kompcards.ccdevlab.ch` → SaaS-Frontend und `/api` → Backend). DB intern; Compose-Mapping `3306:3306` nur für lokale Entwicklung, in Produktion entfernen.
 7. **Nur TypeScript** im Backend.
 8. **Nicht pushen und nicht committen** — der Nutzer committet und pusht.

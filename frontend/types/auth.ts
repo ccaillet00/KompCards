@@ -2,6 +2,8 @@ export interface AuthUser {
   id: string
   name: string
   email: string
+  role?: string | null
+  banned?: boolean | null
 }
 
 export interface LoginInput {
@@ -13,16 +15,6 @@ export interface RegisterInput extends LoginInput {
   name: string
 }
 
-export interface LoginResponse {
-  expiresInSeconds: number
-  user: AuthUser
-}
-
-export interface MeResponse {
-  expiresAt: number
-  user: AuthUser
-}
-
-export interface RegisterResponse {
-  user: AuthUser
+export interface AuthSession {
+  expiresAt: Date | string
 }

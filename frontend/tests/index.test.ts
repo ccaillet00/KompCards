@@ -8,8 +8,8 @@ describe('Landing Page', () => {
 
     expect(wrapper.get('h1').text()).toBe('Kompetenzen sichtbar machen.')
     expect(wrapper.text()).toContain('In wenigen Schritten zur Kompetenzkarte.')
-    expect(wrapper.find('a[href="https://service.kompcards.ccdevlab.ch/register"]').exists()).toBe(true)
-    expect(wrapper.find('a[href="https://service.kompcards.ccdevlab.ch/login"]').exists()).toBe(true)
+    expect(wrapper.find('a[href$="/register"]').exists()).toBe(true)
+    expect(wrapper.find('a[href$="/login"]').exists()).toBe(true)
   })
 
   it('verwendet das Fuchswelt-Asset, aber keine Mockup-Datei', async () => {
