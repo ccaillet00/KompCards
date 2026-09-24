@@ -6,3 +6,4 @@ drizzle/
 .DS_Store
 *.csv
 traefik/
+eval-results/

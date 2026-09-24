@@ -86,6 +86,20 @@ Kurze Architektur-Entscheidungsrekorde (ADR) aus dem Requirements-Review. Status
 - **Entscheidung:** Beide Deployments verwenden dieselbe Nuxt-Codebasis mit unterschiedlichen `NUXT_PUBLIC_APP_MODE`-Werten. `kompcards.ccdevlab.ch` dient dem Public-Frontend, `service.kompcards.ccdevlab.ch` dem SaaS-Frontend. Die API bleibt unter `/api` same-origin auf dem Service-Host.
 - **Konsequenz:** Traefik routet host-basiert zu zwei Frontend-Services; Service- und Public-Middleware verhindern falsche Host-/Modus-Zugriffe. Der Auth-Cookie bleibt host-only auf dem Service-Host.
 
+## ADR-014: Prägnante, evidenzbasierte Kompetenzformulierungen
+
+- **Kontext:** Der bisherige Systemprompt trennt Vorgehen, Zweck und erreichtes Ergebnis zu wenig. Die Eingaben sollen stichwortartig bleiben und für alle HF-Studiengänge geeignet sein.
+- **Entscheidung:** `work_result` verwendet Ich-Form und Perfekt in 1–2 Sätzen mit höchstens 60 Wörtern. `quality_statement` beschreibt ein berichtetes Ergebnis in genau einem Satz mit höchstens 30 Wörtern; ohne Ergebnisnachweis benennt es die fehlende Information. Dies präzisiert die bisherige Längenregel aus ADR-011. Keine erfundenen Methoden, Messwerte, Abnahmen oder Erfolge; Widersprüche werden zur Klärung benannt.
+- **Bewertung:** `quality` bleibt eine Bewertung der Aussagekraft der Eingabe (1–4), keine Leistungsnote. Stufe 1: keine Handlung oder wesentlicher Widerspruch; 2: Handlung, aber Methode oder Zweck unklar; 3: Handlung, Methode und Zweck nachvollziehbar; 4: zusätzlich überprüfbares Ergebnis. Stichwortstil wird nicht abgewertet, negative Ergebnisse können Stufe 4 erfüllen.
+- **Konsequenz:** Schema und Feldnamen bleiben unverändert. Ohne Kompetenzbeschreibung wird `overlap_curriculum = false` mit einem Hinweis auf die fehlende Beurteilbarkeit ausgegeben; das bestehende Boolean unterscheidet unbekannten und fehlenden Bezug nicht. Prompt-Vertragstests sichern die Anweisungen; die tatsächliche Modelltreue muss separat evaluiert werden.
+
+## ADR-015: Separater, providerunabhängiger Eval-Runner
+
+- **Kontext:** Prompt- und Modelländerungen sollen mit demselben synthetischen Kompetenzkarten-Set auf vLLM und Online-Modellen vergleichbar werden.
+- **Entscheidung:** Ein explizit gestarteter TypeScript-CLI-Runner unter `backend/src/eval/` nutzt den aktuellen Systemprompt und `buildPrompt()`, ein gemeinsames Transport-Schema und die bestehende lokale Zod-Validierung. Provideradapter für vLLM/OpenAI-kompatible Chat-Completions und Anthropic Messages verwenden ein in Tests gemocktes Transport-Interface. Standard ist ein Dry-run; reale Aufrufe erfolgen nur mit `--run`, sequenziell und ohne Retry oder Reparatur.
+- **Bewertung:** Automatische Prüfungen, Laufzeit und Tokens werden von menschlichen Kriterien für Faktentreue und Sprache getrennt. Fehlgeschlagene Versuche bleiben im Ergebnis; unbekannte Werte und offene Reviews sind null. Erwartete Antworten werden nie an das zu prüfende Modell übermittelt.
+- **Konsequenz:** Keine Änderung der produktiven LLM-Anbindung oder des DB-Schemas. Laufdaten, Prompt-/Dataset-Snapshots und Berichte liegen im Git-ignorierten `eval-results/`. Reale Modellaufrufe sind kein Bestandteil der regulären Vitest-/CI-Läufe. Das Set bleibt synthetisch und seine fachlichen Labels müssen geprüft werden.
+
 ## Offene Entscheidungen
 
 Keine — alle Kernpunkte geschlossen:

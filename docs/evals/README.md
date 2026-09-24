@@ -2,6 +2,8 @@
 
 Dieses Set enthält 30 synthetische, noch nicht fachlich freigegebene Fälle aus sechs HF-Lehrgangsbereichen. Kompetenztexte und Codes sind erfunden und ausdrücklich keine offiziellen Rahmenlehrpläne. Es ist ein Start für Modell- und Promptvergleiche, kein Nachweis allgemeiner Modellqualität. Es wurden keine LLM-Aufrufe ausgeführt.
 
+Der [Eval-Runner](./RUNNER.md) führt wiederholte Aufrufe gegen vLLM oder Anthropic aus, erstellt automatische Berichte und eine Vorlage für die fachliche Bewertung. Start: `cd backend` und `bun run eval --help`.
+
 ## Eingaben und erwartetes Verhalten
 
 `competency-cards.v0.1.json` enthält pro Fall `input` im bestehenden `LlmRequest`-Format sowie getrennte Erwartungen. Nur `input` wird an das getestete Modell übergeben, niemals `expected`, Tags oder Split. Die Eingaben sind Stichworte bzw. kurze Fragmente. Vollständige Sätze und sprachliche Eleganz dürfen für die Eingabebewertung nicht verlangt werden. Ergebnisnachweise stehen vorerst im vorhandenen Feld `how`; das ist eine Evaluationskonvention, keine Änderung des Datenmodells.
@@ -33,7 +35,7 @@ Erfundene Nachweise, Zahlen oder Freigaben, die Umdeutung eines negativen Ergebn
 ## Vergleichsprotokoll für vLLM und Online-Modelle
 
 1. Fachliche Labels vor dem Modellvergleich durch eine Person prüfen; Grenzfälle von einer zweiten Person gegenlesen lassen. Dataset und Prompt einfrieren und versionieren.
-2. Pro Kandidat dieselben Eingaben, denselben fachlichen Systemprompt, dieselben separaten Few-Shot-Beispiele und dasselbe Ausgabeschema senden. Native Chat-Templates und notwendige Providerformate dürfen verschieden sein; diese Unterschiede dokumentieren. Der aktuelle Client im Repo bindet nur OpenAI-kompatible Endpunkte an. Ein direkter Claude-Aufruf benötigt einen eigenen Adapter hinter dem bestehenden Interface, mit Tests; dieser Entwurf implementiert ihn nicht.
+2. Pro Kandidat dieselben Eingaben, denselben fachlichen Systemprompt, dieselben separaten Few-Shot-Beispiele und dasselbe Ausgabeschema senden. Native Chat-Templates und notwendige Providerformate dürfen verschieden sein; diese Unterschiede dokumentieren. Der produktive Client bindet nur OpenAI-kompatible Endpunkte an. Der separate Eval-Runner unterstützt zusätzlich Anthropic über ein gemockt getestetes Transport-Interface; er verändert den produktiven Client nicht. Zusätzliche Few-Shot-Beispiele können in einer eigenen Systemprompt-Textdatei übergeben werden, niemals aus dem Holdout.
 3. Zuerst 20 development-Fälle zur Entwicklung nutzen. Die 10 holdout-Fälle aus Maschinenbau und Hotellerie erst nach Festlegung des Prompts auswerten. Verwandte Fälle bleiben im gleichen Split, damit keine beinahe identischen Varianten beide Seiten belegen. Dieses Holdout prüft bewusst auch den Transfer auf zwei weitere Bereiche; es ist klein und nicht repräsentativ für alle Lehrgänge. Wer es zur Optimierung nutzt, muss neue zurückgehaltene Fälle ergänzen.
 4. Je Fall drei Wiederholungen je Modellkonfiguration. Bei 30 Fällen und drei Modellen entstehen 270 Aufrufe. Keine goldenen Erwartungen als Few-Shot verwenden; dafür eigene Fälle erstellen. Drei Wiederholungen messen Schwankung, ergeben aber weiterhin nur 30 unterschiedliche Aufgaben.
 5. Zuerst Erstversuche ohne automatische inhaltliche Reparatur vergleichen. Separat den tatsächlichen Produktablauf einschliesslich begrenzter Reparaturen und Transport-Retries messen. Alle Versuche, Fehler, zusätzlichen Tokens und Zeiten zählen; keine misslungenen Antworten aus dem Nenner entfernen.
@@ -56,6 +58,6 @@ Je Modell und Konfiguration ausweisen: Schemaquote, kritische Fehler nach Art, m
 
 Dasselbe Modell mit altem und neuem Prompt vergleichen, bevor der Modellwechsel bewertet wird. Später anonymisierte und freigegebene Praxisfälle sowie jeden reproduzierbaren Produktionsfehler als Regression ergänzen; keinen Testfall löschen, nur weil er schwer ist. Nach Modell-, Prompt-, Template-, Quantisierungs- oder Serverwechsel erneut ausführen. Die synthetischen Fälle sind keine Trainingsdaten und kein Beleg für reale Nutzerverteilung.
 
-Echte Modell-Evaluationen werden explizit gestartet und bleiben getrennt von normalen Vitest-Tests mit gemocktem LLM. Dieses Verzeichnis enthält nur Daten und Bewertungsdokumentation, keinen ausführbaren Runner und keine Ergebnisse. Ein späterer Runner und Provideradapter folgen TDD.
+Echte Modell-Evaluationen werden explizit gestartet und bleiben getrennt von normalen Vitest-Tests mit gemocktem LLM. Dieses Verzeichnis enthält Daten und Bewertungsdokumentation; der Runner liegt unter `backend/src/eval/`. Ergebnisse werden standardmässig im Git-ignorierten Verzeichnis `eval-results/` gespeichert. Die menschliche Bewertung und die synthetischen Labels bleiben vorläufig; ein automatischer LLM-Judge ist nicht implementiert.
 
 Methodische Referenz: [Anthropic: Demystifying evals for AI agents](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents). Die Kombination aus deterministischen, menschlichen und modellbasierten Bewertungen ist auch für diese einzelne strukturierte Generierungsaufgabe sinnvoll; ein Agentenframework ist dafür nicht nötig.
