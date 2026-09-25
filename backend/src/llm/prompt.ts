@@ -81,6 +81,9 @@ OVERLAP_CURRICULUM
 NOTE_IMPROVMENT
 - Formuliere höchstens zwei kurze, konkrete Hinweise auf fehlende oder
   mehrdeutige Angaben.
+- Gib alle Hinweise zusammen als einzelnen JSON-String aus, kein Array.
+  Trenne mehrere Hinweise innerhalb dieses Strings durch einen Zeilenumbruch
+  (im JSON als \\n maskiert).
 - Priorisiere Angaben, die für die Handlung oder einen überprüfbaren
   Ergebnisnachweis fehlen.
 - Fordere keine erfundenen Erfolge und keine bestimmten positiven Ergebnisse.

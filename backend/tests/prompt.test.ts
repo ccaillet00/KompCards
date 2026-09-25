@@ -15,6 +15,12 @@ const base: LlmRequest = {
 // Promptverträge sichern die Anweisungen ab; tatsächliche Modelltreue wird
 // separat mit dem Eval-Set geprüft, niemals durch echte LLM-Calls in Vitest.
 describe('SYSTEM_PROMPT', () => {
+  it('fordert Hinweise als einen JSON-String statt einer Liste an', () => {
+    const notes = SYSTEM_PROMPT.split('NOTE_IMPROVMENT\n')[1]?.split('AUSGABE\n')[0];
+    expect(notes).toContain('einzelnen JSON-String');
+    expect(notes).toContain('kein Array');
+  });
+
   it('akzeptiert Stichworte ohne Abwertung und trennt Eingabequalität von Leistung', () => {
     expect(SYSTEM_PROMPT).toContain('Stichworte und kurze Fragmente sind ausdrücklich erwünscht');
     expect(SYSTEM_PROMPT).toContain('Stichwortstil und fehlende vollständige Sätze senken die Bewertung nicht');

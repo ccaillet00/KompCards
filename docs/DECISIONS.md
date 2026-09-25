@@ -112,6 +112,12 @@ Diese Entscheidung wurde durch ADR-014 ersetzt. `userTable` und `userSession` bl
 - **Bewertung:** Automatische Prüfungen, Laufzeit und Tokens werden von menschlichen Kriterien für Faktentreue und Sprache getrennt. Fehlgeschlagene Versuche bleiben im Ergebnis; unbekannte Werte und offene Reviews sind null. Erwartete Antworten werden nie an das zu prüfende Modell übermittelt.
 - **Konsequenz:** Keine Änderung der produktiven LLM-Anbindung oder des DB-Schemas. Laufdaten, Prompt-/Dataset-Snapshots und Berichte liegen im Git-ignorierten `eval-results/`. Reale Modellaufrufe sind kein Bestandteil der regulären Vitest-/CI-Läufe. Das Set bleibt synthetisch und seine fachlichen Labels müssen geprüft werden.
 
+## ADR-017: Hinweis-Listen an der produktiven LLM-Grenze normalisieren
+
+- **Kontext:** Das eingesetzte Modell liefert `note_improvment` teilweise als String-Liste statt als String/null; die SDK-Validierung verwirft dadurch die gesamte Auswertung.
+- **Entscheidung:** Der Prompt verlangt explizit einen einzelnen JSON-String oder null. Der produktive Client verbindet dennoch gelieferte reine String-Listen vor der Validierung mit Zeilenumbrüchen; eine leere Liste wird null. Andere Typen und ungültige Werte der übrigen Felder werden weiterhin abgelehnt.
+- **Konsequenz:** DB, API und Domänenschema bleiben unverändert. Das übermittelte JSON-Schema verlangt weiterhin String/null. Die separate Evaluation bleibt strikt und zählt Listen weiterhin als Formatfehler, damit Modellvergleiche die tatsächliche Schematreue zeigen.
+
 ## Offene Entscheidungen
 
 Keine — alle Kernpunkte geschlossen:
