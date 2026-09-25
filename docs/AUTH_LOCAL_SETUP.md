@@ -22,3 +22,5 @@ Die lokale Entwicklung startet mit einer leeren Datenbank. Es werden keine beste
 5. Den ersten Administrator ausschließlich über seine explizit ausgewählte UUID in `auth_user.role` setzen.
 
 `userTable` und `userSession` werden weiterhin als leere Legacy-Tabellen angelegt. Die Dateien für eine mögliche spätere Bestandsübernahme bleiben im Repository, sind für diesen lokalen Start aber nicht erforderlich.
+
+Optionales GitHub OAuth nach dem bestehenden Setup aktivieren: [AUTH_GITHUB_SETUP.md](./AUTH_GITHUB_SETUP.md). Dafür sind weder ein DB-Reset noch eine weitere Migration erforderlich.

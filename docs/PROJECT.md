@@ -65,6 +65,7 @@ Maschinelle Auswertung/Ausformulierung des Arbeitsergebnisses:
 ## 3. Anforderungen
 
 ### Funktionale (Vorgabe)
+- Neue Nutzer können sich optional über GitHub ohne KompCards-Passwort registrieren und später mit demselben GitHub-Konto anmelden. Bestehende Konten können nicht mit GitHub verknüpft werden (ADR-018).
 - Nutzer können sich mit E-Mail und Passwort über Better Auth registrieren und authentifizieren (DB-Session mit HttpOnly-Cookie).
 - Nutzer können eine Kompetenzkarte für eine Kompetenz anlegen (Status: `draft`).
 - Nutzer können strukturierte Eingaben (what/how/why/…) zu einer Karte erfassen.

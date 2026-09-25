@@ -47,12 +47,29 @@ export function createBetterAuth(
       transaction: true,
     }),
     advanced: {
+      disableOriginCheck: false,
       database: {
         generateId: () => randomUUID(),
       },
     },
-    user: { modelName: 'auth_user' },
-    account: { modelName: 'auth_account' },
+    user: {
+      modelName: 'auth_user',
+      validateUserInfo: ({ user, source }) => {
+        if (source.oauth?.providerId === 'github' && user.emailVerified !== true) {
+          return { error: 'github_email_not_verified' };
+        }
+      },
+    },
+    account: {
+      modelName: 'auth_account',
+      accountLinking: { enabled: false },
+      encryptOAuthTokens: true,
+      storeStateStrategy: 'database',
+    },
+    socialProviders: config.github ? {
+      github: { ...config.github, disableImplicitSignUp: true },
+    } : {},
+    onAPIError: { errorURL: `${origin}/login` },
     session: {
       modelName: 'auth_session',
       expiresIn: 43_200,
@@ -84,6 +101,8 @@ export function createBetterAuth(
     },
     plugins: [admin()],
     disabledPaths: [
+      '/link-social',
+      '/unlink-account',
       '/admin/remove-user',
       '/admin/impersonate-user',
       '/admin/stop-impersonating-user',

@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { definePageMeta, useRoute, useSeoMeta } from '#imports'
 import { useAuth } from '../composables/useAuth'
+import { githubErrorMessage } from '../utils/oauthError'
 import AuthLoginForm from '../components/auth/AuthLoginForm.vue'
 import AuthRegisterForm from '../components/auth/AuthRegisterForm.vue'
 
@@ -33,6 +34,7 @@ onBeforeUnmount(() => {
 })
 
 const route = useRoute()
+const oauthError = computed(() => route.query.error ? githubErrorMessage(route.query.error) : null)
 const isRegister = computed(() => route.query.mode === 'register')
 const title = computed(() => isRegister.value ? 'Konto erstellen' : 'Willkommen zurück')
 const description = computed(() => isRegister.value
@@ -53,6 +55,15 @@ useSeoMeta({ title: () => `${title.value} – KompCards` })
     <p class="mt-4 max-w-lg text-lg leading-8 text-base-content/65">
       {{ description }}
     </p>
+
+    <div
+      v-if="oauthError"
+      data-test="oauth-error"
+      role="alert"
+      class="alert mt-7 border border-error/20 bg-error/10 text-error"
+    >
+      {{ oauthError }}
+    </div>
 
     <Transition
       v-if="showForm"

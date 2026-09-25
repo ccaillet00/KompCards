@@ -14,6 +14,15 @@ const config = loadConfig({
 });
 
 describe('Better Auth', () => {
+  it('deaktiviert Linking und schützt OAuth-Tokens ohne den Credential-Login zu ändern', () => {
+    const auth = createBetterAuth({} as Database, config);
+    expect(auth.options.account).toMatchObject({
+      accountLinking: { enabled: false }, encryptOAuthTokens: true,
+    });
+    expect(auth.options.socialProviders?.github).toBeUndefined();
+    expect(auth.options.disabledPaths).toEqual(expect.arrayContaining(['/link-social', '/unlink-account']));
+  });
+
   it('konfiguriert feste 12-Stunden-DB-Sessions ohne Cookie-Cache', () => {
     const auth = createBetterAuth({} as Database, config);
 

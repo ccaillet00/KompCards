@@ -13,6 +13,8 @@ export interface AppConfig {
   betterAuthSecret: string;
   /** Öffentliche Origin des SaaS-Frontends, z. B. https://service.example.ch. */
   betterAuthUrl: string;
+  /** Optionaler GitHub OAuth Provider; beide Werte müssen gemeinsam gesetzt sein. */
+  github?: { clientId: string; clientSecret: string };
   /** Basis-URL des externen LLM (OpenAI-kompatible API). */
   llmBaseUrl: string;
   /** API-Key des externen LLM. */
@@ -47,11 +49,18 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new Error('BETTER_AUTH_SECRET muss mindestens 32 Zeichen lang sein');
   }
 
+  const clientId = env.GITHUB_CLIENT_ID?.trim();
+  const clientSecret = env.GITHUB_CLIENT_SECRET?.trim();
+  if (Boolean(clientId) !== Boolean(clientSecret)) {
+    throw new Error('GITHUB_CLIENT_ID und GITHUB_CLIENT_SECRET müssen gemeinsam gesetzt sein');
+  }
+
   const nodeEnvRaw = env.NODE_ENV ?? 'development';
   const nodeEnv =
     nodeEnvRaw === 'production' || nodeEnvRaw === 'test' ? nodeEnvRaw : 'development';
 
   return {
+    ...(clientId && clientSecret ? { github: { clientId, clientSecret } } : {}),
     port: env.PORT ? Number.parseInt(env.PORT, 10) : 4000,
     nodeEnv,
     databaseUrl: required.DATABASE_URL as string,

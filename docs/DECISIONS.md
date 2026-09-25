@@ -118,6 +118,15 @@ Diese Entscheidung wurde durch ADR-014 ersetzt. `userTable` und `userSession` bl
 - **Entscheidung:** Der Prompt verlangt explizit einen einzelnen JSON-String oder null. Der produktive Client verbindet dennoch gelieferte reine String-Listen vor der Validierung mit Zeilenumbrüchen; eine leere Liste wird null. Andere Typen und ungültige Werte der übrigen Felder werden weiterhin abgelehnt.
 - **Konsequenz:** DB, API und Domänenschema bleiben unverändert. Das übermittelte JSON-Schema verlangt weiterhin String/null. Die separate Evaluation bleibt strikt und zählt Listen weiterhin als Formatfehler, damit Modellvergleiche die tatsächliche Schematreue zeigen.
 
+## ADR-018: GitHub OAuth ausschliesslich für neue Konten
+
+- **Kontext:** Nach der erfolgreichen Auth-Migration ist GitHub als weitere Anmeldeoption gewünscht. Die App ist noch nicht produktiv; bestehende Konten sollen ausdrücklich nicht verknüpft werden.
+- **Entscheidung:** Optionaler GitHub-Provider in Better Auth 1.7.5. Registrierung legt eine neue `auth_user.id` und einen `auth_account` mit `provider_id = github` und der stabilen GitHub-ID als `account_id` an. Kein Credential-Passwort wird erzeugt. Wiederholte Logins behalten dieselbe UUID und damit den Kartenbesitz.
+- **Kontentrennung:** Account-Linking ist serverseitig deaktiviert; `/link-social` und `/unlink-account` sind zusätzlich gesperrt. E-Mail-Kollisionen führen zu einem Fehler, niemals zur Zusammenführung. E-Mail-/Passwort-Registrierung und -Login bleiben bestehen. Eine nachträgliche Passwortvergabe für GitHub-Konten wird nicht angeboten.
+- **Registrierung:** `disableImplicitSignUp` verlangt den expliziten Registrierungsmodus. Im Registrierungsformular ist die vorhandene Zustimmung auch für GitHub nötig; das ist wie beim Credential-Formular eine UI-Prüfung, kein persistierter Zustimmungsnachweis. Der Login-Button erzeugt keine neuen Nutzer. GitHub muss eine verifizierte E-Mail liefern, auch private Adressen werden unterstützt.
+- **Betrieb:** Separate OAuth Apps für Entwicklung und Produktion. `GITHUB_CLIENT_ID` und `GITHUB_CLIENT_SECRET` sind gemeinsam optional; Teilkonfiguration verhindert den Start. `/api/auth-config` meldet nur Verfügbarkeit. Keine Schemaänderung; bestehende Auth-Tabellen reichen aus. State wird in der DB abgelegt; Tokenverschlüsselung verwendet das bestehende Better-Auth-Secret. Sessiondauer und Admin-Regeln bleiben bestehen.
+- **Tests:** Reale Better-Auth-Handler und GitHub-Provider mit Memory-Adapter anstelle von Drizzle und gemocktem GitHub-HTTP. Keine externen OAuth-Aufrufe in CI. Ein echter Browser-/MySQL-/Traefik-Durchlauf bleibt Teil der Aktivierungsabnahme.
+
 ## Offene Entscheidungen
 
 Keine — alle Kernpunkte geschlossen:

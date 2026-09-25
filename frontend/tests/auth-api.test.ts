@@ -6,10 +6,13 @@ import { useAuth } from '../composables/useAuth'
 
 const client = vi.hoisted(() => ({
   getSession: vi.fn(),
-  signIn: { email: vi.fn() },
+  signIn: { email: vi.fn(), social: vi.fn() },
   signUp: { email: vi.fn() },
   signOut: vi.fn(),
 }))
+
+const fetchConfig = vi.hoisted(() => vi.fn())
+vi.mock('ofetch', () => ({ $fetch: fetchConfig }))
 
 vi.mock('../lib/authClient', () => ({
   createRequestAuthClient: () => client,
@@ -24,11 +27,48 @@ const Harness = defineComponent({
 
 describe('useAuth', () => {
   beforeEach(() => {
+    fetchConfig.mockReset()
+    client.signIn.social.mockReset()
     client.getSession.mockReset()
     client.signIn.email.mockReset()
     client.signUp.email.mockReset()
     client.signOut.mockReset()
     clearNuxtState()
+  })
+
+  it('lädt GitHub-Verfügbarkeit vom Backend und bleibt bei Fehlern deaktiviert', async () => {
+    const wrapper = await mountSuspended(Harness)
+    const auth = wrapper.vm as unknown as { loadAuthMethods: () => Promise<void>, githubEnabled: boolean }
+    fetchConfig.mockResolvedValue({ github: true })
+    await auth.loadAuthMethods()
+    expect(fetchConfig).toHaveBeenCalledWith('/api/auth-config')
+    expect(auth.githubEnabled).toBe(true)
+    fetchConfig.mockRejectedValue(new Error('offline'))
+    await auth.loadAuthMethods()
+    expect(auth.githubEnabled).toBe(false)
+  })
+
+  it.each(['login', 'register'] as const)('startet GitHub %s mit festen Rücksprungzielen und explizitem Registrierungsmodus', async (mode) => {
+    client.signIn.social.mockResolvedValue({ data: { url: 'https://github.com/login/oauth/authorize' }, error: null })
+    const wrapper = await mountSuspended(Harness)
+    const auth = wrapper.vm as unknown as { signInWithGithub: (mode: 'login' | 'register') => Promise<void> }
+    await auth.signInWithGithub(mode)
+    expect(client.signIn.social).toHaveBeenCalledWith({
+      provider: 'github', callbackURL: '/dashboard',
+      errorCallbackURL: mode === 'register' ? '/login?mode=register' : '/login',
+      requestSignUp: mode === 'register',
+    })
+    expect(client.getSession).not.toHaveBeenCalled()
+  })
+
+  it('übersetzt GitHub-Startfehler und gibt den Ladezustand wieder frei', async () => {
+    client.signIn.social.mockResolvedValue({ data: null, error: { code: 'PROVIDER_NOT_FOUND', message: 'raw provider failure' } })
+    const wrapper = await mountSuspended(Harness)
+    const auth = wrapper.vm as unknown as { signInWithGithub: (mode: 'login') => Promise<void>, error: string, isLoading: boolean }
+    await expect(auth.signInWithGithub('login')).rejects.toThrow()
+    expect(auth.error).toContain('GitHub')
+    expect(auth.error).not.toContain('raw provider failure')
+    expect(auth.isLoading).toBe(false)
   })
 
   it('stellt die Sitzung über den HttpOnly-Cookie wieder her', async () => {

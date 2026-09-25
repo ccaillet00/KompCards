@@ -113,7 +113,10 @@ Logout / Revocation
 - Bestehende bcryptjs-Hashes (Kostenfaktor 10) werden unverändert als Credential-Passwort übernommen.
 - `userTable` und `userSession` bleiben als Legacy-Tabellen erhalten, werden aber nach dem Cutover nicht mehr für Authentifizierung oder Sitzungen verwendet.
 - Passwort-Reset ist über eine injizierbare Mail-Schnittstelle vorbereitet. Ohne Mailprovider wird kein Reset-Flow angeboten.
-- GitHub, E-Mail-Verifizierung und Passkeys sind nicht aktiviert. Spätere Methoden müssen als weitere Accounts beziehungsweise Passkey-Datensätze auf dieselbe `auth_user.id` zeigen.
+- Optionales GitHub OAuth erstellt neue `auth_user`-Identitäten mit einem GitHub-Account ohne Passwort. Spätere GitHub-Anmeldungen verwenden dieselbe UUID. Bestehende Konten werden weder automatisch noch explizit verknüpft; E-Mail-Kollisionen werden abgelehnt (ADR-018).
+- GitHub-Registrierung ist explizit (`requestSignUp`); der Login legt kein neues Konto an. Eine von GitHub bestätigte E-Mail ist erforderlich. OAuth-State liegt in `auth_verification`, OAuth-Tokens werden verschlüsselt gespeichert.
+- `GET /api/auth-config` liefert nur die GitHub-Verfügbarkeit; Credentials verbleiben im Backend. Setup: [AUTH_GITHUB_SETUP.md](./AUTH_GITHUB_SETUP.md).
+- Eigener E-Mail-Verifizierungsversand und Passkeys sind weiterhin nicht aktiviert.
 - Das Admin-Plugin verwaltet Rollen, Sperren, Passwörter und Sessions. Benutzerlöschung und Impersonation sind serverseitig deaktiviert.
 
 ## 7. Routing & Frontend → Backend-Kommunikation (Traefik)
@@ -143,7 +146,7 @@ Logout / Revocation
 | `userTable` | Nutzer (UUID) | `id` (VARCHAR(36)) |
 | `userSession` | Session / JWT-Hash (UUID) | `id` (VARCHAR(36)) |
 | `auth_user` | Aktive Better-Auth-Benutzeridentität | `id` (VARCHAR(36)) |
-| `auth_account` | Authentifizierungsmethoden; aktuell Credential | `id` (VARCHAR(36)) |
+| `auth_account` | Authentifizierungsmethoden: Credential oder GitHub | `id` (VARCHAR(36)) |
 | `auth_session` | Aktive DB-Sitzungen | `id` (VARCHAR(36)) |
 | `auth_verification` | Zeitlich begrenzte Reset-/Verifikationstoken | `id` (VARCHAR(36)) |
 

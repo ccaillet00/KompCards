@@ -18,7 +18,7 @@ import { logger } from './utils/logger.js';
  * mit gemockten Services/DB/LLM aufbauen, ohne echte Abhängigkeiten.
  */
 export function createApp(
-  _config: AppConfig,
+  config: AppConfig,
   auth: BetterAuthInstance,
   services: {
     competency: CompetencyService;
@@ -30,6 +30,11 @@ export function createApp(
   // Better Auth muss den unverarbeiteten Request-Body vor express.json() erhalten.
   app.all('/api/auth/*', toNodeHandler(auth));
   app.use(express.json());
+
+  // Only expose availability; OAuth credentials stay on the server.
+  app.get('/api/auth-config', (_req: Request, res: Response) => {
+    res.set('Cache-Control', 'no-store').json({ github: Boolean(config.github) });
+  });
 
   // Health-Check (für Traefik / Monitoring)
   app.get('/api/health', (_req: Request, res: Response) => {

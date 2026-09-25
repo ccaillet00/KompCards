@@ -1,4 +1,6 @@
 import { computed, ref } from 'vue'
+import { $fetch } from 'ofetch'
+import { githubErrorMessage } from '../utils/oauthError'
 import { navigateTo, useState } from '#imports'
 import { createRequestAuthClient } from '../lib/authClient'
 import type {
@@ -42,8 +44,41 @@ export function useAuth() {
   const user = useState<AuthUser | null>('auth.user', () => null)
   const expiresAt = useState<number | null>('auth.expiresAt', () => null)
   const initialized = useState('auth.initialized', () => false)
+  const githubEnabled = useState('auth.githubEnabled', () => false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+
+  async function loadAuthMethods(): Promise<void> {
+    try {
+      const methods = await $fetch<{ github: boolean }>('/api/auth-config')
+      githubEnabled.value = methods.github === true
+    } catch {
+      githubEnabled.value = false
+    }
+  }
+
+  async function signInWithGithub(mode: 'login' | 'register'): Promise<void> {
+    if (isLoading.value) return
+    isLoading.value = true
+    error.value = null
+    try {
+      const result = await client.signIn.social({
+        provider: 'github',
+        callbackURL: '/dashboard',
+        errorCallbackURL: mode === 'register' ? '/login?mode=register' : '/login',
+        requestSignUp: mode === 'register',
+      })
+      if (result.error) {
+        error.value = githubErrorMessage(result.error.code)
+        throw new Error(error.value)
+      }
+      // The client redirects to GitHub. The returning page restores the session.
+    } catch (requestError) {
+      error.value ??= githubErrorMessage(undefined)
+      isLoading.value = false
+      throw requestError
+    }
+  }
 
   function clearSession(): void {
     user.value = null
@@ -136,6 +171,9 @@ export function useAuth() {
     isLoading,
     error,
     isAuthenticated: computed(() => Boolean(user.value && expiresAt.value && expiresAt.value > Date.now())),
+    githubEnabled,
+    loadAuthMethods,
+    signInWithGithub,
     restoreSession,
     login,
     register,

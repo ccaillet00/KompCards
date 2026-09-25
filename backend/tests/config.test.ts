@@ -12,6 +12,16 @@ const baseEnv: NodeJS.ProcessEnv = {
 };
 
 describe('loadConfig', () => {
+  it('aktiviert GitHub nur mit einem vollständigen Schlüsselpaar', () => {
+    expect(loadConfig(baseEnv).github).toBeUndefined();
+    expect(loadConfig({ ...baseEnv, GITHUB_CLIENT_ID: '', GITHUB_CLIENT_SECRET: '' }).github).toBeUndefined();
+    expect(loadConfig({ ...baseEnv, GITHUB_CLIENT_ID: 'client', GITHUB_CLIENT_SECRET: 'secret' }).github)
+      .toEqual({ clientId: 'client', clientSecret: 'secret' });
+    for (const partial of [{ GITHUB_CLIENT_ID: 'client' }, { GITHUB_CLIENT_SECRET: 'secret' }]) {
+      expect(() => loadConfig({ ...baseEnv, ...partial })).toThrow(/GITHUB_CLIENT_ID.*GITHUB_CLIENT_SECRET/);
+    }
+  });
+
   it('liest Pflichtvariablen aus der Env', () => {
     const config = loadConfig({ ...baseEnv });
     expect(config.databaseUrl).toBe(baseEnv.DATABASE_URL);
