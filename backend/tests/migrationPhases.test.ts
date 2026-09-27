@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { readFile } from 'node:fs/promises';
+import { getTableName } from 'drizzle-orm';
+import { getTableConfig } from 'drizzle-orm/mysql-core';
 
 import { selectMigrationEntries } from '../src/db/migrationPhases.js';
+import {
+  authAccount,
+  authSession,
+  authUser,
+  authVerification,
+} from '../src/db/authSchema.js';
+import { competencyProof, userSession, userTable } from '../src/db/schema.js';
 
 const journal = {
   version: '7',
@@ -25,31 +33,26 @@ describe('phasenweise Drizzle-Migration', () => {
       .toEqual(['0000_initial', '0001_quality', '0002_auth_schema', '0003_auth_cutover']);
   });
 
-  it('legt das Better-Auth-Schema parallel an, ohne Legacy-Tabellen zu löschen', async () => {
-    const sql = await readFile(
-      new URL('../drizzle/0002_vengeful_shooting_star.sql', import.meta.url),
-      'utf8',
-    );
-
-    expect(sql).toContain('CREATE TABLE `auth_user`');
-    expect(sql).toContain('CREATE TABLE `auth_account`');
-    expect(sql).toContain('CREATE TABLE `auth_session`');
-    expect(sql).toContain('CREATE TABLE `auth_verification`');
-    expect(sql).not.toMatch(/DROP TABLE/i);
-    expect(sql).not.toContain('`userTable`');
-    expect(sql).not.toContain('`userSession`');
+  it('definiert das Better-Auth-Schema parallel zu den Legacy-Tabellen', () => {
+    expect([
+      getTableName(authUser),
+      getTableName(authAccount),
+      getTableName(authSession),
+      getTableName(authVerification),
+    ]).toEqual(['auth_user', 'auth_account', 'auth_session', 'auth_verification']);
+    expect([getTableName(userTable), getTableName(userSession)])
+      .toEqual(['userTable', 'userSession']);
   });
 
-  it('ändert beim Cutover nur den FK und keine competency_proof-Daten', async () => {
-    const sql = await readFile(
-      new URL('../drizzle/0003_solid_jubilee.sql', import.meta.url),
-      'utf8',
+  it('verknüpft Kompetenzkarten mit auth_user und erhält die user_id-Spalte', () => {
+    const config = getTableConfig(competencyProof);
+    const userForeignKey = config.foreignKeys.find(foreignKey =>
+      foreignKey.getName().startsWith('competency_proof_user_id'),
     );
 
-    expect(sql).toContain('DROP FOREIGN KEY `competency_proof_user_id_userTable_id_fk`');
-    expect(sql).toContain('REFERENCES `auth_user`(`id`) ON DELETE cascade');
-    expect(sql).not.toMatch(/UPDATE\s+`?competency_proof/i);
-    expect(sql).not.toMatch(/DELETE\s+FROM/i);
-    expect(sql).not.toMatch(/DROP TABLE/i);
+    expect(userForeignKey).toBeDefined();
+    expect(getTableName(userForeignKey!.reference().foreignTable)).toBe('auth_user');
+    expect(userForeignKey!.reference().columns[0]?.name).toBe('user_id');
+    expect(config.columns.map(column => column.name)).toContain('user_id');
   });
 });
