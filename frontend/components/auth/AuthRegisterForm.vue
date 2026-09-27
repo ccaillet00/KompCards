@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { navigateTo } from '#imports'
 import { useAuth } from '../../composables/useAuth'
 import UiButton from '../ui/UiButton.vue'
@@ -7,8 +7,10 @@ import UiFormField from '../ui/UiFormField.vue'
 import UiIcon from '../ui/UiIcon.vue'
 import UiInput from '../ui/UiInput.vue'
 import AuthPasswordField from './AuthPasswordField.vue'
+import AuthGithubButton from './AuthGithubButton.vue'
 
 const auth = useAuth()
+onMounted(() => auth.loadAuthMethods())
 const form = reactive({ name: '', email: '', password: '' })
 const acceptedTerms = ref(false)
 const errors = reactive<{ name?: string, email?: string, password?: string, terms?: string }>({})
@@ -28,6 +30,13 @@ async function submit(): Promise<void> {
     await navigateTo('/login?registered=1')
   } catch {
     // Der Auth-Service stellt die serverseitige Fehlermeldung bereit.
+  }
+}
+async function githubSignIn(): Promise<void> {
+  try {
+    await auth.signInWithGithub('register')
+  } catch {
+    // useAuth provides the translated error above the form.
   }
 }
 </script>
@@ -123,6 +132,14 @@ async function submit(): Promise<void> {
         />
       </UiButton>
     </form>
+
+    <AuthGithubButton
+      v-if="auth.githubEnabled.value"
+      mode="register"
+      :loading="auth.isLoading.value"
+      :disabled="auth.isLoading.value || !acceptedTerms"
+      @click="githubSignIn"
+    />
 
     <p class="mt-7 text-center text-sm text-base-content/70">
       Du hast bereits ein Konto?

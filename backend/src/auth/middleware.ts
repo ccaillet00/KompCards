@@ -1,75 +1,61 @@
 import type { NextFunction, Request, Response } from 'express';
+import { fromNodeHeaders } from 'better-auth/node';
 
-import type { AppConfig } from '../config.js';
-import { getDb } from '../db/client.js';
-import { userSession } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
-import jwt from 'jsonwebtoken';
+import { ForbiddenError, UnauthorizedError } from '../utils/errors.js';
 
-import { UnauthorizedError } from '../utils/errors.js';
-import { hashToken, verifyToken, type JwtPayload } from './jwt.js';
-
-/** Erweitert den Express-Request um den authentifizierten Nutzer. */
-export interface AuthRequest extends Request {
-  user?: JwtPayload;
+export interface AuthenticatedUser {
+  id: string;
+  name: string;
+  email: string;
+  role?: string | null;
 }
 
-/**
- * Middleware: prüft das JWT (Signatur + Zeit) und die serverseitige Session
- * (Hash-Lookup, nicht revoked, nicht abgelaufen). Andernfalls 401.
- *
- * Flow (ADR-002):
- * 1. JWT signatur-/zeitmäßig prüfen.
- * 2. Hash(JWT) in `userSession` suchen.
- * 3. Prüfung: nicht revoked, `expires_at` > now.
- */
-export function requireAuth(config: AppConfig) {
+export interface AuthenticatedSession {
+  user: AuthenticatedUser;
+  session: { id: string };
+}
+
+export interface SessionReader {
+  getSession(input: { headers: Headers }): Promise<AuthenticatedSession | null>;
+}
+
+/** Express request enriched with the stable Better Auth user identity. */
+export interface AuthRequest extends Request {
+  user?: AuthenticatedUser;
+  authSession?: AuthenticatedSession['session'];
+}
+
+/** Validates the database-backed Better Auth session from the incoming cookie. */
+export function requireAuth(auth: SessionReader) {
   return async (req: AuthRequest, _res: Response, next: NextFunction): Promise<void> => {
     try {
-      const token = req.cookies?.access_token;
-      if (!token) {
-        throw new UnauthorizedError('Fehlendes Auth-Cookie');
+      const result = await auth.getSession({ headers: fromNodeHeaders(req.headers) });
+      if (!result?.user) {
+        throw new UnauthorizedError('Sitzung ungültig oder abgelaufen. Bitte erneut anmelden.');
       }
 
-      // 1. JWT signatur-/zeitmäßig prüfen
-      const payload = verifyToken(config, token);
-
-      // 2. + 3. serverseitige Session prüfen
-      const db = getDb();
-      const rows = await db
-        .select()
-        .from(userSession)
-        .where(eq(userSession.tokenHash, hashToken(token)))
-        .limit(1);
-
-      const session = rows[0];
-      if (!session) {
-        throw new UnauthorizedError('Unbekannte Session');
-      }
-      if (session.revokedAt !== null) {
-        throw new UnauthorizedError('Session wurde widerrufen');
-      }
-      if (new Date(session.expiresAt).getTime() <= Date.now()) {
-        throw new UnauthorizedError('Session abgelaufen');
-      }
-
-      req.user = payload;
+      req.user = result.user;
+      req.authSession = result.session;
       next();
-    } catch (err) {
-      next(err instanceof jwt.JsonWebTokenError
-        ? new UnauthorizedError('Sitzung ungültig oder abgelaufen. Bitte erneut anmelden.')
-        : err);
+    } catch (error) {
+      next(error);
     }
   };
 }
 
-/**
- * Middleware: setzt `req.user` voraus (nach `requireAuth`).
- * Wirft 401, falls kein Nutzer gesetzt ist.
- */
 export function requireUser(req: AuthRequest, _res: Response, next: NextFunction): void {
   if (!req.user) {
     next(new UnauthorizedError());
+    return;
+  }
+  next();
+}
+
+/** Restricts an application route to an explicitly assigned admin role. */
+export function requireAdmin(req: AuthRequest, _res: Response, next: NextFunction): void {
+  const roles = req.user?.role?.split(',').map(role => role.trim()) ?? [];
+  if (!roles.includes('admin')) {
+    next(new ForbiddenError('Admin-Berechtigung erforderlich'));
     return;
   }
   next();

@@ -77,7 +77,9 @@ export function useProofs() {
       ])
       cards.value = mergeProofsWithCurriculum(proofsResponse, curriculumResponse)
     } catch (requestError) {
-      error.value = requestErrorMessage(requestError)
+      error.value = auth.handleUnauthorized(requestError)
+        ? 'Deine Sitzung ist nicht mehr gültig. Bitte melde dich erneut an.'
+        : requestErrorMessage(requestError)
     } finally {
       isLoading.value = false
     }

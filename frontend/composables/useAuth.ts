@@ -1,49 +1,113 @@
 import { computed, ref } from 'vue'
-import { useRuntimeConfig, useState } from '#imports'
 import { $fetch } from 'ofetch'
+import { githubErrorMessage } from '../utils/oauthError'
+import { navigateTo, useState } from '#imports'
+import { createRequestAuthClient } from '../lib/authClient'
 import type {
   AuthUser,
   LoginInput,
-  LoginResponse,
-  MeResponse,
   RegisterInput,
-  RegisterResponse,
 } from '../types/auth'
 
-function apiErrorMessage(error: unknown): string {
-  if (typeof error === 'object' && error !== null && 'data' in error) {
-    const data = (error as { data?: unknown }).data
-    if (typeof data === 'object' && data !== null && 'error' in data) {
-      const message = (data as { error?: unknown }).error
-      if (typeof message === 'string') return message
-    }
+function authErrorMessage(error: unknown): string {
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === 'string') return message
   }
   return 'Die Anfrage konnte nicht abgeschlossen werden. Bitte versuche es erneut.'
 }
 
+function authError(result: { error?: unknown | null }): Error | null {
+  if (!result.error) return null
+  const error = new Error(authErrorMessage(result.error)) as Error & { status?: number }
+  if (typeof result.error === 'object' && result.error !== null && 'status' in result.error) {
+    const status = (result.error as { status?: unknown }).status
+    if (typeof status === 'number') error.status = status
+  }
+  return error
+}
+
+function responseStatus(error: unknown): number | undefined {
+  if (typeof error !== 'object' || error === null) return undefined
+  const candidate = error as {
+    status?: unknown
+    statusCode?: unknown
+    response?: { status?: unknown }
+  }
+  if (typeof candidate.status === 'number') return candidate.status
+  if (typeof candidate.statusCode === 'number') return candidate.statusCode
+  return typeof candidate.response?.status === 'number' ? candidate.response.status : undefined
+}
+
 export function useAuth() {
-  const config = useRuntimeConfig()
+  const client = createRequestAuthClient()
   const user = useState<AuthUser | null>('auth.user', () => null)
   const expiresAt = useState<number | null>('auth.expiresAt', () => null)
   const initialized = useState('auth.initialized', () => false)
+  const githubEnabled = useState('auth.githubEnabled', () => false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+
+  async function loadAuthMethods(): Promise<void> {
+    try {
+      const methods = await $fetch<{ github: boolean }>('/api/auth-config')
+      githubEnabled.value = methods.github === true
+    } catch {
+      githubEnabled.value = false
+    }
+  }
+
+  async function signInWithGithub(mode: 'login' | 'register'): Promise<void> {
+    if (isLoading.value) return
+    isLoading.value = true
+    error.value = null
+    try {
+      const result = await client.signIn.social({
+        provider: 'github',
+        callbackURL: '/dashboard',
+        errorCallbackURL: mode === 'register' ? '/login?mode=register' : '/login',
+        requestSignUp: mode === 'register',
+      })
+      if (result.error) {
+        error.value = githubErrorMessage(result.error.code)
+        throw new Error(error.value)
+      }
+      // The client redirects to GitHub. The returning page restores the session.
+    } catch (requestError) {
+      error.value ??= githubErrorMessage(undefined)
+      isLoading.value = false
+      throw requestError
+    }
+  }
 
   function clearSession(): void {
     user.value = null
     expiresAt.value = null
   }
 
+  function handleUnauthorized(requestError: unknown): boolean {
+    if (responseStatus(requestError) !== 401) return false
+    clearSession()
+    initialized.value = true
+    void navigateTo('/login')
+    return true
+  }
+
   async function restoreSession(force = false): Promise<void> {
     if (initialized.value && !force) return
     try {
-      const response = await $fetch<MeResponse>(`${config.public.apiBase}/auth/me`, {
-        credentials: 'include',
-      })
-      user.value = response.user
-      expiresAt.value = response.expiresAt
-    } catch {
-      clearSession()
+      const result = await client.getSession()
+      const requestError = authError(result)
+      if (requestError) throw requestError
+      if (!result.data?.user || !result.data.session) {
+        clearSession()
+        return
+      }
+      user.value = result.data.user as AuthUser
+      expiresAt.value = new Date(result.data.session.expiresAt).getTime()
+    } catch (requestError) {
+      handleUnauthorized(requestError)
+      error.value = authErrorMessage(requestError)
     } finally {
       initialized.value = true
     }
@@ -53,16 +117,14 @@ export function useAuth() {
     isLoading.value = true
     error.value = null
     try {
-      const response = await $fetch<LoginResponse>(`${config.public.apiBase}/auth/login`, {
-        method: 'POST',
-        body: input,
-        credentials: 'include',
-      })
-      user.value = response.user
-      expiresAt.value = Date.now() + response.expiresInSeconds * 1000
-      initialized.value = true
+      const result = await client.signIn.email(input)
+      const requestError = authError(result)
+      if (requestError) throw requestError
+      initialized.value = false
+      await restoreSession(true)
+      if (!user.value) throw new Error('Die Sitzung konnte nach der Anmeldung nicht geladen werden.')
     } catch (requestError) {
-      error.value = apiErrorMessage(requestError)
+      error.value = authErrorMessage(requestError)
       throw requestError
     } finally {
       isLoading.value = false
@@ -73,12 +135,11 @@ export function useAuth() {
     isLoading.value = true
     error.value = null
     try {
-      await $fetch<RegisterResponse>(`${config.public.apiBase}/auth/register`, {
-        method: 'POST',
-        body: input,
-      })
+      const result = await client.signUp.email(input)
+      const requestError = authError(result)
+      if (requestError) throw requestError
     } catch (requestError) {
-      error.value = apiErrorMessage(requestError)
+      error.value = authErrorMessage(requestError)
       throw requestError
     } finally {
       isLoading.value = false
@@ -89,14 +150,16 @@ export function useAuth() {
     isLoading.value = true
     error.value = null
     try {
-      await $fetch<void>(`${config.public.apiBase}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      })
-    } catch (requestError) {
-      error.value = apiErrorMessage(requestError)
-    } finally {
+      const result = await client.signOut()
+      const requestError = authError(result)
+      if (requestError) throw requestError
       clearSession()
+      initialized.value = true
+    } catch (requestError) {
+      error.value = authErrorMessage(requestError)
+      if (handleUnauthorized(requestError)) return
+      throw requestError
+    } finally {
       isLoading.value = false
     }
   }
@@ -108,10 +171,14 @@ export function useAuth() {
     isLoading,
     error,
     isAuthenticated: computed(() => Boolean(user.value && expiresAt.value && expiresAt.value > Date.now())),
+    githubEnabled,
+    loadAuthMethods,
+    signInWithGithub,
     restoreSession,
     login,
     register,
     logout,
     clearSession,
+    handleUnauthorized,
   }
 }

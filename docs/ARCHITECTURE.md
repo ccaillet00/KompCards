@@ -92,25 +92,32 @@ Handler ──(zod)──▶ Service ──(Drizzle)──▶ MySQL
 - **Kapselung:** Der LLM-Client steht hinter einem **Interface** und wird in Unit-Tests **gemockt** (deterministisch, kein echter LLM-Call).
 - **LLM-seitig gesetzt:** `quality`, `quality_statement` und `overlap_curriculum` werden vom LLM erzeugt (bestätigt).
 
-## 6. Auth-Flow (JWT + serverseitige Session)
+## 6. Auth-Flow (Better Auth)
 
-**Vorgabe (Schema) + aus Q&A:**
+KompCards verwendet Better Auth 1.7.5 mit dem Drizzle-Adapter für MySQL und dem Admin-Plugin.
+
 ```
 Login (email + password)
-  → bcryptjs.compare(password, password_hash)      [userTable]
-  → JWT erzeugen
-  → Hash(JWT) in userSession speichern             (token_hash)
-  → expires_at setzen, revoked_at = NULL
-Request mit JWT
-  → JWT signatur-/zeitmäßig prüfen
-  → Hash(JWT) in userSession suchen
-  → Prüfung: nicht revoked, expires_at > now
+  → Credential-Account in auth_account laden
+  → bcryptjs.compare(password, auth_account.password)
+  → DB-Session in auth_session anlegen
+  → HttpOnly-Session-Cookie setzen
+Request mit Cookie
+  → Better Auth liest die DB-Session
+  → Prüfung: Session vorhanden, nicht abgelaufen, Benutzer nicht gesperrt
   → Zugriff; sonst 401
 Logout / Revocation
-  → revoked_at setzen (serverseitig)
+  → DB-Session löschen
 ```
-- Ein JWT pro Login; Expiry + Revocation werden **serverseitig** geprüft (passt exakt zum fixen `userSession`-Schema).
-- Passwort-Hashing: **bcryptjs** (Pure-JS; `password_hash VARCHAR(60)` = klassisches bcrypt-Format).
+- Sessions laufen nach 12 Stunden fest ab; Sliding Refresh und Cookie-Cache sind deaktiviert.
+- Bestehende bcryptjs-Hashes (Kostenfaktor 10) werden unverändert als Credential-Passwort übernommen.
+- `userTable` und `userSession` bleiben als Legacy-Tabellen erhalten, werden aber nach dem Cutover nicht mehr für Authentifizierung oder Sitzungen verwendet.
+- Passwort-Reset ist über eine injizierbare Mail-Schnittstelle vorbereitet. Ohne Mailprovider wird kein Reset-Flow angeboten.
+- Optionales GitHub OAuth erstellt neue `auth_user`-Identitäten mit einem GitHub-Account ohne Passwort. Spätere GitHub-Anmeldungen verwenden dieselbe UUID. Bestehende Konten werden weder automatisch noch explizit verknüpft; E-Mail-Kollisionen werden abgelehnt (ADR-018).
+- GitHub-Registrierung ist explizit (`requestSignUp`); der Login legt kein neues Konto an. Eine von GitHub bestätigte E-Mail ist erforderlich. OAuth-State liegt in `auth_verification`, OAuth-Tokens werden verschlüsselt gespeichert.
+- `GET /api/auth-config` liefert nur die GitHub-Verfügbarkeit; Credentials verbleiben im Backend. Setup: [AUTH_GITHUB_SETUP.md](./AUTH_GITHUB_SETUP.md).
+- Eigener E-Mail-Verifizierungsversand und Passkeys sind weiterhin nicht aktiviert.
+- Das Admin-Plugin verwaltet Rollen, Sperren, Passwörter und Sessions. Benutzerlöschung und Impersonation sind serverseitig deaktiviert.
 
 ## 7. Routing & Frontend → Backend-Kommunikation (Traefik)
 
@@ -138,10 +145,16 @@ Logout / Revocation
 | `competency_llm_output` | LLM-Output (mit Revisionskette) | `id` (AUTO_INCREMENT) |
 | `userTable` | Nutzer (UUID) | `id` (VARCHAR(36)) |
 | `userSession` | Session / JWT-Hash (UUID) | `id` (VARCHAR(36)) |
+| `auth_user` | Aktive Better-Auth-Benutzeridentität | `id` (VARCHAR(36)) |
+| `auth_account` | Authentifizierungsmethoden: Credential oder GitHub | `id` (VARCHAR(36)) |
+| `auth_session` | Aktive DB-Sitzungen | `id` (VARCHAR(36)) |
+| `auth_verification` | Zeitlich begrenzte Reset-/Verifikationstoken | `id` (VARCHAR(36)) |
 
 **Beziehungen:**
 - `curriculum` 1→N `areas` 1→N `competencies` (CASCADE).
-- `userTable` 1→N `competency_proof` (CASCADE); `userTable` 1→N `userSession` (CASCADE).
+- Nach dem Auth-Cutover: `auth_user` 1→N `competency_proof`, `auth_account` und `auth_session` (jeweils CASCADE).
+- Legacy: `userTable` 1→N `userSession` (CASCADE). Beide Tabellen bleiben bestehen.
+- Bestehende Identitäten behalten dieselbe UUID in `userTable.id`, `auth_user.id`, `auth_account.user_id` und `competency_proof.user_id`.
 - `competency_proof` 1→N `competency_input` (CASCADE) 1→N `competency_llm_output` (CASCADE).
 - `competency_proof` N→1 `competencies` (NO ACTION).
 - Selbst-Referenzen (NO ACTION): `competency_proof.copied_from_proof_id` (Copy), `competency_llm_output.predecessor` (Revision).
@@ -155,7 +168,7 @@ Logout / Revocation
 Die Referenzdaten (`curriculum`, `areas`, `competencies`) werden per **CSV-Upload** importiert.
 
 - **Endpunkt:** `POST /api/curriculum/import` (multipart, 3 Dateien: `curriculum`, `areas`, `competencies`).
-- **Auth:** Erfordert gültige Session (`requireAuth` + `requireUser`).
+- **Auth:** Erfordert gültige Better-Auth-Session und die Rolle `admin`.
 - **Strategie:** **Löschen & Neu** (komplett) — bestehende Referenzdaten werden gelöscht und neu eingefügt.
 - **FK-Schutz:** Falls `competency_proof`-Zeilen existieren → **409 Conflict** (Import abgelehnt).
 - **ID-Mapping:** CSV-IDs werden auf neue AUTO_INCREMENT-IDs gemappt (in-memory Map).
@@ -165,7 +178,7 @@ Die Referenzdaten (`curriculum`, `areas`, `competencies`) werden per **CSV-Uploa
 
 ```
 POST /api/curriculum/import  (multipart: curriculum.csv, areas.csv, competencies.csv)
-  → requireAuth + requireUser
+  → requireAuth + requireUser + requireAdmin
   → multer (3 Dateien, memory)
   → CurriculumService.importCurriculum()
       1. CSVs parsen & validieren (Spalten, Werte)

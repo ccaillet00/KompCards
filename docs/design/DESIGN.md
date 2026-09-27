@@ -180,7 +180,7 @@ Das Dashboard zeigt erstellte und abgeschlossene Karten, den Fortschritt zum fac
 
 ### Authentifizierung und Profil
 
-Registrierung und Login verwenden ausschliesslich die vorhandenen Auth-Verträge. Noch nicht implementierte Funktionen wie Passwort-Reset, Social Login oder Profilbearbeitung dürfen visuell angedeutet, aber weder simuliert noch als funktionierende Aktion angeboten werden. Sie werden deaktiviert, klar gekennzeichnet oder ausgeblendet.
+Registrierung und Login verwenden ausschliesslich die vorhandenen Auth-Verträge. GitHub wird bei konfiguriertem Backend in Login und Registrierung angeboten. Neue GitHub-Konten benötigen kein Passwort; bestehende Konten werden nicht verknüpft. Noch nicht implementierte Funktionen wie Passwort-Reset oder Profilbearbeitung dürfen visuell angedeutet, aber weder simuliert noch als funktionierende Aktion angeboten werden. Sie werden deaktiviert, klar gekennzeichnet oder ausgeblendet.
 
 ## 8. Responsive Verhalten
 

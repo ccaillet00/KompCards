@@ -1,9 +1,13 @@
 import { Router, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 
-import type { AppConfig } from '../config.js';
 import type { CompetencyService } from '../services/competencyService.js';
-import { requireAuth, requireUser, type AuthRequest } from '../auth/middleware.js';
+import {
+  requireAuth,
+  requireUser,
+  type AuthRequest,
+  type SessionReader,
+} from '../auth/middleware.js';
 
 const createProofSchema = z.object({
   competencyId: z.number().int().positive(),
@@ -27,13 +31,13 @@ const retrySchema = z.object({
  * Competency-Routen (dünne Handler): zod-Validierung → Service → Response.
  * Alle Routen erfordern eine gültige Session (requireAuth).
  */
-export function competencyRouter(config: AppConfig, competencyService: CompetencyService): Router {
+export function competencyRouter(auth: SessionReader, competencyService: CompetencyService): Router {
   const router = Router();
-  router.use(requireAuth(config), requireUser);
+  router.use(requireAuth(auth), requireUser);
 
   router.get('/proofs', (req: AuthRequest, res: Response, next: NextFunction) => {
     competencyService
-      .listProofs(req.user!.sub)
+      .listProofs(req.user!.id)
       .then((proofs) => res.json({ proofs }))
       .catch(next);
   });
@@ -45,7 +49,7 @@ export function competencyRouter(config: AppConfig, competencyService: Competenc
       return;
     }
     competencyService
-      .createProof(req.user!.sub, parsed.data)
+      .createProof(req.user!.id, parsed.data)
       .then((proof) => res.status(201).json({ proof }))
       .catch(next);
   });
@@ -57,7 +61,7 @@ export function competencyRouter(config: AppConfig, competencyService: Competenc
       return;
     }
     competencyService
-      .getProof(req.user!.sub, proofId)
+      .getProof(req.user!.id, proofId)
       .then((proof) => res.json({ proof }))
       .catch(next);
   });
@@ -76,7 +80,7 @@ export function competencyRouter(config: AppConfig, competencyService: Competenc
         return;
       }
       competencyService
-        .saveInput(req.user!.sub, proofId, parsed.data)
+        .saveInput(req.user!.id, proofId, parsed.data)
         .then((input) => res.status(201).json({ input }))
         .catch(next);
     },
@@ -91,7 +95,7 @@ export function competencyRouter(config: AppConfig, competencyService: Competenc
         return;
       }
       competencyService
-        .triggerLlmCheck(req.user!.sub, proofId)
+        .triggerLlmCheck(req.user!.id, proofId)
         .then((output) =>
           res.status(201).json({
             output,
@@ -116,7 +120,7 @@ export function competencyRouter(config: AppConfig, competencyService: Competenc
         return;
       }
       competencyService
-        .retryOutput(req.user!.sub, outputId, parsed.data.userFeedback)
+        .retryOutput(req.user!.id, outputId, parsed.data.userFeedback)
         .then((output) => res.status(201).json({ output }))
         .catch(next);
     },
@@ -131,7 +135,7 @@ export function competencyRouter(config: AppConfig, competencyService: Competenc
         return;
       }
       competencyService
-        .acceptOutput(req.user!.sub, outputId)
+        .acceptOutput(req.user!.id, outputId)
         .then((output) => res.json({ output }))
         .catch(next);
     },
@@ -146,7 +150,7 @@ export function competencyRouter(config: AppConfig, competencyService: Competenc
         return;
       }
       competencyService
-        .discardProof(req.user!.sub, proofId)
+        .discardProof(req.user!.id, proofId)
         .then((proof) => res.json({ proof }))
         .catch(next);
     },

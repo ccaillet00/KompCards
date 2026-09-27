@@ -14,6 +14,7 @@ const initials = computed(() => user.value?.name
   .slice(0, 2)
   .map(part => part[0]?.toUpperCase())
   .join('') || 'KC')
+const isAdmin = computed(() => user.value?.role?.split(',').map(role => role.trim()).includes('admin') ?? false)
 
 async function signOut(): Promise<void> {
   await logout()
@@ -53,6 +54,14 @@ onMounted(() => {
           active-class="border-primary text-primary"
         >
           Profil
+        </NuxtLink>
+        <NuxtLink
+          v-if="isAdmin"
+          to="/admin"
+          class="border-b-2 border-transparent py-7 hover:text-primary"
+          active-class="border-primary text-primary"
+        >
+          Administration
         </NuxtLink>
       </nav>
       <details

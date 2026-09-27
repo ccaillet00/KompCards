@@ -5,7 +5,10 @@ import { defineComponent } from 'vue'
 import { $fetch } from 'ofetch'
 import { useProofs } from '../composables/useProofs'
 
-const auth = vi.hoisted(() => ({ isAuthenticated: { value: true } }))
+const auth = vi.hoisted(() => ({
+  isAuthenticated: { value: true },
+  handleUnauthorized: vi.fn(() => false),
+}))
 
 vi.mock('ofetch', () => ({ $fetch: vi.fn() }))
 vi.mock('../composables/useAuth', () => ({ useAuth: () => auth }))
@@ -21,6 +24,19 @@ describe('useProofs', () => {
   beforeEach(() => {
     clearNuxtState()
     vi.mocked($fetch).mockReset()
+    auth.handleUnauthorized.mockReset()
+    auth.handleUnauthorized.mockReturnValue(false)
+  })
+
+  it('erkennt eine abgelaufene Sitzung zentral und zeigt die erneute Anmeldung an', async () => {
+    vi.mocked($fetch).mockRejectedValue({ response: { status: 401 } })
+    auth.handleUnauthorized.mockReturnValue(true)
+    const wrapper = await mountSuspended(Harness)
+
+    await (wrapper.vm as unknown as { load: () => Promise<void> }).load()
+
+    expect(auth.handleUnauthorized).toHaveBeenCalled()
+    expect((wrapper.vm as unknown as { error: string }).error).toContain('Sitzung')
   })
 
   it('kombiniert Kompetenzkarten und Lehrplan über die vorhandenen GET-Endpunkte', async () => {

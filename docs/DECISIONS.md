@@ -8,10 +8,12 @@ Kurze Architektur-Entscheidungsrekorde (ADR) aus dem Requirements-Review. Status
 - **Entscheidung:** **1 Repository, 2 Verzeichnisse** `frontend/` + `backend/`, je eigene `package.json`, root `docker-compose.yml`. **Kein** Shared-Workspace (kein pnpm-workspace/turbo).
 - **Konsequenz:** Eigenständige Builds/Installs pro Tier; CI muss beide Verzeichnisse abdecken.
 
-## ADR-002: Auth — Single JWT + serverseitige Session
+## ADR-002: Auth — Single JWT + serverseitige Session (ersetzt)
 - **Kontext:** Fixe Tabelle `userSession` (`token_hash`, `expires_at`, `revoked_at`); Anforderungen ohne Token-Strategie.
 - **Entscheidung:** **Ein JWT pro Login**; Hash in `userSession.token_hash`; Expiry + Revocation **serverseitig** geprüft.
 - **Konsequenz:** Stateful-Prüfung pro Request (Lookup auf `token_hash`); Revocation möglich. Kein Refresh-Token (würde das Schema verletzen).
+
+Diese Entscheidung wurde durch ADR-014 ersetzt. `userTable` und `userSession` bleiben als Legacy-Struktur bestehen.
 
 ## ADR-003: Test-Framework
 - **Kontext:** „Strikt TDD" + „Tests in CI", aber kein Framework benannt.
@@ -57,7 +59,7 @@ Kurze Architektur-Entscheidungsrekorde (ADR) aus dem Requirements-Review. Status
   - **Validierung:** Spaltennamen, Pflichtwerte und numerische IDs werden vor dem Import geprüft (400 bei Fehlern). BOM wird entfernt.
   - **FK-Schutz:** 409 Conflict, falls `competency_proof`-Zeilen existieren (NO ACTION-FK würde sonst verletzt).
   - **ID-Mapping:** CSV-IDs → neue AUTO_INCREMENT-IDs (in-memory Map), da die DB-IDs neu generiert werden.
-  - **Auth:** Bestehendes `requireAuth` + `requireUser` (kein separates Admin-Role, da kein Role-System vorhanden).
+  - **Auth:** Better-Auth-Session plus explizite Admin-Rolle (`requireAuth` + `requireUser` + `requireAdmin`).
   - **Bibliotheken:** `csv-parse/sync` (synchrones CSV-Parsing), `multer` (multipart-Upload, memory storage, 5 MB Limit pro Datei).
   - **Response:** `200 { imported: { curriculum: n, areas: n, competencies: n } }`.
 - **Konsequenz:**
@@ -85,6 +87,45 @@ Kurze Architektur-Entscheidungsrekorde (ADR) aus dem Requirements-Review. Status
 - **Kontext:** Landingpage und eingeloggte SaaS-Oberfläche sollen unter getrennten Subdomains erreichbar sein, ohne Frontend-Code zu duplizieren.
 - **Entscheidung:** Beide Deployments verwenden dieselbe Nuxt-Codebasis mit unterschiedlichen `NUXT_PUBLIC_APP_MODE`-Werten. `kompcards.ccdevlab.ch` dient dem Public-Frontend, `service.kompcards.ccdevlab.ch` dem SaaS-Frontend. Die API bleibt unter `/api` same-origin auf dem Service-Host.
 - **Konsequenz:** Traefik routet host-basiert zu zwei Frontend-Services; Service- und Public-Middleware verhindern falsche Host-/Modus-Zugriffe. Der Auth-Cookie bleibt host-only auf dem Service-Host.
+
+## ADR-014: Better Auth mit stabiler KompCards-Identität
+
+- **Kontext:** Die MVP-Authentifizierung aus `userTable`, JWT und `userSession` wird für den produktiven Betrieb durch eine erweiterbare Auth-Lösung ersetzt. Bestehende Kompetenzkarten müssen unverändert ihren Eigentümern zugeordnet bleiben.
+- **Entscheidung:** Better Auth **1.7.5** mit Drizzle/MySQL, E-Mail/Passwort, DB-Sessions und Admin-Plugin. Neue Tabellen laufen parallel: `auth_user`, `auth_account`, `auth_session`, `auth_verification`. Bestehende UUIDs werden 1:1 nach `auth_user.id` und `auth_account.user_id` übernommen; der Credential-Account verwendet in dieser Version `provider_id = credential` und `account_id = auth_user.id`. Das fachliche Identitätsfeld bleibt `auth_user.id`; `account_id` ist kein KompCards-Vertrag. `competency_proof.user_id` wird nicht verändert, nur sein FK-Ziel wechselt auf `auth_user.id` mit `ON DELETE CASCADE`.
+- **Sessions:** 12 Stunden, DB-basiert, kein Cookie-Cache und keine Übernahme alter JWT-Sessions. Nach dem Cutover werden JWTs nicht mehr akzeptiert.
+- **Passwörter:** Bestehende bcryptjs-Hashes mit Kostenfaktor 10 bleiben gültig. Ein späterer Hashwechsel ist eine eigene Migration.
+- **Admin:** Erste Administratoren werden ausschließlich über explizite UUIDs beim Benutzerimport festgelegt. Curriculum-Import benötigt `admin`. Admins erhalten keinen impliziten Zugriff auf fremde Kompetenzkarten. Löschen und Impersonation sind deaktiviert.
+- **Erweiterungen:** Passwort-Reset ist hinter einer Mail-Schnittstelle vorbereitet, bleibt ohne Provider unsichtbar. GitHub, E-Mail-Verifizierung und Passkeys folgen separat und müssen dieselbe `auth_user.id` weiterverwenden.
+- **Betrieb:** Migrationen laufen explizit vor dem Backend-Start. Die lokale Entwicklung beginnt mit einer leeren Datenbank.
+
+## ADR-015: Prägnante, evidenzbasierte Kompetenzformulierungen
+
+- **Kontext:** Der bisherige Systemprompt trennt Vorgehen, Zweck und erreichtes Ergebnis zu wenig. Die Eingaben sollen stichwortartig bleiben und für alle HF-Studiengänge geeignet sein.
+- **Entscheidung:** `work_result` verwendet Ich-Form und Perfekt in 1–2 Sätzen mit höchstens 60 Wörtern. `quality_statement` beschreibt ein berichtetes Ergebnis in genau einem Satz mit höchstens 30 Wörtern; ohne Ergebnisnachweis benennt es die fehlende Information. Dies präzisiert die bisherige Längenregel aus ADR-011. Keine erfundenen Methoden, Messwerte, Abnahmen oder Erfolge; Widersprüche werden zur Klärung benannt.
+- **Bewertung:** `quality` bleibt eine Bewertung der Aussagekraft der Eingabe (1–4), keine Leistungsnote. Stufe 1: keine Handlung oder wesentlicher Widerspruch; 2: Handlung, aber Methode oder Zweck unklar; 3: Handlung, Methode und Zweck nachvollziehbar; 4: zusätzlich überprüfbares Ergebnis. Stichwortstil wird nicht abgewertet, negative Ergebnisse können Stufe 4 erfüllen.
+- **Konsequenz:** Schema und Feldnamen bleiben unverändert. Ohne Kompetenzbeschreibung wird `overlap_curriculum = false` mit einem Hinweis auf die fehlende Beurteilbarkeit ausgegeben; das bestehende Boolean unterscheidet unbekannten und fehlenden Bezug nicht. Prompt-Vertragstests sichern die Anweisungen; die tatsächliche Modelltreue muss separat evaluiert werden.
+
+## ADR-016: Separater, providerunabhängiger Eval-Runner
+
+- **Kontext:** Prompt- und Modelländerungen sollen mit demselben synthetischen Kompetenzkarten-Set auf vLLM und Online-Modellen vergleichbar werden.
+- **Entscheidung:** Ein explizit gestarteter TypeScript-CLI-Runner unter `backend/src/eval/` nutzt den aktuellen Systemprompt und `buildPrompt()`, ein gemeinsames Transport-Schema und die bestehende lokale Zod-Validierung. Provideradapter für vLLM/OpenAI-kompatible Chat-Completions und Anthropic Messages verwenden ein in Tests gemocktes Transport-Interface. Standard ist ein Dry-run; reale Aufrufe erfolgen nur mit `--run`, sequenziell und ohne Retry oder Reparatur.
+- **Bewertung:** Automatische Prüfungen, Laufzeit und Tokens werden von menschlichen Kriterien für Faktentreue und Sprache getrennt. Fehlgeschlagene Versuche bleiben im Ergebnis; unbekannte Werte und offene Reviews sind null. Erwartete Antworten werden nie an das zu prüfende Modell übermittelt.
+- **Konsequenz:** Keine Änderung der produktiven LLM-Anbindung oder des DB-Schemas. Laufdaten, Prompt-/Dataset-Snapshots und Berichte liegen im Git-ignorierten `eval-results/`. Reale Modellaufrufe sind kein Bestandteil der regulären Vitest-/CI-Läufe. Das Set bleibt synthetisch und seine fachlichen Labels müssen geprüft werden.
+
+## ADR-017: Hinweis-Listen an der produktiven LLM-Grenze normalisieren
+
+- **Kontext:** Das eingesetzte Modell liefert `note_improvment` teilweise als String-Liste statt als String/null; die SDK-Validierung verwirft dadurch die gesamte Auswertung.
+- **Entscheidung:** Der Prompt verlangt explizit einen einzelnen JSON-String oder null. Der produktive Client verbindet dennoch gelieferte reine String-Listen vor der Validierung mit Zeilenumbrüchen; eine leere Liste wird null. Andere Typen und ungültige Werte der übrigen Felder werden weiterhin abgelehnt.
+- **Konsequenz:** DB, API und Domänenschema bleiben unverändert. Das übermittelte JSON-Schema verlangt weiterhin String/null. Die separate Evaluation bleibt strikt und zählt Listen weiterhin als Formatfehler, damit Modellvergleiche die tatsächliche Schematreue zeigen.
+
+## ADR-018: GitHub OAuth ausschliesslich für neue Konten
+
+- **Kontext:** Nach der erfolgreichen Auth-Migration ist GitHub als weitere Anmeldeoption gewünscht. Die App ist noch nicht produktiv; bestehende Konten sollen ausdrücklich nicht verknüpft werden.
+- **Entscheidung:** Optionaler GitHub-Provider in Better Auth 1.7.5. Registrierung legt eine neue `auth_user.id` und einen `auth_account` mit `provider_id = github` und der stabilen GitHub-ID als `account_id` an. Kein Credential-Passwort wird erzeugt. Wiederholte Logins behalten dieselbe UUID und damit den Kartenbesitz.
+- **Kontentrennung:** Account-Linking ist serverseitig deaktiviert; `/link-social` und `/unlink-account` sind zusätzlich gesperrt. E-Mail-Kollisionen führen zu einem Fehler, niemals zur Zusammenführung. E-Mail-/Passwort-Registrierung und -Login bleiben bestehen. Eine nachträgliche Passwortvergabe für GitHub-Konten wird nicht angeboten.
+- **Registrierung:** `disableImplicitSignUp` verlangt den expliziten Registrierungsmodus. Im Registrierungsformular ist die vorhandene Zustimmung auch für GitHub nötig; das ist wie beim Credential-Formular eine UI-Prüfung, kein persistierter Zustimmungsnachweis. Der Login-Button erzeugt keine neuen Nutzer. GitHub muss eine verifizierte E-Mail liefern, auch private Adressen werden unterstützt.
+- **Betrieb:** Separate OAuth Apps für Entwicklung und Produktion. `GITHUB_CLIENT_ID` und `GITHUB_CLIENT_SECRET` sind gemeinsam optional; Teilkonfiguration verhindert den Start. `/api/auth-config` meldet nur Verfügbarkeit. Keine Schemaänderung; bestehende Auth-Tabellen reichen aus. State wird in der DB abgelegt; Tokenverschlüsselung verwendet das bestehende Better-Auth-Secret. Sessiondauer und Admin-Regeln bleiben bestehen.
+- **Tests:** Reale Better-Auth-Handler und GitHub-Provider mit Memory-Adapter anstelle von Drizzle und gemocktem GitHub-HTTP. Keine externen OAuth-Aufrufe in CI. Ein echter Browser-/MySQL-/Traefik-Durchlauf bleibt Teil der Aktivierungsabnahme.
 
 ## Offene Entscheidungen
 

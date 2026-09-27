@@ -8,7 +8,7 @@ import CompetencySummary from '../../../components/workflow/CompetencySummary.vu
 import DocumentationField from '../../../components/workflow/DocumentationField.vue'
 import WorkflowSteps from '../../../components/workflow/WorkflowSteps.vue'
 import { useCompetencyWorkflow } from '../../../composables/useCompetencyWorkflow'
-import type { CompetencyInputPayload } from '../../../types/proof'
+import type { CompetencyInput, CompetencyInputPayload } from '../../../types/proof'
 
 definePageMeta({ middleware: ['service-only', 'auth'] })
 useSeoMeta({ title: 'Arbeit dokumentieren – KompCards' })
@@ -100,7 +100,10 @@ onMounted(async () => {
     return
   }
   await loadProof(proofId)
-  const latestInput = proof.value?.inputs.reduce((latest, input) => input.id > latest.id ? input : latest, proof.value.inputs[0])
+  const latestInput = proof.value?.inputs.reduce<CompetencyInput | null>(
+    (latest, input) => !latest || input.id > latest.id ? input : latest,
+    null,
+  )
   if (latestInput) {
     form.userRole = latestInput.userRole
     form.what = latestInput.what

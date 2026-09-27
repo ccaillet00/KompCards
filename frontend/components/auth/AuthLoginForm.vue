@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive } from 'vue'
+import { computed, onMounted, reactive } from 'vue'
 import { navigateTo, useRoute } from '#imports'
 import { useAuth } from '../../composables/useAuth'
 import UiButton from '../ui/UiButton.vue'
@@ -7,9 +7,11 @@ import UiFormField from '../ui/UiFormField.vue'
 import UiIcon from '../ui/UiIcon.vue'
 import UiInput from '../ui/UiInput.vue'
 import AuthPasswordField from './AuthPasswordField.vue'
+import AuthGithubButton from './AuthGithubButton.vue'
 
 const route = useRoute()
 const auth = useAuth()
+onMounted(() => auth.loadAuthMethods())
 const form = reactive({ email: '', password: '' })
 const errors = reactive<{ email?: string, password?: string }>({})
 const registered = computed(() => route.query.registered === '1')
@@ -27,6 +29,13 @@ async function submit(): Promise<void> {
     await navigateTo('/dashboard')
   } catch {
     // Der Auth-Service stellt die serverseitige Fehlermeldung bereit.
+  }
+}
+async function githubSignIn(): Promise<void> {
+  try {
+    await auth.signInWithGithub('login')
+  } catch {
+    // useAuth provides the translated error above the form.
   }
 }
 </script>
@@ -101,6 +110,14 @@ async function submit(): Promise<void> {
         />
       </UiButton>
     </form>
+
+    <AuthGithubButton
+      v-if="auth.githubEnabled.value"
+      mode="login"
+      :loading="auth.isLoading.value"
+      :disabled="auth.isLoading.value"
+      @click="githubSignIn"
+    />
 
     <p class="mt-8 text-center text-sm text-base-content/70">
       Noch kein Konto?

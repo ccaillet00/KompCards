@@ -5,7 +5,10 @@ import { defineComponent } from 'vue'
 import { $fetch } from 'ofetch'
 import { useCompetencyWorkflow } from '../composables/useCompetencyWorkflow'
 
-const auth = vi.hoisted(() => ({ isAuthenticated: { value: true } }))
+const auth = vi.hoisted(() => ({
+  isAuthenticated: { value: true },
+  handleUnauthorized: vi.fn(() => false),
+}))
 
 vi.mock('ofetch', () => ({ $fetch: vi.fn() }))
 vi.mock('../composables/useAuth', () => ({ useAuth: () => auth }))
@@ -38,6 +41,8 @@ describe('useCompetencyWorkflow', () => {
   beforeEach(() => {
     clearNuxtState()
     vi.mocked($fetch).mockReset()
+    auth.handleUnauthorized.mockReset()
+    auth.handleUnauthorized.mockReturnValue(false)
   })
 
   it('lädt den Lehrplan und erstellt eine Karte mit der gewählten Kompetenz', async () => {

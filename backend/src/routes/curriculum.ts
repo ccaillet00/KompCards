@@ -1,8 +1,13 @@
 import multer from 'multer';
 import { Router, type NextFunction, type Response } from 'express';
 
-import type { AppConfig } from '../config.js';
-import { requireAuth, requireUser, type AuthRequest } from '../auth/middleware.js';
+import {
+  requireAdmin,
+  requireAuth,
+  requireUser,
+  type AuthRequest,
+  type SessionReader,
+} from '../auth/middleware.js';
 import { BadRequestError } from '../utils/errors.js';
 import type { CurriculumService } from '../services/curriculumService.js';
 
@@ -16,11 +21,11 @@ const upload = multer({
  * Curriculum-Routen: Import der Rahmenlehrplan-Referenzdaten aus CSV-Dateien.
  *
  * `POST /import` — multipart-Upload mit 3 Dateien (curriculum, areas, competencies).
- * Erfordert eine gültige Session (requireAuth).
+ * Erfordert eine gültige Session und die explizite Admin-Rolle.
  */
-export function curriculumRouter(config: AppConfig, curriculumService: CurriculumService): Router {
+export function curriculumRouter(auth: SessionReader, curriculumService: CurriculumService): Router {
   const router = Router();
-  router.use(requireAuth(config), requireUser);
+  router.use(requireAuth(auth), requireUser);
 
   // GET / — alle Lehrgänge mit Bereichen und Kompetenzen (verschachtelt)
   router.get('/', (_req: AuthRequest, res: Response, next: NextFunction) => {
@@ -32,6 +37,7 @@ export function curriculumRouter(config: AppConfig, curriculumService: Curriculu
 
   router.post(
     '/import',
+    requireAdmin,
     upload.fields([
       { name: 'curriculum', maxCount: 1 },
       { name: 'areas', maxCount: 1 },

@@ -23,6 +23,10 @@ Regeln:
 - **Typen:** `bun run typecheck` (`tsc --noEmit`) als eigene Schicht.
 - **In CI:** Tests laufen als eigener Step.
 
+### LLM-Evaluation (explizit, ausserhalb der CI)
+
+Im `backend/`: `bun run eval --dry-run` erstellt einen Request-Plan ohne API-Aufrufe; `bun run eval --run` führt den Modellvergleich aus. Konfiguration, Split-Auswahl und fachliche Nachbewertung stehen in [`evals/RUNNER.md`](./evals/RUNNER.md). Standard ist der development-Split mit drei Wiederholungen. Reale LLM-Aufrufe bleiben von den gemockten Vitest-Tests getrennt.
+
 ## 3. Linting
 
 - **ESLint** in Frontend und Backend (je eigene Konfiguration).
@@ -72,6 +76,7 @@ Regeln:
 ## 8. Konventionen
 
 - **Namen:** DB-Objekte exakt wie im SQL (inkl. `note_improvment`, `userTable`, `userSession`).
+- **Auth-Setup:** Lokale Datenbanken werden gemäß [`AUTH_LOCAL_SETUP.md`](./AUTH_LOCAL_SETUP.md) leer aufgebaut. Der normale Backend-Start verändert das DB-Schema nicht.
 - **Domänen-Wissen:** Spalten-/Status-Bedeutungen im TS-Schema via `.$comment()`/JSDoc dokumentieren.
 - **Frontend-Design:** Verbindliche Tokens, Assets, Komponenten- und Bildregeln stehen in [`design/DESIGN.md`](./design/DESIGN.md). Mockups unter `design/references/` sind nur visuelle Referenzen und keine Runtime-Assets.
 - [Annahme] API = REST/JSON; `/api`-Proxy im Frontend.

@@ -3,8 +3,12 @@ import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import AuthLayout from '../layouts/auth.vue'
 import LoginPage from '../pages/login.vue'
+import AuthRegisterForm from '../components/auth/AuthRegisterForm.vue'
 
 const auth = vi.hoisted(() => ({
+  githubEnabled: { value: false },
+  loadAuthMethods: vi.fn(),
+  signInWithGithub: vi.fn(),
   login: vi.fn(),
   register: vi.fn(),
   isLoading: { value: false },
@@ -19,6 +23,10 @@ vi.mock('../composables/useAuth', () => ({
 
 describe('Authentifizierungsseiten', () => {
   beforeEach(() => {
+    auth.githubEnabled.value = false
+    auth.loadAuthMethods.mockReset().mockResolvedValue(undefined)
+    auth.signInWithGithub.mockReset().mockResolvedValue(undefined)
+    auth.isLoading.value = false
     auth.login.mockReset()
     auth.register.mockReset()
     auth.error.value = null
@@ -44,6 +52,43 @@ describe('Authentifizierungsseiten', () => {
     expect(wrapper.get('input[type="password"]').attributes('autocomplete')).toBe('current-password')
     expect(wrapper.text()).not.toContain('GitHub')
     expect(wrapper.text()).not.toContain('Passwort vergessen')
+  })
+
+  it('bietet aktiviertes GitHub für bereits registrierte GitHub-Konten an', async () => {
+    auth.githubEnabled.value = true
+    const wrapper = await mountSuspended(LoginPage, { route: '/login' })
+    await wrapper.get('[data-test="github-auth"]').trigger('click')
+    expect(auth.loadAuthMethods).toHaveBeenCalled()
+    expect(auth.signInWithGithub).toHaveBeenCalledWith('login')
+    expect(auth.login).not.toHaveBeenCalled()
+  })
+
+  it('registriert über GitHub ohne Passwort erst nach Zustimmung', async () => {
+    auth.githubEnabled.value = true
+    const wrapper = await mountSuspended(AuthRegisterForm)
+    expect(wrapper.get('[data-test="github-auth"]').attributes('disabled')).toBeDefined()
+    await wrapper.get('input[type="checkbox"]').setValue(true)
+    expect(wrapper.get('[data-test="github-auth"]').attributes('disabled')).toBeUndefined()
+    await wrapper.get('[data-test="github-auth"]').trigger('click')
+    expect(auth.signInWithGithub).toHaveBeenCalledWith('register')
+    expect(auth.register).not.toHaveBeenCalled()
+  })
+
+  it('zeigt OAuth-Konflikte verständlich statt rohe Providerbeschreibungen an', async () => {
+    const wrapper = await mountSuspended(LoginPage, { route: '/login?error=account_not_linked&error_description=UNTRUSTED' })
+    expect(wrapper.get('[data-test="oauth-error"]').text()).toContain('E-Mail-Adresse')
+    expect(wrapper.get('[data-test="oauth-error"]').text()).toContain('Passwort')
+    expect(wrapper.text()).not.toContain('UNTRUSTED')
+  })
+
+  it('fängt einen fehlgeschlagenen GitHub-Start im Formular ab', async () => {
+    auth.githubEnabled.value = true
+    auth.signInWithGithub.mockRejectedValue(new Error('offline'))
+    auth.error.value = 'GitHub ist gerade nicht erreichbar.'
+    const wrapper = await mountSuspended(LoginPage, { route: '/login' })
+    await wrapper.get('[data-test="github-auth"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('GitHub ist gerade nicht erreichbar.')
   })
 
   it('validiert Login-Daten vor dem API-Aufruf', async () => {

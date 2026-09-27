@@ -33,6 +33,12 @@ export function useCompetencyWorkflow() {
   const isChecking = ref(false)
   const error = ref<string | null>(null)
 
+  function handleRequestError(requestError: unknown): void {
+    error.value = auth.handleUnauthorized(requestError)
+      ? 'Deine Sitzung ist nicht mehr gültig. Bitte melde dich erneut an.'
+      : apiErrorMessage(requestError)
+  }
+
   const competencyContext = computed<CompetencyContext | null>(() => {
     if (!proof.value) return null
     for (const curriculum of curricula.value) {
@@ -72,7 +78,7 @@ export function useCompetencyWorkflow() {
         requestOptions(),
       )
     } catch (requestError) {
-      if (!error.value) error.value = apiErrorMessage(requestError)
+      if (!error.value) handleRequestError(requestError)
     } finally {
       isLoading.value = false
     }
@@ -92,7 +98,7 @@ export function useCompetencyWorkflow() {
       )
       return response.proof
     } catch (requestError) {
-      if (!error.value) error.value = apiErrorMessage(requestError)
+      if (!error.value) handleRequestError(requestError)
       throw requestError
     } finally {
       isSaving.value = false
@@ -112,7 +118,7 @@ export function useCompetencyWorkflow() {
       proof.value = proofResponse.proof
       curricula.value = curriculumResponse
     } catch (requestError) {
-      if (!error.value) error.value = apiErrorMessage(requestError)
+      if (!error.value) handleRequestError(requestError)
     } finally {
       isLoading.value = false
     }
@@ -137,7 +143,7 @@ export function useCompetencyWorkflow() {
       }
       return savedInput
     } catch (requestError) {
-      if (!error.value) error.value = apiErrorMessage(requestError)
+      if (!error.value) handleRequestError(requestError)
       throw requestError
     } finally {
       isSaving.value = false
@@ -161,7 +167,7 @@ export function useCompetencyWorkflow() {
       }
       return response.output
     } catch (requestError) {
-      if (!error.value) error.value = apiErrorMessage(requestError)
+      if (!error.value) handleRequestError(requestError)
       throw requestError
     } finally {
       isChecking.value = false
@@ -182,7 +188,7 @@ export function useCompetencyWorkflow() {
       )
       return response.output
     } catch (requestError) {
-      if (!error.value) error.value = apiErrorMessage(requestError)
+      if (!error.value) handleRequestError(requestError)
       throw requestError
     } finally {
       isChecking.value = false
@@ -202,7 +208,7 @@ export function useCompetencyWorkflow() {
       )
       return response.output
     } catch (requestError) {
-      if (!error.value) error.value = apiErrorMessage(requestError)
+      if (!error.value) handleRequestError(requestError)
       throw requestError
     } finally {
       isSaving.value = false

@@ -26,6 +26,7 @@
 | ORM | **Drizzle ORM** | Vorgabe; baut das SQL-Schema nach |
 | Datenbank | **MySQL** | Vorgabe (utf8mb4) |
 | DB-Treiber | **mysql2** | [Annahme] Drizzle-MySQL-Standard |
+| Authentifizierung | **Better Auth 1.7.5** | Drizzle-Adapter für MySQL, E-Mail/Passwort, DB-Sessions und Admin-Plugin |
 | Passwort-Hashing | **bcryptjs** | Vorgabe **abgeändert**: natives `bcrypt` ist unter Bun unzuverlässig → Pure-JS `bcryptjs` (gleiches 60-Char-Format). Siehe ADR-004. |
 | Logging | **pino** | Vorgabe |
 | Linter | **ESLint** | Vorgabe |
@@ -53,7 +54,10 @@
 ```
 # Backend
 DATABASE_URL=mysql://user:pass@db:3306/kompcards_db
-JWT_SECRET=...
+BETTER_AUTH_SECRET=...  # mindestens 32 zufällige Zeichen
+BETTER_AUTH_URL=https://service.kompcards.ccdevlab.ch
+GITHUB_CLIENT_ID=       # optional; nur gemeinsam mit Secret
+GITHUB_CLIENT_SECRET=   # beide leer deaktiviert GitHub
 LLM_BASE_URL=...        # externer LLM (aus Scope)
 LLM_API_KEY=...
 LLM_MODEL=...
@@ -64,3 +68,5 @@ NUXT_PUBLIC_API_BASE=/api       # same-origin auf service.kompcards.ccdevlab.ch
 NUXT_PUBLIC_APP_MODE=public     # public oder service
 NUXT_PUBLIC_SERVICE_URL=...     # Zielhost für Login/Registrierung von der Landingpage
 ```
+
+GitHub OAuth: Einrichtung, Callback-URLs und Abnahme in [AUTH_GITHUB_SETUP.md](./AUTH_GITHUB_SETUP.md). Credentials bleiben ausschliesslich im Backend.

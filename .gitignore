@@ -1,8 +1,8 @@
 node_modules/
 dist/
-drizzle/
 .env
 *.log
 .DS_Store
 *.csv
 traefik/
+eval-results/
