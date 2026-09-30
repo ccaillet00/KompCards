@@ -143,7 +143,9 @@ Die Auswahl erfolgt hierarchisch: Lehrgang → Bereich → Kompetenz. Ein Auswah
 
 ### Arbeit dokumentieren
 
-Die Oberfläche erfasst die vorhandenen Backend-Felder, darunter Rolle, Was, Wie, Warum, Umfeld und die fachlich definierte Betreff-/Vorgabenangabe. Eine Karte kann als Entwurf gespeichert oder zur LLM-Prüfung übermittelt werden.
+Die Oberfläche erfasst die vorhandenen Backend-Felder, darunter Rolle, Was, Wie, Wozu (Zweck/Nutzen), Umfeld und die fachlich definierte Betreff-/Vorgabenangabe. Die drei W bedeuten: Was = ausgeführte Handlung, Wie = Vorgehen/Methode, Wozu = angestrebter Zweck/Nutzen. Die Wozu-Frage lautet «Wozu hast du die Arbeit ausgeführt?». Das API-Feld bleibt `why`. Der frühere Warum-Text im Referenzmockup ist fachlich überholt.
+
+Eine Karte kann als Entwurf gespeichert oder zur LLM-Prüfung übermittelt werden.
 
 ### LLM-Auswertung
 

@@ -26,7 +26,7 @@ bun run eval --run
 
 Ohne Modus ist der Aufruf ein Dry-run. Er validiert Konfiguration/Dataset und schreibt einen Plan, ruft aber kein Modell auf. `--run` führt die API-Aufrufe aus und kann bei Online-Anbietern Kosten verursachen. Es findet keine automatische API-Erkennung oder Umschaltung auf einen weniger strikten Ausgabemodus statt.
 
-Standard: 20 Entwicklungsfälle × 3 Wiederholungen = 60 Aufrufe. `EVAL_SPLIT=holdout` erzeugt 30, `EVAL_SPLIT=all` 90 Aufrufe. Die zehn zurückgehaltenen Fälle erst nach Festlegung des Prompts auswerten. Stichwortartige Eingaben sind beabsichtigt und werden nicht abgewertet.
+Standard: 23 Entwicklungsfälle × 3 Wiederholungen = 69 Aufrufe. `EVAL_SPLIT=holdout` erzeugt 30, `EVAL_SPLIT=all` 99 Aufrufe. Die zehn zurückgehaltenen Fälle erst nach Festlegung des Prompts auswerten. Stichwortartige Eingaben sind beabsichtigt und werden nicht abgewertet.
 
 ## 2. Claude Haiku 4.5
 

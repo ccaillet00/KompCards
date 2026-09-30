@@ -127,6 +127,14 @@ Diese Entscheidung wurde durch ADR-014 ersetzt. `userTable` und `userSession` bl
 - **Betrieb:** Separate OAuth Apps für Entwicklung und Produktion. `GITHUB_CLIENT_ID` und `GITHUB_CLIENT_SECRET` sind gemeinsam optional; Teilkonfiguration verhindert den Start. `/api/auth-config` meldet nur Verfügbarkeit. Keine Schemaänderung; bestehende Auth-Tabellen reichen aus. State wird in der DB abgelegt; Tokenverschlüsselung verwendet das bestehende Better-Auth-Secret. Sessiondauer und Admin-Regeln bleiben bestehen.
 - **Tests:** Reale Better-Auth-Handler und GitHub-Provider mit Memory-Adapter anstelle von Drizzle und gemocktem GitHub-HTTP. Keine externen OAuth-Aufrufe in CI. Ein echter Browser-/MySQL-/Traefik-Durchlauf bleibt Teil der Aktivierungsabnahme.
 
+## ADR-019: Drei W — Was, Wie und Wozu
+
+- **Kontext:** Formular und Eingabeprompt fragten nach «Warum» beziehungsweise der Begründung einer Methode. Fachlich soll das dritte W den Zweck und Nutzen der Tätigkeit erfassen; ADR-015 beschreibt bereits Handlung, Methode und Zweck.
+- **Entscheidung:** Was = ausgeführte Handlung, Wie = Vorgehen/Methode, Wozu = angestrebter Zweck/Nutzen. Formular, Auswertung und LLM-Prompt verwenden diese Bedeutung durchgehend. Der technische Feldname `why` bleibt in API, TypeScript und `competency_input` bestehen; keine Schemaänderung oder Migration.
+- **LLM:** Ein beabsichtigter Nutzen gilt weiterhin nicht als erreichtes Ergebnis. Ist nur die Methodenwahl begründet und kein Zweck erkennbar, fragt das LLM nach dem Zweck, statt ihn zu erfinden. Bewertung und Ausgabeschema aus ADR-015 bleiben erhalten.
+- **Bestandsdaten:** Bestehende Eingaben und gespeicherte Auswertungen werden nicht umgeschrieben oder automatisch neu erzeugt. Bei zukünftigen Prüfungen und Retries gilt der neue Prompt; fehlende Zwecke werden als Informationslücke behandelt.
+- **Validierung:** Vitest sichert Texte, Pflichtfeldverhalten, bestehenden `why`-Transport und Prompt-Verträge. Dataset v0.2 ergänzt drei synthetische Entwicklungsfälle; v0.1 bleibt als historische Vergleichsgrundlage erhalten. Modelltreue wird separat evaluiert.
+
 ## Offene Entscheidungen
 
 Keine — alle Kernpunkte geschlossen:

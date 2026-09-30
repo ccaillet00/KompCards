@@ -44,7 +44,7 @@ Das von der Studierenden ausgefüllte Formular — das „Arbeitsergebnis nach V
 - `user_role` — Rolle im Unternehmen/Praktikum
 - `what` — das „Was" der Kompetenzübung
 - `how` — das „Wie"
-- `why` — das „Warum"
+- `why` — das „Wozu": angestrebter Zweck und Nutzen der Tätigkeit; technischer Feldname bleibt unverändert.
 - `environment` — Umgebung/Kontext, in dem es erfolgte
 - `subject` — **Vorgabe, Bedeutung unklar:** SQL-Kommentar „The lecturer's requests"; spaltengenaue Bedeutung offen gelassen
 
