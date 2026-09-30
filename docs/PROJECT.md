@@ -50,7 +50,8 @@ Das von der Studierenden ausgefüllte Formular — das „Arbeitsergebnis nach V
 
 ### LLM-Output (`competency_llm_output`)
 Maschinelle Auswertung/Ausformulierung des Arbeitsergebnisses:
-- `work_result` — der von LLM erzeugte Output
+- `work_result` — fachlicher Absatz aus Was/Wie/Wozu in Ich-Form und Perfekt, mit Rolle, 1–2 Sätze
+- `quality_statement` — genau ein Satz zum überprüfbaren Ergebnis; ohne Nachweis ein ausdrücklich offenes konkretes Zielkriterium beziehungsweise eine spezifische Informationslücke (ADR-020)
 - `quality` (1–4): 1=very bad, 2=bad, 3=good, 4=very good — Bewertung der Qualität des Nutzeingangs
 - `overlap_curriculum` (bool) — überlappt der Output mit dem Curriculum
 - `note_improvment` — Verbesserungshinweise des LLM *(Spaltenname enthält Tippfehler, wird beibehalten)*
