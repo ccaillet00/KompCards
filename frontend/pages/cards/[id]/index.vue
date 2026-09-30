@@ -49,7 +49,7 @@ function validateForCheck(): boolean {
     userRole: 'Bitte beschreibe deine Rolle.',
     what: 'Bitte beschreibe, was du gemacht hast.',
     how: 'Bitte beschreibe dein Vorgehen.',
-    why: 'Bitte begründe dein Vorgehen.',
+    why: 'Bitte beschreibe den Zweck oder angestrebten Nutzen deiner Arbeit.',
     environment: 'Bitte beschreibe das Umfeld.',
   }
   let valid = true
@@ -223,9 +223,9 @@ onMounted(async () => {
             <DocumentationField
               id="why"
               v-model="form.why"
-              label="Warum hast du so gehandelt?"
-              hint="Erkläre, warum du diesen Weg gewählt hast."
-              placeholder="z. B. um eine skalierbare Lösung zu erreichen …"
+              label="Wozu hast du die Arbeit ausgeführt?"
+              hint="Beschreibe den Zweck der Arbeit und den angestrebten Nutzen."
+              placeholder="z. B. um Daten konsistent zu speichern und doppelte Erfassungen zu vermeiden …"
               :error="errors.why"
               :disabled="!editable || isSaving || isChecking"
             />

@@ -58,7 +58,7 @@ const documentation = computed(() => activeInput.value
       { label: 'Rolle', value: activeInput.value.userRole },
       { label: 'Was hast du gemacht?', value: activeInput.value.what },
       { label: 'Wie bist du vorgegangen?', value: activeInput.value.how },
-      { label: 'Warum hast du so gehandelt?', value: activeInput.value.why },
+      { label: 'Wozu hast du die Arbeit ausgeführt?', value: activeInput.value.why },
       { label: 'Umfeld', value: activeInput.value.environment },
     ]
   : [])
