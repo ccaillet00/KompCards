@@ -18,7 +18,7 @@ export interface LlmRequest {
   what: string;
   /** The 'how' in the exercise of competence */
   how: string;
-  /** The 'why' behind the exercise of competence */
+  /** Wozu: angestrebter Zweck/Nutzen der Tätigkeit; technischer Feldname bleibt why. */
   why: string;
   /** Where was this plot carried out? */
   environment: string;
