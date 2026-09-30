@@ -28,6 +28,17 @@ Ohne Modus ist der Aufruf ein Dry-run. Er validiert Konfiguration/Dataset und sc
 
 Standard: 23 Entwicklungsfälle × 3 Wiederholungen = 69 Aufrufe. `EVAL_SPLIT=holdout` erzeugt 30, `EVAL_SPLIT=all` 99 Aufrufe. Die zehn zurückgehaltenen Fälle erst nach Festlegung des Prompts auswerten. Stichwortartige Eingaben sind beabsichtigt und werden nicht abgewertet.
 
+### Informatik-Kompetenzen aus CSV-Dateien
+
+Das ergänzende Set wird ausdrücklich gewählt; der bisherige Standard bleibt erhalten:
+
+```bash
+EVAL_SPLIT=development bun run eval --dry-run --dataset ../docs/evals/informatics-cards.v1.0.json
+EVAL_SPLIT=development bun run eval --run --dataset ../docs/evals/informatics-cards.v1.0.json
+```
+
+30 development-Fälle × 3 = 90 Aufrufe; zehn holdout-Fälle × 3 = 30. Alle 40 Fälle × 3 = 120. Die Erwartungen müssen fachlich geprüft werden. Hintergrund, Quellen und Review: [INFORMATICS.md](./INFORMATICS.md). Während der Erstellung wurden nur Unit-Tests und Dry-runs ausgeführt, keine echten LLM-Aufrufe.
+
 ## 2. Claude Haiku 4.5
 
 ```bash

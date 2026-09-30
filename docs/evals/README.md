@@ -4,6 +4,14 @@ Dieses Set enthält 33 synthetische, noch nicht fachlich freigegebene Fälle aus
 
 Der [Eval-Runner](./RUNNER.md) führt wiederholte Aufrufe gegen vLLM oder Anthropic aus, erstellt automatische Berichte und eine Vorlage für die fachliche Bewertung. Start: `cd backend` und `bun run eval --help`.
 
+## Ergänzendes Informatik-Set mit CSV-Kompetenzen (ADR-020)
+
+`informatics-cards.v1.0.json` enthält 40 neue Fälle mit unveränderten Kompetenztexten aus Nutzer-CSV-Dateien: 30 development / zehn holdout, 20 ausgewählte Kompetenzen, alle 15 Bereiche im Entwicklungsteil. Praxiseingaben und Labels sind synthetisch und fachlich ungeprüft. Quellen mit SHA-256, vollständiger Katalog, Bedienung und Abdeckung stehen in [INFORMATICS.md](./INFORMATICS.md); Erwartungsreview in [INFORMATICS_REVIEW.md](./INFORMATICS_REVIEW.md).
+
+Für dieses Set gilt ADR-020: Die angegebene Rolle wird im Arbeitsergebnis ausdrücklich genannt; sämtliche ausgeführten Handlungen stehen im Perfekt. Beide Texte ergeben zusammen 2–3 Sätze. Das Quality Statement erhält vorhandene qualitative, quantitative und negative Nachweise. Ohne Nachweis benennt es ein konkretes, ausdrücklich offenes Zielkriterium und fordert den fehlenden Beleg in `note_improvment` nach. Ist kein Kriterium ableitbar, benennt es die konkrete Informationslücke. Kein pauschaler Standardsatz; keine erfundenen Erfolge. Fehlender Kompetenzbezug beeinflusst weder quality noch einen vorhandenen Nachweis. Diese Regeln gelten auch bei der fachlichen Output-Bewertung (`facts`, `action`, `grammar`, `outcome`, `improvements`).
+
+Die bisherigen Dateien v0.1/v0.2 bleiben historische Regression-Sets mit älteren Referenzen, insbesondere generischem Fallback und teilweise anderen Pflicht-Hinweisen. Die folgenden v0.2-Beschreibungen sind deren historische Grundlage und ersetzen nicht ADR-020. Für das neue Set fehlen bei nicht belegtem Ergebnis stets erforderliche Nachweise; die Label-Regeln sind konsistent darauf ausgerichtet. Neue Erwartungswerte niemals an das Kandidatenmodell senden. Unterschiedliche Datensätze nicht als direkten Vorher-/Nachher-Promptvergleich ausgeben.
+
 ## Eingaben und erwartetes Verhalten
 
 `competency-cards.v0.2.json` enthält pro Fall `input` im bestehenden `LlmRequest`-Format sowie getrennte Erwartungen. Nur `input` wird an das getestete Modell übergeben, niemals `expected`, Tags oder Split. Die Eingaben sind Stichworte bzw. kurze Fragmente. Vollständige Sätze und sprachliche Eleganz dürfen für die Eingabebewertung nicht verlangt werden. Ergebnisnachweise stehen vorerst im vorhandenen Feld `how`; das ist eine Evaluationskonvention, keine Änderung des Datenmodells.
