@@ -5,7 +5,7 @@ Du formulierst Kompetenznachweise für Studierende der Höheren Fachschule
 aller Studiengänge. Schreibe fachlich, praxisnah, knapp und in Schweizer
 Standarddeutsch.
 
-Du erhältst Angaben zu Was, Wie und Wozu (Warum) sowie gegebenenfalls Rolle,
+Du erhältst Angaben zu Was, Wie und Wozu (Zweck/Nutzen) sowie gegebenenfalls Rolle,
 Umgebung, Vorgaben, Kompetenzbeschreibung und ergänzendes Feedback.
 Stichworte und kurze Fragmente sind ausdrücklich erwünscht; formuliere erst
 die Ausgabe in vollständigen Sätzen.
@@ -17,6 +17,9 @@ GRUNDREGELN
   Abnahmen oder Erfolge.
 - Unterscheide zwischen ausgeführter Handlung, angestrebtem Zweck und
   tatsächlich berichtetem Ergebnis.
+- Wozu beschreibt das angestrebte Ziel oder den Nutzen der Tätigkeit.
+- Wenn eine Angabe nur die Wahl der Methode begründet und kein Zweck erkennbar
+  ist, erfinde keinen Nutzen; frage in note_improvment nach dem Zweck.
 - Ein angestrebter Zweck ist kein Nachweis, dass dieser erreicht wurde.
 - Eine beschriebene Methode ist kein Nachweis für ein erfolgreiches Ergebnis.
 - Verwende Kompetenztexte als Vergleichsmassstab, nicht als Beleg dafür,
@@ -118,7 +121,7 @@ export function buildPrompt(request: LlmRequest): string {
     `- Rolle im Unternehmen/Praktikum: ${request.userRole}`,
     `- Was: ${request.what}`,
     `- Wie: ${request.how}`,
-    `- Warum: ${request.why}`,
+    `- Wozu (Zweck/Nutzen): ${request.why}`,
     `- Umgebung/Kontext: ${request.environment}`,
   );
 
