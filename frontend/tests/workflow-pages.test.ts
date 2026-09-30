@@ -84,6 +84,34 @@ describe('Kompetenzauswahl und Dokumentation', () => {
     fixture.triggerLlmCheck.mockReset().mockResolvedValue({ id: 5 })
   })
 
+  it('fragt nach Zweck und Nutzen und lädt das bestehende why-Feld', async () => {
+    const wrapper = await mountSuspended(DocumentationPage, { route: '/cards/9' })
+    await flushPromises()
+
+    expect(wrapper.get('label[for="why"]').text()).toBe('Wozu hast du die Arbeit ausgeführt?')
+    expect(wrapper.text()).toContain('Beschreibe den Zweck der Arbeit und den angestrebten Nutzen.')
+    expect(wrapper.get('#why').attributes('placeholder')).toBe('z. B. um Daten konsistent zu speichern und doppelte Erfassungen zu vermeiden …')
+    expect((wrapper.get('#why').element as HTMLTextAreaElement).value).toBe('Für konsistente Daten')
+    expect(wrapper.text()).not.toContain('Warum hast du so gehandelt?')
+  })
+
+  it('verlangt für die Prüfung einen Zweck, lässt aber einen leeren Entwurf zu', async () => {
+    const wrapper = await mountSuspended(DocumentationPage, { route: '/cards/9' })
+    await flushPromises()
+    await wrapper.get('#why').setValue('   ')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(wrapper.get('#why-error').text()).toBe('Bitte beschreibe den Zweck oder angestrebten Nutzen deiner Arbeit.')
+    expect(wrapper.get('#why').attributes('aria-invalid')).toBe('true')
+    expect(fixture.triggerLlmCheck).not.toHaveBeenCalled()
+    expect(fixture.saveInput).not.toHaveBeenCalled()
+
+    await wrapper.get('[data-test="save-draft"]').trigger('click')
+    await flushPromises()
+    expect(fixture.saveInput).toHaveBeenCalledWith(9, expect.objectContaining({ why: '   ' }))
+  })
+
   it('sperrt Eingaben während des Speicherns', async () => {
     fixture.saving = true
     const wrapper = await mountSuspended(DocumentationPage, { route: '/cards/9' })

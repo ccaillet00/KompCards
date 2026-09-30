@@ -407,7 +407,7 @@ describe('CompetencyService.triggerLlmCheck', () => {
       userRole: 'Alte Rolle',
       what: 'Altes was',
       how: 'Altes wie',
-      why: 'Altes warum',
+      why: 'Alter Zweck',
       environment: 'Alte Umgebung',
       subject: null,
     };
@@ -417,7 +417,7 @@ describe('CompetencyService.triggerLlmCheck', () => {
       userRole: 'Neue Rolle',
       what: 'Neues was',
       how: 'Neues wie',
-      why: 'Neues warum',
+      why: 'Neuer Zweck',
       environment: 'Neue Umgebung',
       subject: 'Neues Thema',
     };
@@ -431,7 +431,7 @@ describe('CompetencyService.triggerLlmCheck', () => {
       userRole: 'Neue Rolle',
       what: 'Neues was',
       how: 'Neues wie',
-      why: 'Neues warum',
+      why: 'Neuer Zweck',
       environment: 'Neue Umgebung',
       subject: 'Neues Thema',
       context: {

@@ -15,6 +15,15 @@ const base: LlmRequest = {
 // Promptverträge sichern die Anweisungen ab; tatsächliche Modelltreue wird
 // separat mit dem Eval-Set geprüft, niemals durch echte LLM-Calls in Vitest.
 describe('SYSTEM_PROMPT', () => {
+  it('definiert Wozu als angestrebten Zweck und fordert bei reiner Methodenbegründung eine Klärung', () => {
+    expect(SYSTEM_PROMPT).toContain('Wozu (Zweck/Nutzen)')
+    expect(SYSTEM_PROMPT).not.toContain('Wozu (Warum)')
+    expect(SYSTEM_PROMPT).toContain('angestrebte Ziel oder den Nutzen der Tätigkeit')
+    expect(SYSTEM_PROMPT).toContain('nur die Wahl der Methode begründet')
+    expect(SYSTEM_PROMPT).toContain('frage in note_improvment nach dem Zweck')
+    expect(SYSTEM_PROMPT).toContain('Ein angestrebter Zweck ist kein Nachweis')
+  })
+
   it('fordert Hinweise als einen JSON-String statt einer Liste an', () => {
     const notes = SYSTEM_PROMPT.split('NOTE_IMPROVMENT\n')[1]?.split('AUSGABE\n')[0];
     expect(notes).toContain('einzelnen JSON-String');
@@ -55,6 +64,12 @@ describe('SYSTEM_PROMPT', () => {
 });
 
 describe('buildPrompt', () => {
+  it.each([undefined, 'Bitte den Zweck klarer formulieren'])('übergibt why als Wozu, auch bei Feedback %s', (userFeedback) => {
+    const prompt = buildPrompt({ ...base, userFeedback })
+    expect(prompt).toContain('- Wozu (Zweck/Nutzen): um Daten bereitzustellen')
+    expect(prompt).not.toContain('- Warum:')
+  })
+
   it('enthält alle Felder der strukturierten Eingabe', () => {
     const prompt = buildPrompt(base);
     expect(prompt).toContain('Praktikant');

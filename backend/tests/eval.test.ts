@@ -6,7 +6,7 @@ import {
   callModel, runEvaluation, summarize, parseReviews,
 } from '../src/eval/core.js';
 
-const dataset = () => parseDataset(JSON.parse(readFileSync('../docs/evals/competency-cards.v0.1.json', 'utf8')));
+const dataset = () => parseDataset(JSON.parse(readFileSync('../docs/evals/competency-cards.v0.2.json', 'utf8')));
 const env = { EVAL_PROVIDER: 'vllm', LLM_BASE_URL: 'http://localhost:8000/v1', LLM_MODEL: 'test-model' };
 const config = () => loadEvalConfig(env);
 const card = () => dataset().cases[0]!;
@@ -30,9 +30,16 @@ describe('eval configuration and dataset', () => {
     expect(() => loadEvalConfig({ ...env, EVAL_PROVIDER: 'anthropic' })).toThrow();
     expect(() => loadEvalConfig({ ...env, EVAL_PROVIDER: 'anthropic', LLM_API_KEY: 'key', EVAL_SEED: '5' })).toThrow();
   });
-  it('loads all 30 keyword cases and rejects duplicate ids or invalid inputs', () => {
+  it('covers purpose, method justification and intended benefit without result evidence', () => {
+    const cases = dataset().cases.filter(c => c.tags.includes('wozu_regression'));
+    expect(cases).toHaveLength(3);
+    expect(cases.map(c => c.expected.quality)).toEqual([3, 2, 3]);
+    expect(cases.every(c => c.expected.result_evidence === null)).toBe(true);
+    expect(cases[1]?.expected).toMatchObject({ note_improvment_required: true, note_topics: ['Zweck/Nutzen'] });
+  });
+  it('loads all 33 keyword cases and rejects duplicate ids or invalid inputs', () => {
     const data = dataset();
-    expect(data.cases).toHaveLength(30);
+    expect(data.cases).toHaveLength(33);
     expect(data.cases.filter(c => c.split === 'holdout')).toHaveLength(10);
     expect(() => parseDataset({ ...data, cases: [card(), card()] })).toThrow();
     expect(() => parseDataset({ ...data, cases: [{ ...card(), input: { what: 'test' } }] })).toThrow();
