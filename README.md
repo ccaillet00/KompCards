@@ -4,7 +4,7 @@ Web-Applikation für Studierende an der Höheren Fachschule (HF): **Kompetenzkar
 
 Eine Kompetenzkarte dokumentiert, wie ein Studierender eine konkrete **Kompetenz** (abgeleitet aus dem Rahmenlehrplan) in einem Arbeitsnachweis umgesetzt hat. Studierende geben ihr Arbeitsergebnis über ein strukturiertes Formular ein; ein **LLM** erzeugt daraus die Ausformulierung/Bewertung, die revidiert, gespeichert oder verworfen werden kann.
 
-> **Scope:** Der LLM läuft auf einer **separaten Maschine** und liegt außerhalb dieses Projekts. In Scope ist ausschließlich die **Anbindung** (API-Call, Prompt, strukturierte Auswertung des Outputs).
+> **Scope:** Das LLM läuft auf einer **separaten Maschine** und liegt außerhalb dieses Projekts. In Scope ist ausschließlich die **Anbindung** (API-Call, Prompt, strukturierte Auswertung des Outputs).
 
 ---
 
