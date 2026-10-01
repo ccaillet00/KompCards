@@ -11,7 +11,7 @@ import { useCompetencyWorkflow } from '../../../composables/useCompetencyWorkflo
 import { orderOutputRevisions } from '../../../utils/outputRevisions'
 
 definePageMeta({ middleware: ['service-only', 'auth'] })
-useSeoMeta({ title: 'LLM-Auswertung – KompCards' })
+useSeoMeta({ title: 'KI-Auswertung – KompCards' })
 
 const route = useRoute()
 const router = useRouter()
@@ -69,7 +69,7 @@ async function submitRetry(): Promise<void> {
   actionMessage.value = null
   const feedback = retryFeedback.value.trim()
   if (!feedback) {
-    retryError.value = 'Bitte beschreibe, was die LLM-Auswertung verbessern soll.'
+    retryError.value = 'Bitte beschreibe, was die KI-Auswertung verbessern soll.'
     return
   }
   if (!activeOutput.value) return
@@ -99,7 +99,7 @@ async function accept(): Promise<void> {
       }))
     }
     if (proof.value) proof.value.status = 5
-    actionMessage.value = 'Auswertung übernommen und als aktuelle Auswahl gespeichert.'
+    actionMessage.value = 'Auswertung übernommen. Deine Kompetenzkarte ist abgeschlossen.'
   } catch {
     // Der Workflow-Service stellt die API-Fehlermeldung bereit.
   }
@@ -232,7 +232,7 @@ onMounted(async () => {
           />
         </CompetencySummary>
 
-        <main class="mt-7 grid max-w-6xl gap-6 lg:grid-cols-2 lg:items-start">
+        <div class="mt-7 grid max-w-6xl gap-6 lg:grid-cols-2 lg:items-start">
           <section class="rounded-box border border-primary/10 bg-base-100/95 p-6 shadow-soft backdrop-blur-sm sm:p-7">
             <div class="flex items-start justify-between gap-4 border-b border-primary/10 pb-5">
               <div>
@@ -287,7 +287,7 @@ onMounted(async () => {
                     KompCards KI
                   </p>
                   <h2 class="font-display text-2xl font-bold text-primary-content">
-                    LLM-Auswertung
+                    KI-Auswertung
                   </h2>
                 </div>
               </div>
@@ -299,7 +299,7 @@ onMounted(async () => {
                   v-if="orderedOutputs.length > 1"
                   data-test="output-navigation"
                   class="flex items-center gap-1 rounded-lg bg-primary-content/10 p-1"
-                  aria-label="Zwischen LLM-Auswertungen wechseln"
+                  aria-label="Zwischen KI-Auswertungen wechseln"
                 >
                   <button
                     data-test="previous-output"
@@ -319,7 +319,7 @@ onMounted(async () => {
                     class="min-w-12 text-center text-sm font-semibold tabular-nums"
                     aria-live="polite"
                   >
-                    {{ activeIndex + 1 }} / {{ orderedOutputs.length }}
+                    Version {{ activeIndex + 1 }} von {{ orderedOutputs.length }}
                   </span>
                   <button
                     data-test="next-output"
@@ -353,7 +353,7 @@ onMounted(async () => {
               <div class="grid gap-5 sm:grid-cols-2">
                 <div class="rounded-xl bg-primary/5 p-4">
                   <p class="text-sm font-semibold text-primary">
-                    Qualität
+                    Qualität deiner Angaben
                   </p>
                   <QualityRating
                     :quality="activeOutput.quality"
@@ -377,6 +377,26 @@ onMounted(async () => {
                 </div>
               </div>
 
+              <details class="rounded-xl border border-primary/15 p-4 text-sm text-base-content/80">
+                <summary class="cursor-pointer font-semibold text-primary">
+                  Wie wird bewertet?
+                </summary>
+                <ol class="mt-3 list-decimal space-y-2 pl-5">
+                  <li>Keine konkrete Handlung oder wesentlicher Widerspruch.</li>
+                  <li>Methode oder Zweck sind noch unklar.</li>
+                  <li>Handlung, Methode und Zweck sind nachvollziehbar.</li>
+                  <li>Zusätzlich ist das Ergebnis überprüfbar nachgewiesen. Auch ein negatives Ergebnis zählt.</li>
+                </ol>
+                <p class="mt-3">
+                  Die KI bewertet deine Angaben. Der Lehrplanbezug wird unabhängig davon eingeschätzt. Prüfe die Auswertung vor dem Übernehmen.
+                </p>
+              </details>
+              <p
+                v-if="orderedOutputs.length > 1"
+                class="text-sm text-base-content/75"
+              >
+                Blättern ändert nur die Vorschau. Erst die ausdrückliche Auswahl speichert eine Version.
+              </p>
               <div>
                 <h3 class="font-semibold text-primary">
                   Erkanntes Arbeitsergebnis
@@ -387,7 +407,7 @@ onMounted(async () => {
               </div>
               <div class="border-t border-primary/10 pt-5">
                 <h3 class="font-semibold text-primary">
-                  Begründung der Bewertung
+                  Ergebnis und Nachweis
                 </h3>
                 <p class="mt-2 whitespace-pre-line leading-7 text-base-content/75">
                   {{ activeOutput.qualityStatement }}
@@ -407,7 +427,7 @@ onMounted(async () => {
               </div>
             </div>
           </section>
-        </main>
+        </div>
 
         <section
           v-if="showRetry && canRetry"
@@ -417,7 +437,7 @@ onMounted(async () => {
             for="retry-feedback"
             class="font-display text-xl font-bold text-primary"
           >
-            Was soll die LLM-Auswertung verbessern?
+            Was soll die KI-Auswertung verbessern?
           </label>
           <p class="mt-1 text-sm text-base-content/60">
             Dein Feedback wird für eine neue Revision der Auswertung verwendet.
@@ -426,12 +446,23 @@ onMounted(async () => {
             id="retry-feedback"
             v-model="retryFeedback"
             maxlength="255"
+            :disabled="busy"
+            :aria-invalid="Boolean(retryError) || undefined"
+            :aria-describedby="retryError ? 'retry-feedback-count retry-feedback-error' : 'retry-feedback-count'"
             rows="3"
             class="textarea textarea-bordered mt-4 w-full bg-base-100 focus:border-primary focus:outline-primary"
             placeholder="z. B. Beschreibe den Praxisbezug und meine Eigenleistung genauer."
           />
           <p
+            id="retry-feedback-count"
+            class="mt-2 text-right text-sm text-base-content/75"
+          >
+            {{ retryFeedback.length }} / 255 Zeichen
+          </p>
+          <p
             v-if="retryError"
+            id="retry-feedback-error"
+            role="alert"
             class="mt-2 text-sm text-error"
           >
             {{ retryError }}
@@ -498,7 +529,7 @@ onMounted(async () => {
 
         <div
           v-if="canAct || canConfirm"
-          class="mt-7 flex max-w-6xl flex-wrap items-center justify-between gap-4 border-t border-primary/10 pt-6"
+          class="workflow-actions mt-7 max-w-6xl"
         >
           <UiButton
             v-if="canAct"
@@ -537,7 +568,7 @@ onMounted(async () => {
                 v-if="isSaving"
                 class="loading loading-spinner loading-sm"
               />
-              {{ isSaving ? 'Wird ausgewählt …' : 'Diese Auswertung auswählen' }}
+              {{ isSaving ? 'Wird ausgewählt …' : proof?.status === 5 ? 'Diese Version übernehmen' : 'Auswertung übernehmen und Karte abschliessen' }}
               <UiIcon
                 v-if="!isSaving"
                 name="arrow-right"
@@ -580,7 +611,7 @@ onMounted(async () => {
           Noch keine Auswertung vorhanden
         </h2>
         <p class="mt-2 text-base-content/65">
-          Dokumentiere zuerst deine Arbeit und starte anschliessend die LLM-Prüfung.
+          Dokumentiere zuerst deine Arbeit und starte anschliessend die KI-Prüfung.
         </p>
         <UiButton
           :to="`/cards/${proofId}`"

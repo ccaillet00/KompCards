@@ -55,7 +55,7 @@ onMounted(() => {
         <p class="eyebrow">
           Konto
         </p>
-        <h1 class="mt-4 font-display text-5xl font-bold leading-tight text-primary xl:text-6xl">
+        <h1 class="mt-4 font-display text-4xl font-bold leading-tight text-primary xl:text-5xl">
           Dein Profil
         </h1>
         <p class="mt-3 text-xl leading-8 text-base-content/65">
@@ -71,7 +71,7 @@ onMounted(() => {
         {{ error }}
       </div>
 
-      <main
+      <div
         v-if="hydrated"
         class="mt-10 grid max-w-4xl gap-5 lg:grid-cols-[1.25fr_0.75fr]"
       >
@@ -180,7 +180,7 @@ onMounted(() => {
             </UiButton>
           </UiSurfaceCard>
         </div>
-      </main>
+      </div>
       <div
         v-else
         class="mt-10 grid max-w-4xl gap-5 lg:grid-cols-[1.25fr_0.75fr]"

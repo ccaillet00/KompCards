@@ -6,6 +6,7 @@ import UiButton from '../../components/ui/UiButton.vue'
 import UiFormField from '../../components/ui/UiFormField.vue'
 import UiIcon from '../../components/ui/UiIcon.vue'
 import UiSelect from '../../components/ui/UiSelect.vue'
+import UiInput from '../../components/ui/UiInput.vue'
 import { useCompetencyWorkflow } from '../../composables/useCompetencyWorkflow'
 
 definePageMeta({ middleware: ['service-only', 'auth'] })
@@ -16,6 +17,7 @@ const selectedCurriculumId = ref<number | undefined>()
 const selectedAreaId = ref<number | undefined>()
 const selectedCompetencyId = ref<number | undefined>()
 const selectionError = ref<string | null>(null)
+const competencySearch = ref('')
 
 const selectedCurriculum = computed(() => curricula.value.find(item => item.id === selectedCurriculumId.value))
 const selectedArea = computed(() => selectedCurriculum.value?.areas.find(item => item.id === selectedAreaId.value))
@@ -25,7 +27,7 @@ const areaOptions = computed(() => selectedCurriculum.value?.areas.map(item => (
   value: item.id,
   label: `${item.code} – ${item.titel}`,
 })) ?? [])
-const competencyOptions = computed(() => selectedArea.value?.competencies.map(item => ({
+const competencyOptions = computed(() => selectedArea.value?.competencies.filter(item => `${item.code} ${item.description}`.toLocaleLowerCase('de-CH').includes(competencySearch.value.trim().toLocaleLowerCase('de-CH'))).map(item => ({
   value: item.id,
   label: `${item.code} – ${item.description}`,
 })) ?? [])
@@ -36,6 +38,10 @@ watch(selectedCurriculumId, () => {
 })
 watch(selectedAreaId, () => {
   selectedCompetencyId.value = undefined
+  competencySearch.value = ''
+})
+watch(competencySearch, () => {
+  if (!competencyOptions.value.some(option => option.value === selectedCompetencyId.value)) selectedCompetencyId.value = undefined
 })
 watch(selectedCompetencyId, () => {
   selectionError.value = null
@@ -76,11 +82,11 @@ onMounted(async () => {
     <div class="fox-world-page-blend absolute inset-0 -z-10" />
 
     <div class="page-shell py-12 xl:py-16">
-      <main class="max-w-2xl">
+      <div class="max-w-2xl">
         <p class="eyebrow">
           Kompetenzkarte erstellen
         </p>
-        <h1 class="mt-4 font-display text-5xl font-bold leading-tight text-primary xl:text-6xl">
+        <h1 class="mt-4 font-display text-4xl font-bold leading-tight text-primary xl:text-5xl">
           Kompetenzkarte erstellen
         </h1>
         <p class="mt-3 max-w-xl text-xl leading-8 text-base-content/65">
@@ -145,6 +151,25 @@ onMounted(async () => {
                 class="absolute -left-16 top-7 grid size-10 place-items-center rounded-full font-semibold"
                 :class="selectedArea ? 'bg-primary text-primary-content' : 'bg-base-300 text-base-content/50'"
               >3</span>
+              <div class="mb-4">
+                <label
+                  for="competency-search"
+                  class="mb-2 block text-sm font-semibold"
+                >Kompetenz suchen</label>
+                <UiInput
+                  id="competency-search"
+                  v-model="competencySearch"
+                  :disabled="!selectedArea"
+                  placeholder="Code oder Stichwort im gewählten Bereich"
+                />
+                <p
+                  v-if="selectedArea && !competencyOptions.length"
+                  role="status"
+                  class="mt-2 text-sm"
+                >
+                  Keine passende Kompetenz. Versuche ein anderes Stichwort.
+                </p>
+              </div>
               <UiFormField
                 id="competency"
                 label="Kompetenz"
@@ -155,7 +180,9 @@ onMounted(async () => {
                   v-model="selectedCompetencyId"
                   :options="competencyOptions"
                   placeholder="Kompetenz auswählen"
-                  :disabled="!selectedArea"
+                  :disabled="!selectedArea || !competencyOptions.length"
+                  :aria-invalid="Boolean(selectionError) || undefined"
+                  :aria-describedby="selectionError ? 'competency-error' : undefined"
                 />
               </UiFormField>
             </div>
@@ -195,7 +222,7 @@ onMounted(async () => {
                 v-if="isSaving"
                 class="loading loading-spinner loading-sm"
               />
-              {{ isSaving ? 'Karte wird erstellt …' : 'Weiter' }}
+              {{ isSaving ? 'Karte wird erstellt …' : 'Arbeit dokumentieren' }}
               <UiIcon
                 v-if="!isSaving"
                 name="arrow-right"
@@ -204,7 +231,7 @@ onMounted(async () => {
             </UiButton>
           </div>
         </form>
-      </main>
+      </div>
     </div>
   </div>
 </template>

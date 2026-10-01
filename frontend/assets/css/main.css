@@ -40,11 +40,11 @@
   }
 
   .display-title {
-    @apply font-display text-5xl font-bold leading-[1.02] tracking-[-0.025em] text-primary md:text-6xl xl:text-7xl;
+    @apply font-display text-4xl font-bold leading-[1.08] sm:text-5xl tracking-[-0.025em] text-primary md:text-6xl xl:text-7xl;
   }
 
   .section-title {
-    @apply font-display text-4xl font-bold leading-tight text-primary md:text-5xl;
+    @apply font-display text-3xl font-bold leading-tight text-primary sm:text-4xl md:text-5xl;
   }
 
   .hero-artwork-image {
@@ -82,16 +82,22 @@
       linear-gradient(to right, #fdfbf6 0%, #fdfbf6 27%, rgba(253, 251, 246, 0.96) 38%, rgba(253, 251, 246, 0.74) 49%, rgba(253, 251, 246, 0.24) 64%, transparent 78%);
   }
 
+  .workflow-actions {
+    @apply sticky bottom-0 z-20 flex flex-wrap items-center justify-between gap-3 rounded-box border border-primary/15 bg-base-100 p-4 shadow-soft;
+  }
+
+  .fox-world-page-image { opacity: 0.65; }
+
   .form-control-input {
-    @apply input input-bordered h-12 w-full border-primary/20 bg-base-100 text-base-content placeholder:text-base-content/40 focus:border-primary focus:outline-none;
+    @apply input input-bordered h-12 w-full border-primary/20 bg-base-100 text-base-content placeholder:text-base-content/40 focus:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary;
   }
 
   .form-control-textarea {
-    @apply textarea textarea-bordered min-h-28 w-full resize-y border-primary/20 bg-base-100 text-base-content placeholder:text-base-content/40 focus:border-primary focus:outline-none;
+    @apply textarea textarea-bordered min-h-28 w-full resize-y border-primary/20 bg-base-100 text-base-content placeholder:text-base-content/40 focus:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary;
   }
 
   .form-control-select {
-    @apply select select-bordered h-12 w-full border-primary/20 bg-base-100 text-base-content focus:border-primary focus:outline-none;
+    @apply select select-bordered h-12 w-full border-primary/20 bg-base-100 text-base-content focus:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary;
   }
 }
 
@@ -105,7 +111,7 @@
   .hero-artwork-blend {
     background:
       linear-gradient(to bottom, transparent 68%, rgba(253, 251, 246, 0.88) 91%, #fdfbf6 100%),
-      linear-gradient(to right, #fdfbf6 0%, rgba(253, 251, 246, 0.98) 43%, rgba(253, 251, 246, 0.78) 63%, rgba(253, 251, 246, 0.3) 100%);
+      linear-gradient(to right, #fdfbf6 0%, rgba(253, 251, 246, 0.98) 43%, rgba(253, 251, 246, 0.94) 63%, rgba(253, 251, 246, 0.85) 100%);
   }
 
   .cta-artwork-blend {

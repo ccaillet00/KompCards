@@ -4,7 +4,7 @@ const props = defineProps<{ current: 1 | 2 | 3 }>()
 const steps = [
   { number: 1, label: 'Kompetenz', description: 'Kompetenz auswählen' },
   { number: 2, label: 'Eingabe', description: 'Arbeit dokumentieren' },
-  { number: 3, label: 'Prüfung', description: 'LLM-Auswertung' },
+  { number: 3, label: 'Prüfung', description: 'KI-Auswertung' },
 ] as const
 </script>
 
@@ -16,6 +16,8 @@ const steps = [
     <li
       v-for="(step, index) in steps"
       :key="step.number"
+      :aria-current="step.number === props.current ? 'step' : undefined"
+      :aria-label="`${step.number}. ${step.label}${step.number === props.current ? ' – aktueller Schritt' : ''}`"
       class="relative flex items-start gap-3"
     >
       <span

@@ -45,7 +45,7 @@ const benefits = [
       </figure>
       <div class="hero-artwork-blend absolute inset-0 -z-10" />
 
-      <div class="page-shell flex min-h-[680px] items-center py-20">
+      <div class="page-shell flex min-h-[560px] items-center py-12 md:min-h-[680px] md:py-20">
         <div class="relative z-10 max-w-2xl lg:max-w-[39rem] xl:max-w-[42rem]">
           <p class="eyebrow mb-5">
             Deine Arbeit. Deine Kompetenz. Deine Zukunft.
@@ -61,7 +61,7 @@ const benefits = [
               :to="`${config.public.serviceUrl}/register`"
               size="lg"
             >
-              KompCards entdecken
+              Konto erstellen
               <UiIcon
                 name="arrow-right"
                 :size="20"
@@ -80,7 +80,7 @@ const benefits = [
             </UiButton>
           </div>
 
-          <div class="mt-12 grid max-w-2xl gap-4 border-t border-primary/15 pt-6 text-sm sm:grid-cols-3">
+          <div class="mt-8 grid max-w-2xl gap-4 border-t border-primary/15 pt-6 text-sm sm:grid-cols-3">
             <div class="flex items-center gap-3">
               <UiIcon
                 name="graduation-cap"
@@ -144,6 +144,42 @@ const benefits = [
       </div>
     </section>
 
+    <section class="border-t border-primary/10 bg-base-100 py-12">
+      <div class="page-shell">
+        <p class="eyebrow">
+          So sieht eine Kompetenzkarte aus
+        </p>
+        <h2 class="section-title mt-3">
+          Aus deiner Arbeit wird ein nachvollziehbarer Nachweis.
+        </h2>
+        <article
+          data-test="example-card"
+          class="mt-7 max-w-5xl rounded-box border border-primary/15 bg-base-200 p-6 sm:p-8"
+        >
+          <p class="text-sm font-semibold text-primary">
+            Fiktives Beispiel · keine echte KI-Auswertung
+          </p>
+          <div class="mt-5 grid gap-7 md:grid-cols-2">
+            <div>
+              <h3 class="font-sans text-lg font-bold">
+                Deine Notizen
+              </h3><p class="mt-3 leading-7">
+                Als Entwickler habe ich ein Datenmodell entworfen, die Anforderungen mit dem Team abgestimmt und zwölf Prüffälle mit Testdaten erfolgreich durchgeführt. Ziel war eine konsistente Speicherung ohne doppelte Erfassungen.
+              </p>
+            </div>
+            <div>
+              <h3 class="font-sans text-lg font-bold">
+                Mögliche Ausformulierung
+              </h3><p class="mt-3 leading-7">
+                Ich habe als Entwickler ein mit dem Team abgestimmtes Datenmodell entworfen, um Daten konsistent zu speichern und doppelte Erfassungen zu vermeiden. Die Prüfung mit Testdaten hat alle zwölf definierten Prüffälle erfüllt.
+              </p><p class="mt-3 text-sm leading-6">
+                Hilfreicher nächster Schritt: Beschreibe kurz, welche Kriterien die Prüffälle abgedeckt haben.
+              </p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
     <section
       id="fuer-studierende"
       class="border-y border-primary/10 bg-base-200/70 py-10"
@@ -199,7 +235,7 @@ const benefits = [
             size="lg"
             class="mt-7"
           >
-            KompCards entdecken
+            Konto erstellen
             <UiIcon
               name="arrow-right"
               :size="20"

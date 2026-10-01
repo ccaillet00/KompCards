@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { nextTick, onMounted, reactive, ref } from 'vue'
 import { navigateTo } from '#imports'
 import { useAuth } from '../../composables/useAuth'
 import UiButton from '../ui/UiButton.vue'
@@ -24,7 +24,11 @@ function validate(): boolean {
 }
 
 async function submit(): Promise<void> {
-  if (!validate()) return
+  if (!validate()) {
+    await nextTick()
+    document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+    return
+  }
   try {
     await auth.register({ ...form, name: form.name.trim() })
     await navigateTo('/login?registered=1')
@@ -68,6 +72,7 @@ async function githubSignIn(): Promise<void> {
           name="name"
           autocomplete="name"
           :aria-invalid="Boolean(errors.name) || undefined"
+          :aria-describedby="errors.name ? 'register-name-error' : undefined"
         />
       </UiFormField>
 
@@ -84,6 +89,7 @@ async function githubSignIn(): Promise<void> {
           name="email"
           autocomplete="email"
           :aria-invalid="Boolean(errors.email) || undefined"
+          :aria-describedby="errors.email ? 'register-email-error' : undefined"
         />
       </UiFormField>
 
@@ -96,10 +102,24 @@ async function githubSignIn(): Promise<void> {
         :error="errors.password"
       />
 
+      <p
+        id="registration-information"
+        class="rounded-box border border-warning/30 bg-warning/10 p-3 text-sm leading-6"
+      >
+        Nutzungsbedingungen und Datenschutzbestimmungen sind noch in Ausarbeitung und derzeit nicht veröffentlicht.
+        <NuxtLink
+          to="/information"
+          class="link font-semibold text-primary"
+        >
+          Stand der Informationen ansehen
+        </NuxtLink>
+      </p>
       <div>
         <label class="flex cursor-pointer items-start gap-3 text-sm leading-6 text-base-content/75">
           <input
             v-model="acceptedTerms"
+            :aria-invalid="Boolean(errors.terms) || undefined"
+            :aria-describedby="errors.terms ? 'register-terms-error registration-information' : 'registration-information'"
             type="checkbox"
             class="checkbox checkbox-primary checkbox-sm mt-0.5"
           >
@@ -107,6 +127,7 @@ async function githubSignIn(): Promise<void> {
         </label>
         <p
           v-if="errors.terms"
+          id="register-terms-error"
           role="alert"
           class="mt-1.5 text-sm text-error"
         >

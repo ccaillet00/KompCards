@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { proofStatuses } from '../../utils/proofStatus'
 import type { ProofStatus } from '../../types/proof'
 
 const props = defineProps<{ status: ProofStatus }>()
 
-const statuses: Record<ProofStatus, { label: string, classes: string }> = {
-  1: { label: 'Entwurf', classes: 'bg-base-300/70 text-base-content/75' },
-  2: { label: 'In Prüfung', classes: 'bg-info/15 text-info' },
-  3: { label: 'Prüfung fehlgeschlagen', classes: 'bg-error/15 text-error' },
-  4: { label: 'Prüfung abgeschlossen', classes: 'bg-primary/10 text-primary' },
-  5: { label: 'Abgeschlossen', classes: 'bg-success/15 text-success' },
-  6: { label: 'Verworfen', classes: 'bg-error/10 text-error' },
+const statusClasses: Record<ProofStatus, string> = {
+  1: 'bg-base-300/70 text-base-content/75',
+  2: 'bg-info/15 text-info',
+  3: 'bg-error/15 text-error',
+  4: 'bg-primary/10 text-primary',
+  5: 'bg-success/15 text-success',
+  6: 'bg-error/10 text-error',
 }
 
-const statusConfig = computed(() => statuses[props.status])
+const statusConfig = computed(() => ({ label: proofStatuses.find(status => status.value === props.status)?.label, classes: statusClasses[props.status] }))
 </script>
 
 <template>

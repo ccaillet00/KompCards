@@ -150,6 +150,12 @@ Diese Entscheidung wurde durch ADR-014 ersetzt. `userTable` und `userSession` bl
 - **Bewertung:** ADR-020, konkrete offene Kriterien bei fehlendem Nachweis, getrennte Eingabequalität und Curriculum-Passung. Semantische Erwartungen und Labels bleiben bis zum menschlichen Review ungeprüft. Die Nutzer-Exporte sind keine unabhängig bestätigte offizielle Lehrplanversion. Inputs sind keine echten Studierendenfälle.
 - **Konsequenz:** Keine DB-, Prompt- oder Runneränderung; bisherige Sets und Standardauswahl bleiben erhalten. Nur explizite Modellläufe verwenden das neue Set; Schema-, Quellen- und Splitprüfungen laufen in Vitest ohne LLM-Aufruf. Holdout nicht zur Promptoptimierung verwenden. Ein Vergleich unterschiedlicher Datensätze ist kein direkter Nachweis einer Promptverbesserung.
 
+## ADR-022: Verständliche Kartenführung und explizites Speichern
+
+- **Kontext:** Fortschritt, KI-Auswertungen und abgeschlossene Karten waren in der Oberfläche schwer auseinanderzuhalten. Lange Formulare und administrative Aktionen brauchten eindeutigere Rückmeldung.
+- **Entscheidung:** Status 4 heisst in der UI „Auswertung bereit“, Status 5 „Karte abgeschlossen“. Das Ziel von 45 Karten zählt Status 5. Die Kartenübersicht kombiniert lokale Text-, Bereichs- und Statusfilter. Formulare behalten das ausdrückliche Speichern mit sichtbarem Speicherzustand und Verlassenswarnung; keine lokale Persistenz fachlicher Eingaben. Auswertungen trennen Vorschau, Eingabequalität, Lehrplanbezug und ausdrückliche Übernahme. Kritische administrative Aktionen zeigen vor Ausführung Wirkung und betroffene Person.
+- **Konsequenz:** Keine Änderung an Datenmodell, Statuswerten oder produktiver LLM-Anbindung. Vorhandene API-Verträge werden verwendet, inklusive Offset-Paginierung der Administration. Die App bleibt desktop-first; vorhandene Navigation und Aktionen dürfen umbrechen. Noch nicht freigegebene Rechtstexte und Kontaktangaben werden sichtbar als in Ausarbeitung gekennzeichnet.
+
 ## Offene Entscheidungen
 
 Keine — alle Kernpunkte geschlossen:

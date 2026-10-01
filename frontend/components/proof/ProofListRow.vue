@@ -25,13 +25,19 @@ const target = computed(() => [4, 5].includes(props.card.status)
         />
       </span>
       <span class="min-w-0">
-        <strong class="block truncate font-semibold text-primary">
+        <strong
+          class="block line-clamp-2 font-semibold text-primary"
+          :title="`${card.competencyCode} – ${card.competencyDescription}`"
+        >
           {{ card.competencyCode }} – {{ card.competencyDescription }}
         </strong>
-        <span class="block truncate text-sm text-base-content/55">{{ card.curriculumTitle }}</span>
+        <span class="block truncate text-sm text-base-content/55">Karte {{ card.id }} · {{ card.curriculumTitle }}</span>
       </span>
     </span>
-    <span class="truncate text-sm text-base-content/70">{{ card.areaTitle }}</span>
+    <span
+      class="line-clamp-2 text-sm text-base-content/75"
+      :title="card.areaTitle"
+    >{{ card.areaTitle }}</span>
     <ProofStatusBadge :status="card.status" />
     <time
       :datetime="card.updatedAt"

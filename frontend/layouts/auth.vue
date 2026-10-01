@@ -19,21 +19,36 @@ import BrandLogo from '../components/brand/BrandLogo.vue'
 
     <div class="relative z-10 flex min-h-screen flex-col px-6 py-7 sm:px-12 lg:px-16 xl:px-24">
       <BrandLogo />
-      <main class="flex flex-1 items-center py-12">
+      <main class="flex flex-1 items-center py-6">
         <div class="w-full max-w-xl">
           <slot />
         </div>
       </main>
       <footer class="flex flex-wrap gap-5 text-xs text-base-content/50">
-        <span>Nutzungsbedingungen</span>
-        <span>Datenschutz</span>
-        <span>Support</span>
+        <NuxtLink
+          to="/information#terms"
+          class="link"
+        >
+          Nutzungsbedingungen · in Ausarbeitung
+        </NuxtLink>
+        <NuxtLink
+          to="/information#privacy"
+          class="link"
+        >
+          Datenschutz · in Ausarbeitung
+        </NuxtLink>
+        <NuxtLink
+          to="/information#contact"
+          class="link"
+        >
+          Support · in Ausarbeitung
+        </NuxtLink>
       </footer>
     </div>
 
     <aside
       class="relative hidden min-h-screen overflow-hidden lg:block"
-      aria-label="KompCards Fuchswelt"
+      aria-hidden="true"
     />
   </div>
 </template>

@@ -89,4 +89,12 @@ describe('useAdminUsers', () => {
 
     expect(auth.handleUnauthorized).toHaveBeenCalledWith(unauthorized)
   })
+
+ it('lädt weitere Benutzer mit einem Offset', async () => {
+  admin.listUsers.mockResolvedValue({data:{users:[],total:150},error:null})
+  const wrapper = await mountSuspended(Harness)
+  await (wrapper.vm as unknown as {load:(page?:number)=>Promise<void>}).load(2)
+  expect(admin.listUsers).toHaveBeenCalledWith({query:{limit:100,offset:100,sortBy:'name',sortDirection:'asc'}})
+ })
+
 })

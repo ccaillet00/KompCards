@@ -37,12 +37,12 @@ export function useAdminUsers() {
     }
   }
 
-  async function load(): Promise<void> {
+  async function load(page = 1): Promise<void> {
     isLoading.value = true
     error.value = null
     try {
       const result = await client.admin.listUsers({
-        query: { limit: 100, sortBy: 'name', sortDirection: 'asc' },
+        query: { limit: 100, ...(page > 1 ? { offset: (page - 1) * 100 } : {}), sortBy: 'name', sortDirection: 'asc' },
       })
       if (result.error) auth.handleUnauthorized(result.error)
       const failure = resultError(result)

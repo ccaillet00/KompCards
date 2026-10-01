@@ -28,29 +28,29 @@ onMounted(() => {
 
 <template>
   <header class="relative z-50 border-b border-primary/10 bg-base-100/95 backdrop-blur">
-    <div class="page-shell flex min-h-20 items-center justify-between gap-8">
+    <div class="page-shell flex min-h-20 flex-wrap items-center justify-between gap-x-4 gap-y-0">
       <BrandLogo />
       <nav
-        class="flex items-center gap-8 text-sm font-medium"
+        class="order-last flex w-full flex-wrap items-center gap-x-5 gap-y-0 text-sm font-medium sm:order-none sm:w-auto"
         aria-label="App-Navigation"
       >
         <NuxtLink
           to="/dashboard"
-          class="border-b-2 border-transparent py-7 hover:text-primary"
+          class="border-b-2 border-transparent py-4 md:py-7 hover:text-primary"
           active-class="border-primary text-primary"
         >
           Dashboard
         </NuxtLink>
         <NuxtLink
           to="/cards"
-          class="border-b-2 border-transparent py-7 hover:text-primary"
+          class="border-b-2 border-transparent py-4 md:py-7 hover:text-primary"
           active-class="border-primary text-primary"
         >
           Meine Karten
         </NuxtLink>
         <NuxtLink
           to="/profile"
-          class="border-b-2 border-transparent py-7 hover:text-primary"
+          class="border-b-2 border-transparent py-4 md:py-7 hover:text-primary"
           active-class="border-primary text-primary"
         >
           Profil
@@ -58,7 +58,7 @@ onMounted(() => {
         <NuxtLink
           v-if="isAdmin"
           to="/admin"
-          class="border-b-2 border-transparent py-7 hover:text-primary"
+          class="border-b-2 border-transparent py-4 md:py-7 hover:text-primary"
           active-class="border-primary text-primary"
         >
           Administration
