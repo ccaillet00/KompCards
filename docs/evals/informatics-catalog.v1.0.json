@@ -1,0 +1,665 @@
+{
+  "version": "informatics-catalog-1.0.0",
+  "provenance": "User-provided CSV exports; wording preserved; official publication/version not independently verified.",
+  "sources": [
+    {
+      "file": "curriculum.csv",
+      "sha256": "0821d64afee1d445455aec69a75d168875dcafaf56756c52eb0343dbff648d49"
+    },
+    {
+      "file": "areas.csv",
+      "sha256": "f08db1d037a2e7b1935177f8cd8158ac2c36b33dde6adb81a12e436a63d1e96a"
+    },
+    {
+      "file": "competencies.csv",
+      "sha256": "b133969c1ea5579766e2a29e6667895c557ef565b2512e0034e88cc28f6ca978"
+    }
+  ],
+  "curricula": [
+    {
+      "id": "1",
+      "code": "RLP_INF",
+      "titel": "Rahmenlehrplan Informatik"
+    }
+  ],
+  "areas": [
+    {
+      "id": "1",
+      "curriculum_id": "1",
+      "code": "A1",
+      "titel": "Unternehmens- und Führungsprozesse gestalten und verantworten"
+    },
+    {
+      "id": "2",
+      "curriculum_id": "1",
+      "code": "A2",
+      "titel": "Kommunikations situationsangepasst und wirkungsvoll gestalten"
+    },
+    {
+      "id": "3",
+      "curriculum_id": "1",
+      "code": "A3",
+      "titel": "Die persönliche Entwicklung reflektieren und aktiv gestalten"
+    },
+    {
+      "id": "4",
+      "curriculum_id": "1",
+      "code": "B4",
+      "titel": "Entwicklungsmethoden zur Lösung von ICT Problemen und Entwicklung von ICT-Innovationen zielführend einsetzen"
+    },
+    {
+      "id": "5",
+      "curriculum_id": "1",
+      "code": "B5",
+      "titel": "ICT-Projekte und Vorhaben planen, leiten, umsetzen und evaluieren"
+    },
+    {
+      "id": "6",
+      "curriculum_id": "1",
+      "code": "B6",
+      "titel": "Eine ICT Organisationseinheit leiten"
+    },
+    {
+      "id": "7",
+      "curriculum_id": "1",
+      "code": "B7",
+      "titel": "Technische Anforderungen analysieren und bestimmen"
+    },
+    {
+      "id": "8",
+      "curriculum_id": "1",
+      "code": "B8",
+      "titel": "ICT-Qualität sicherstellen"
+    },
+    {
+      "id": "9",
+      "curriculum_id": "1",
+      "code": "B9",
+      "titel": "Datenschutz und Datensicherheit gewährleisten"
+    },
+    {
+      "id": "10",
+      "curriculum_id": "1",
+      "code": "B10",
+      "titel": "Softwarearchitektur analysieren und bestimmen"
+    },
+    {
+      "id": "11",
+      "curriculum_id": "1",
+      "code": "B11",
+      "titel": "Applikationen entwickeln, Programm erstellen und testen"
+    },
+    {
+      "id": "12",
+      "curriculum_id": "1",
+      "code": "B12",
+      "titel": "System- und Netzwerkarchitektur bestimmen"
+    },
+    {
+      "id": "13",
+      "curriculum_id": "1",
+      "code": "B13",
+      "titel": "Konzepte und Services entwickeln"
+    },
+    {
+      "id": "14",
+      "curriculum_id": "1",
+      "code": "B14",
+      "titel": "Konzepte und Services umsetzen"
+    },
+    {
+      "id": "15",
+      "curriculum_id": "1",
+      "code": "B15",
+      "titel": "Nachhaltiges Handeln"
+    }
+  ],
+  "competencies": [
+    {
+      "id": "1",
+      "area_id": "1",
+      "code": "A1.1",
+      "description": "Geschäftsprozesse des Unternehmens verantwortungsvoll ausführen"
+    },
+    {
+      "id": "2",
+      "area_id": "1",
+      "code": "A1.2",
+      "description": "Unternehmensprozesse überprüfen und zu Händen der Entscheidungsträger überzeugende Vorschläge zu Optimierung unterbreiten"
+    },
+    {
+      "id": "3",
+      "area_id": "1",
+      "code": "A1.3",
+      "description": "Fachliche Kenntnisse kombiniert mit betriebswirtschaftlichem Wissen für einen ökonomische, ökologisch und sozial erfolgreichen Geschäftsgang einsetzen"
+    },
+    {
+      "id": "4",
+      "area_id": "1",
+      "code": "A1.4",
+      "description": "Transformationsprozesse im Bereich neuer Technologien, neuer Geschäftsmodelle, Reorganisationen oder Geschäftsprozessinnovationen mitgestalten, mittragen und umsetzen"
+    },
+    {
+      "id": "5",
+      "area_id": "1",
+      "code": "A1.5",
+      "description": "Rechtliche Grundlagen, Regelungen und Normen, die für die Arbeitsumgebung und Produkte relevant sind, beachten und umsetzen"
+    },
+    {
+      "id": "6",
+      "area_id": "1",
+      "code": "A1.6",
+      "description": "Arbeitspsychologische Grundsätze im Umgang mit Mitarbeiterinnen und Mitarbeiter berücksichtigen sowie sozial und verantwortungsvoll handeln"
+    },
+    {
+      "id": "7",
+      "area_id": "1",
+      "code": "A1.7",
+      "description": "Zusammenarbeit im Team gestalten, reflektieren und optimieren"
+    },
+    {
+      "id": "8",
+      "area_id": "1",
+      "code": "A1.8",
+      "description": "Die Führungsrolle in der Organisation wahrnehmen und ausgestalten"
+    },
+    {
+      "id": "9",
+      "area_id": "1",
+      "code": "A1.9",
+      "description": "Interpersonelle Konflikte und schwierige individuelle Situationen erkenn, ansprechen und konstruktiv an Lösungen mitarbeiten"
+    },
+    {
+      "id": "10",
+      "area_id": "1",
+      "code": "A1.10",
+      "description": "Die Kommunikation und Zusammenarbeit unter Berücksichtigung relevanter Gender fragen, der Diversität und interkulturellen Gegenbenheiten gestalten"
+    },
+    {
+      "id": "11",
+      "area_id": "1",
+      "code": "A1.11",
+      "description": "Die Motivation im Team fördern und dieses zu Höchstleistungen befähigen"
+    },
+    {
+      "id": "12",
+      "area_id": "1",
+      "code": "A1.12",
+      "description": "Kundenbeziehungen gestalten"
+    },
+    {
+      "id": "13",
+      "area_id": "2",
+      "code": "A2.1",
+      "description": "Mündliche wie schriftliche sachlogisch, transparent und klar kommunizieren"
+    },
+    {
+      "id": "14",
+      "area_id": "2",
+      "code": "A2.2",
+      "description": "Das Interesse von Adressaten gewinnen und glaubwürdig sowie überzeugend kommunizieren"
+    },
+    {
+      "id": "15",
+      "area_id": "2",
+      "code": "A2.3",
+      "description": "Quantität und Qualität der Informationen adressatengerecht selektieren und daraus folgend die Art und Form der Information festlegen"
+    },
+    {
+      "id": "16",
+      "area_id": "2",
+      "code": "A2.4",
+      "description": "Arbeitsergebnisse mit geeigneten medialen und rherotischen Elementen zielgruppenadäquat präsentieren"
+    },
+    {
+      "id": "17",
+      "area_id": "2",
+      "code": "A2.5",
+      "description": "Informations- und Kommunikationstechnolgien (ICT) professionell einsetzen und etablieren"
+    },
+    {
+      "id": "18",
+      "area_id": "2",
+      "code": "A2.6",
+      "description": "Die branchenspezifischen Fachtermini des Engineerings verwenden und adressatengenrecht kommunizieren"
+    },
+    {
+      "id": "19",
+      "area_id": "2",
+      "code": "A2.7",
+      "description": "Berichte profesionell und in einer für die Adressanten verständliche Weise verfassen"
+    },
+    {
+      "id": "20",
+      "area_id": "2",
+      "code": "A2.8",
+      "description": "Im Arbeitsumfeld mündlich wie schriftlich in Englisch auf Niveau B1 kommunizieren"
+    },
+    {
+      "id": "21",
+      "area_id": "3",
+      "code": "A3.1",
+      "description": "Die eigenen Kompetenzen bezüglich der beruflichen Anforderungen regelmässig reflektieren, bewerten und daraus den Lernbedarf ermitteln"
+    },
+    {
+      "id": "22",
+      "area_id": "3",
+      "code": "A3.2",
+      "description": "Neues Wissen mit geeigneten Methoden erschliessen und arbeitsplatzrelevante Weiterbildung realisieren"
+    },
+    {
+      "id": "23",
+      "area_id": "3",
+      "code": "A3.3",
+      "description": "Neue Technologien kritisch reflexiv beurteilen, adaptieren und integrieren"
+    },
+    {
+      "id": "24",
+      "area_id": "3",
+      "code": "A3.4",
+      "description": "Die eigenen digitalen Kompetenzen kontinuierlich weiterentwickeln"
+    },
+    {
+      "id": "25",
+      "area_id": "3",
+      "code": "A3.5",
+      "description": "Das eigene Denken, Fühlen und Handeln reflektieren und geeignete persönliche Entwicklungsmassnahmen definieren und umsetzen"
+    },
+    {
+      "id": "26",
+      "area_id": "4",
+      "code": "B4.1",
+      "description": "ICT-Innovationsprozesse methodisch mitgestalten"
+    },
+    {
+      "id": "27",
+      "area_id": "4",
+      "code": "B4.2",
+      "description": "ICT-Problemstellungen unter Berücksichtigung vernetzten Denkens, Entwicklung neuer ICT-Lösungen und Anwendung aktueller Technologien identifizieren, analysieren und lösen"
+    },
+    {
+      "id": "28",
+      "area_id": "4",
+      "code": "B4.3",
+      "description": "Kreative situativ passende Lösungen für komplexe ICT-Probleme mit ineinandergreifenden Einflussgrössen entwickeln"
+    },
+    {
+      "id": "29",
+      "area_id": "4",
+      "code": "B4.4",
+      "description": "Geeignete Methoden der Entscheidungsfindung aufgrund der Kriterien- und Argumentationsanalyse anwenden"
+    },
+    {
+      "id": "30",
+      "area_id": "4",
+      "code": "B4.5",
+      "description": "Ganzheitliche ICT-Lösungsansätze unter Berücksichtigung von technischen, sozialen, gesellschaftlichen, ethischen, ökologischen und ökonomischen Aspekten entwickeln"
+    },
+    {
+      "id": "31",
+      "area_id": "4",
+      "code": "B4.6",
+      "description": "Aktuelle technologiebasierte Entwicklungswerkzeuge einsetzen"
+    },
+    {
+      "id": "32",
+      "area_id": "4",
+      "code": "B4.7",
+      "description": "Informationsquellen und Wissensnetzwerke kritisch reflexiv nutzen"
+    },
+    {
+      "id": "33",
+      "area_id": "5",
+      "code": "B5.1",
+      "description": "ICT-Projekte oder Vorhaben eigenständig bis zur Ausführungsreife planen und steuern"
+    },
+    {
+      "id": "34",
+      "area_id": "5",
+      "code": "B5.2",
+      "description": "Sich gegenseitig beeinflussende Faktoren berücksichtigen und Veränderungen anti-pizieren"
+    },
+    {
+      "id": "35",
+      "area_id": "5",
+      "code": "B5.3",
+      "description": "Die Erfolgsfaktoren, die Zusammenarbeit im Team, die Planung der Ressourcen, die Umweltbelastung und die Kostenkontrolle berücksichtigen"
+    },
+    {
+      "id": "36",
+      "area_id": "5",
+      "code": "B5.4",
+      "description": "Eine technische Risikoanalyse durchführen und die Ergebnisse in der Planung berücksichtigen"
+    },
+    {
+      "id": "37",
+      "area_id": "5",
+      "code": "B5.5",
+      "description": "Initiative und Kreativität bei der Gestaltung von Projekten sowie Durchsetzungsvermögen bei der Durchführung zeigen"
+    },
+    {
+      "id": "38",
+      "area_id": "5",
+      "code": "B5.6",
+      "description": "In interdisziplinären Projekten teamorientiert handeln"
+    },
+    {
+      "id": "39",
+      "area_id": "5",
+      "code": "B5.7",
+      "description": "Ausweichpläne, um auf potenzielle Umsetzungsproblem zu reagieren, entwickeln"
+    },
+    {
+      "id": "40",
+      "area_id": "5",
+      "code": "B5.8",
+      "description": "Verhältnis zwischen Kosten und Terminen nach Vorgaben optimieren"
+    },
+    {
+      "id": "41",
+      "area_id": "5",
+      "code": "B5.9",
+      "description": "Dokumente, die die Überwachung des Projektfortschritts erleichtern, erstellen und pflegen"
+    },
+    {
+      "id": "42",
+      "area_id": "5",
+      "code": "B5.10",
+      "description": "ICT Projekte termin- und budgetgerecht und in Übereinstimmung mit den ursprünglichen Anforderungen abschliessen"
+    },
+    {
+      "id": "43",
+      "area_id": "6",
+      "code": "B6.1",
+      "description": "Aus dem Unternehmensleitbild und der ICT-Strategie die Anforderungen und Rahmenbedingungen derive and in der technischen ICT-Organisationseinheit konkret umsetzen"
+    },
+    {
+      "id": "44",
+      "area_id": "6",
+      "code": "B6.2",
+      "description": "Ressourcen für eine ICT-Organisationseinheit planen und budgetieren, den Mitarbeiter-einsatz organisieren und die Kommunikation zu den beteiligten Stakeholder sicherstellen"
+    },
+    {
+      "id": "45",
+      "area_id": "6",
+      "code": "B6.3",
+      "description": "Den Informationsbedarf für Entscheidungssituationen aufgrund von Anspruchsgruppen bestimmen"
+    },
+    {
+      "id": "46",
+      "area_id": "6",
+      "code": "B6.4",
+      "description": "Marktinformationen und Umfeld (Konkurrenz, Forschung etc.) in der ICT beobachten und bewerten"
+    },
+    {
+      "id": "47",
+      "area_id": "6",
+      "code": "B6.5",
+      "description": "Risiken einer ICT-Abteilung analysieren und geeignete Massnahmen ableiten"
+    },
+    {
+      "id": "48",
+      "area_id": "7",
+      "code": "B7.1",
+      "description": "Die ICT-Architektur zielorientiert (ICT-Strategie) analysieren, beurteilen und bestimmen"
+    },
+    {
+      "id": "49",
+      "area_id": "7",
+      "code": "B7.2",
+      "description": "Geschäftsprozesse aus ICT-Sicht priorisieren, analysieren, spezifizieren und optimieren"
+    },
+    {
+      "id": "50",
+      "area_id": "7",
+      "code": "B7.3",
+      "description": "Technische Anforderungen aufnehmen und spezifizieren"
+    },
+    {
+      "id": "51",
+      "area_id": "7",
+      "code": "B7.4",
+      "description": "Den Einsatz von geschäftslrevanten Systemen konzipieren"
+    },
+    {
+      "id": "52",
+      "area_id": "7",
+      "code": "B7.5",
+      "description": "Anforderungen für den Einsatz von Informatikmitteln spezifizieren"
+    },
+    {
+      "id": "53",
+      "area_id": "8",
+      "code": "B8.1",
+      "description": "Das ICT-Qualitätsmanagement-System definieren, dokumentieren, umsetzen und überwachen"
+    },
+    {
+      "id": "54",
+      "area_id": "8",
+      "code": "B8.2",
+      "description": "Optimierungen im Qualitätsmanagement planen und umsetzen"
+    },
+    {
+      "id": "55",
+      "area_id": "8",
+      "code": "B8.3",
+      "description": "Qualitäts-Messsysteme mit Indikatoren festlegen"
+    },
+    {
+      "id": "56",
+      "area_id": "9",
+      "code": "B9.1",
+      "description": "ICT-Sicherheitskonzepte zur Gewährleistung der ICT-Sicherheit wie Datenschutz, Datensicherheit und Verfügbarkeit einhalten, umsetzen und unterhalten"
+    },
+    {
+      "id": "57",
+      "area_id": "9",
+      "code": "B9.2",
+      "description": "Datensammlungen von Unternehmen erfassen, zu schützende Daten identifizieren und den Schutzbedarf ermitteln"
+    },
+    {
+      "id": "58",
+      "area_id": "9",
+      "code": "B9.3",
+      "description": "Sicherheitsrelevante Baussteine vernetzter ICT-Infrastrukturen identifizieren, die Gefährdungslage beurteilen und geeignete organisatorische, personelle, infrastrukturelle und technische Schutzmassnahmen derive"
+    },
+    {
+      "id": "59",
+      "area_id": "10",
+      "code": "B10.1",
+      "description": "Die Architektur der Software bestimmen und die Entwicklung unter Berücksichtigung von Betrieb und Wartung planen, realisieren und dokumentieren"
+    },
+    {
+      "id": "60",
+      "area_id": "10",
+      "code": "B10.2",
+      "description": "Applikationen unter Beachtung übergeordneter Konzepte wie der ICT-Strategie, Standards etc. in die Softwarearchitektur integrieren"
+    },
+    {
+      "id": "61",
+      "area_id": "11",
+      "code": "B11.1",
+      "description": "Vorgaben für die Konzipierung eines Softwaresystems mit einer formalen Methode analysieren"
+    },
+    {
+      "id": "62",
+      "area_id": "11",
+      "code": "B11.2",
+      "description": "Systemspezifikation interpretieren und die technische Umsetzung entwerfen"
+    },
+    {
+      "id": "63",
+      "area_id": "11",
+      "code": "B11.3",
+      "description": "Spezifikation in einer geeigneten Programmiersprache umsetzen"
+    },
+    {
+      "id": "64",
+      "area_id": "11",
+      "code": "B11.4",
+      "description": "Entwicklungsprojekte aufgrund der Analysegegebnisse und des gewähten Vorgehens planen und leiten"
+    },
+    {
+      "id": "65",
+      "area_id": "11",
+      "code": "B11.5",
+      "description": "Mobile und verteilte Applikationen unter Berücksichtigung zeitgemässer Architekturmuster bzw. Referenzarchitekturen implementieren"
+    },
+    {
+      "id": "66",
+      "area_id": "11",
+      "code": "B11.6",
+      "description": "Testkonzepte und Testspezifikation erstellen, Tests implementieren und auswerten sowie notwendige Massnahmen umsetzen"
+    },
+    {
+      "id": "67",
+      "area_id": "11",
+      "code": "B11.7",
+      "description": "Datenbanken aufgrund konzeptioneller Datenmodelle logisch abbilden und in Applikationen integrieren"
+    },
+    {
+      "id": "68",
+      "area_id": "11",
+      "code": "B11.8",
+      "description": "Prinzipien, Methoden und Werkzeuge für die arbeitssteilige Entwicklung und Anwendung von umfangreichen Softwaresystemen zielorientiert bereitstellen und systematisch umsetzen"
+    },
+    {
+      "id": "69",
+      "area_id": "12",
+      "code": "B12.1",
+      "description": "Die bestehende Systemarchitektur beurteilen und weiterentwickeln"
+    },
+    {
+      "id": "70",
+      "area_id": "12",
+      "code": "B12.2",
+      "description": "Die bestehende Netzwerk-Architektur analysieren, Umsetzungsvarianten definieren und eine Soll-Architektur entwickeln"
+    },
+    {
+      "id": "71",
+      "area_id": "12",
+      "code": "B12.3",
+      "description": "Bestehende ICT-Konfigurationen analysieren, Umsetzungsvarianten für die Erweiterung definieren und Soll-Konfigurationen entwickeln"
+    },
+    {
+      "id": "72",
+      "area_id": "12",
+      "code": "B12.4",
+      "description": "Die Anforderungen an ein Konfigurationsmanagementsystem einer ICT-Organisation erheben und mögliche Lösungsvarianten vorschlagen"
+    },
+    {
+      "id": "73",
+      "area_id": "13",
+      "code": "B13.1",
+      "description": "Archiv-, Backup-, Restore- und Repair-Konzepte für die Software, Datenbestände und Datenbanken erarbeiten"
+    },
+    {
+      "id": "74",
+      "area_id": "13",
+      "code": "B13.2",
+      "description": "Spezifische Testkonzepte erstellen und die Tests der relevanten Prüfobjekte planen"
+    },
+    {
+      "id": "75",
+      "area_id": "13",
+      "code": "B13.3",
+      "description": "Services gemäss Pflichtheft planen"
+    },
+    {
+      "id": "76",
+      "area_id": "13",
+      "code": "B13.4",
+      "description": "Anforderungen aus dem Service-Management analysieren, entwickeln und integrieren"
+    },
+    {
+      "id": "77",
+      "area_id": "13",
+      "code": "B13.5",
+      "description": "Service-Levels unter Berücksichtigung der Servicestrategie und Kundenvorgaben entwickeln"
+    },
+    {
+      "id": "78",
+      "area_id": "14",
+      "code": "B14.1",
+      "description": "Technische und organisatorische Massnahmen planen und für die Einführung von Software bzw. Releases ausarbeiten"
+    },
+    {
+      "id": "79",
+      "area_id": "14",
+      "code": "B14.2",
+      "description": "Probleme und Fehler im operativen Betrieb überwachen, identifizieren, zuordnen, beheben oder falls erforderlich eskalieren"
+    },
+    {
+      "id": "80",
+      "area_id": "14",
+      "code": "B14.3",
+      "description": "Die Kundenzufriedenheit bezüglich ICT-Dienstleistungen durch Messungen und Umfragen ermitteln"
+    },
+    {
+      "id": "81",
+      "area_id": "14",
+      "code": "B14.4",
+      "description": "Risiken beim Betrieb von ICT-Systemen systematisch erheben und Massnahmen derive"
+    },
+    {
+      "id": "82",
+      "area_id": "14",
+      "code": "B14.5",
+      "description": "ICT-Systeme und ICT-Dienstleistungen beschaffen"
+    },
+    {
+      "id": "83",
+      "area_id": "14",
+      "code": "B14.6",
+      "description": "Standardverträge für ICT-Lizenzen einsetzen"
+    },
+    {
+      "id": "84",
+      "area_id": "14",
+      "code": "B14.7",
+      "description": "Verrechnungsmodell operativ erstellen, umsetzen und ICT-Dienstleistungen budgetieren und verrechnen"
+    },
+    {
+      "id": "85",
+      "area_id": "15",
+      "code": "B15.1",
+      "description": "Neue und bereits bestehende ICT-Systeme bezüglich Energie- und Ressourceneffizienz und Umweltverträglichkeit evaluieren"
+    },
+    {
+      "id": "86",
+      "area_id": "15",
+      "code": "B15.2",
+      "description": "Massnahmen zur Minimierung des Energieverbrauchs ergreifen"
+    },
+    {
+      "id": "87",
+      "area_id": "15",
+      "code": "B15.3",
+      "description": "Den Einsatz von Material und natürlichen Ressourcen überwachen und Massnahmen zur Minimierung ergreifen"
+    },
+    {
+      "id": "88",
+      "area_id": "15",
+      "code": "B15.4",
+      "description": "Massnahmen zum Ersatz und zur Minimierung des Einsatzes von umweltschädigenden Materialien sowie zur Schliessung von Materialkreisläufen ergreifen"
+    },
+    {
+      "id": "89",
+      "area_id": "15",
+      "code": "B15.5",
+      "description": "Tätigkeiten an den Kriterien einer ökonomischen, sozialen und ökologischen Nachhaltigkeit sowie ethischer Richtlinien ausrichten"
+    },
+    {
+      "id": "90",
+      "area_id": "15",
+      "code": "B15.6",
+      "description": "Interaktionen gegenüber Dritten mit Respekt und Toleranz gestalten"
+    },
+    {
+      "id": "91",
+      "area_id": "15",
+      "code": "B15.7",
+      "description": "Arbeitssicherheit und Gesundheitsschutz der Mitarbeitenden sowie Umweltschutz im eigenen Wirkungsbereich als Vorgesetzte/Vorgesetzter verantworten und gestalten"
+    }
+  ]
+}

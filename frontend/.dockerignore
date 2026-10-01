@@ -1,0 +1,13 @@
+tests/
+vitest.config.ts
+coverage/
+node_modules/
+.nuxt/
+.output/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.git/

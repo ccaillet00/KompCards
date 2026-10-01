@@ -1,4 +1,4 @@
-node_modules
+node_modules/
 .env
 .env.*
 !.env.example
@@ -6,3 +6,9 @@ dist
 *.log
 .git
 /eval
+/csv
+tests/
+vitest.config.ts
+coverage/
+README.md
+.DS_Store

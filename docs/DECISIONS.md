@@ -135,6 +135,21 @@ Diese Entscheidung wurde durch ADR-014 ersetzt. `userTable` und `userSession` bl
 - **Bestandsdaten:** Bestehende Eingaben und gespeicherte Auswertungen werden nicht umgeschrieben oder automatisch neu erzeugt. Bei zukünftigen Prüfungen und Retries gilt der neue Prompt; fehlende Zwecke werden als Informationslücke behandelt.
 - **Validierung:** Vitest sichert Texte, Pflichtfeldverhalten, bestehenden `why`-Transport und Prompt-Verträge. Dataset v0.2 ergänzt drei synthetische Entwicklungsfälle; v0.1 bleibt als historische Vergleichsgrundlage erhalten. Modelltreue wird separat evaluiert.
 
+## ADR-020: Ergebnisorientierter LLM-Prompt und getrennte Eingabebewertung
+
+- **Kontext:** Der Eval-Lauf `2026-09-30T20-19-35-793Z-3b976f3f` verwendet einen anderen Prompt als der ursprüngliche Worktree. Er zeigt verlorene Ergebnisnachweise, fehlende Rollen, Grammatikfehler und die Vermischung von Curriculum-Passung und Eingabequalität. Der Nutzer hat die Überarbeitung anhand dieser Analyse beauftragt.
+- **Entscheidung:** `work_result` verbindet Was/Wie/Wozu in 1–2 kurzen Sätzen, nennt die angegebene Rolle ausdrücklich und verwendet Ich-Form und Perfekt. `quality_statement` beschreibt in genau einem Satz ein überprüfbares Ergebnis aus den Sachangaben; Methoden und Handlung werden nicht wiederholt. Damit wird die in ADR-011 und ADR-015 definierte Qualitätsbeschreibung fachlich präzisiert. Zusammen ergeben beide Texte 2–3 Sätze.
+- **Fehlende Nachweise:** Aus Wie/Wozu darf ein konkretes Zielkriterium abgeleitet, aber kein erreichter Erfolg behauptet werden. Ohne Beleg wird dieses Kriterium ausdrücklich als noch nicht nachgewiesen bezeichnet und der Nachweis in `note_improvment` konkret nachgefragt. Fehlt auch ein ableitbares Kriterium, wird die spezifische Informationslücke benannt. Der pauschale Ergebnis-Fallback entfällt.
+- **Bewertung:** `quality` bewertet die ursprünglichen Sachangaben: 1 = keine konkrete Handlung oder wesentlicher Widerspruch; 2 = Methode/Zweck unklar; 3 = Handlung/Methode/Zweck klar; 4 = zusätzlich Ergebnisnachweis. Negative Ergebnisse zählen ebenfalls. Curriculum-Passung wird unabhängig davon bewertet. Das bestehende Feld `why` wird im LLM-Prompt als Wozu (Zweck/Nutzen) bezeichnet; reine Methodenbegründungen werden nicht in einen Zweck umgedeutet.
+- **Konsequenz:** Schema, Wertebereiche und Client-Interface bleiben unverändert. Prompt-Vertrag per Vitest geprüft; Beispiele verdeutlichen qualitative Freigabe, negatives Ergebnis, fehlenden Nachweis und Widerspruch. Sprachliche Wirkung und Fehlerquote müssen separat mit Gemma evaluiert werden; Unit-Tests machen keine echten LLM-Aufrufe. Das historische Eval-Dataset erwartet teilweise den alten Fallback und benötigt vor einem semantischen Vergleich eine versionierte Anpassung.
+
+## ADR-021: Informatik-Evaluation mit CSV-Kompetenzkontext
+
+- **Kontext:** Der Nutzer stellt Curriculum-, Bereichs- und Kompetenz-CSV-Dateien für Informatik bereit. Der bisherige Benchmark verwendet erfundene Kompetenztexte und ältere Ergebnis-Fallback-Regeln.
+- **Entscheidung:** Ein ergänzendes explizit auswählbares Set mit 40 synthetischen Praxiseingaben auf unveränderten CSV-Kompetenztexten. 30 development-Fälle decken alle 15 Bereiche ab; zehn holdout-Fälle verwenden andere Kompetenzen. Varianten bleiben im gleichen Split. 20 von 91 Kompetenzen werden für Fälle verwendet; der gesamte Katalog und Quellprüfsummen werden als JSON festgehalten.
+- **Bewertung:** ADR-020, konkrete offene Kriterien bei fehlendem Nachweis, getrennte Eingabequalität und Curriculum-Passung. Semantische Erwartungen und Labels bleiben bis zum menschlichen Review ungeprüft. Die Nutzer-Exporte sind keine unabhängig bestätigte offizielle Lehrplanversion. Inputs sind keine echten Studierendenfälle.
+- **Konsequenz:** Keine DB-, Prompt- oder Runneränderung; bisherige Sets und Standardauswahl bleiben erhalten. Nur explizite Modellläufe verwenden das neue Set; Schema-, Quellen- und Splitprüfungen laufen in Vitest ohne LLM-Aufruf. Holdout nicht zur Promptoptimierung verwenden. Ein Vergleich unterschiedlicher Datensätze ist kein direkter Nachweis einer Promptverbesserung.
+
 ## Offene Entscheidungen
 
 Keine — alle Kernpunkte geschlossen:
