@@ -134,13 +134,13 @@ describe('LLM-Auswertung', () => {
     const wrapper = await mountSuspended(ResultPage, { route: '/cards/9/result' })
     await flushPromises()
 
-    expect(wrapper.get('[data-test="output-position"]').text()).toContain('2 / 2')
+    expect(wrapper.get('[data-test="output-position"]').text()).toContain('Version 2 von 2')
     expect(wrapper.text()).toContain('Das Datenmodell wurde fachlich korrekt umgesetzt.')
     expect(wrapper.get('[data-test="next-output"]').attributes('disabled')).toBeDefined()
 
     await wrapper.get('[data-test="previous-output"]').trigger('click')
 
-    expect(wrapper.get('[data-test="output-position"]').text()).toContain('1 / 2')
+    expect(wrapper.get('[data-test="output-position"]').text()).toContain('Version 1 von 2')
     expect(wrapper.get('[data-test="previous-output"]').attributes('disabled')).toBeDefined()
     expect(wrapper.text()).toContain('Die erste Auswertung.')
     expect(wrapper.text()).toContain('Die erste Begründung.')
@@ -205,4 +205,16 @@ describe('LLM-Auswertung', () => {
     expect(fixture.discardProof).toHaveBeenCalledWith(9)
     expect(push).toHaveBeenCalledWith('/cards')
   })
+
+ it('erklärt Bewertung und Abschluss und zählt Feedbackzeichen', async () => {
+  const wrapper = await mountSuspended(ResultPage, { route: '/cards/9/result' })
+  await flushPromises()
+  expect(wrapper.text()).toContain('Qualität deiner Angaben')
+  expect(wrapper.text()).toContain('Ergebnis und Nachweis')
+  expect(wrapper.get('[data-test="accept-output"]').text()).toContain('Karte abschliessen')
+  await wrapper.get('[data-test="show-retry"]').trigger('click')
+  await wrapper.get('#retry-feedback').setValue('Nachweis ergänzen')
+  expect(wrapper.get('#retry-feedback-count').text()).toBe('17 / 255 Zeichen')
+ })
+
 })

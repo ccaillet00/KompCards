@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive } from 'vue'
+import { computed, nextTick, onMounted, reactive } from 'vue'
 import { navigateTo, useRoute } from '#imports'
 import { useAuth } from '../../composables/useAuth'
 import UiButton from '../ui/UiButton.vue'
@@ -23,7 +23,11 @@ function validate(): boolean {
 }
 
 async function submit(): Promise<void> {
-  if (!validate()) return
+  if (!validate()) {
+    await nextTick()
+    document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+    return
+  }
   try {
     await auth.login({ ...form })
     await navigateTo('/dashboard')
@@ -119,7 +123,15 @@ async function githubSignIn(): Promise<void> {
       @click="githubSignIn"
     />
 
-    <p class="mt-8 text-center text-sm text-base-content/70">
+    <p class="mt-4 text-sm text-base-content/75">
+      Probleme beim Zugang? <NuxtLink
+        to="/information#contact"
+        class="link text-primary"
+      >
+        Supportinformationen ansehen
+      </NuxtLink>
+    </p>
+    <p class="mt-5 text-center text-sm text-base-content/70">
       Noch kein Konto?
       <NuxtLink
         to="/login?mode=register"

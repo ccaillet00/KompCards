@@ -46,7 +46,7 @@ const dashOffset = computed(() => circumference * (1 - percentage.value / 100))
     <div class="relative text-center">
       <strong class="block font-display text-4xl text-primary">{{ current }}</strong>
       <span class="text-sm font-semibold text-primary">von {{ target }}</span>
-      <span class="mt-1 block text-xs text-base-content/60">Karten erstellt</span>
+      <span class="mt-1 block text-xs text-base-content/60">Karten abgeschlossen</span>
     </div>
   </div>
 </template>

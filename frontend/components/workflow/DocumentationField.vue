@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import UiTextarea from '../ui/UiTextarea.vue'
+import UiInput from '../ui/UiInput.vue'
 
 defineProps<{
   id: string
@@ -8,6 +9,7 @@ defineProps<{
   placeholder: string
   error?: string
   disabled?: boolean
+  compact?: boolean
 }>()
 
 const model = defineModel<string>({ default: '' })
@@ -20,19 +22,32 @@ const model = defineModel<string>({ default: '' })
         :for="id"
         class="font-semibold text-primary"
       >{{ label }}</label>
-      <p class="mt-1 text-sm leading-5 text-base-content/55">
+      <p
+        :id="`${id}-hint`"
+        class="mt-1 text-sm leading-5 text-base-content/75"
+      >
         {{ hint }}
       </p>
     </div>
     <div>
+      <UiInput
+        v-if="compact"
+        :id="id"
+        v-model="model"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        :aria-invalid="Boolean(error) || undefined"
+        :aria-describedby="`${id}-hint${error ? ` ${id}-error` : ''}`"
+      />
       <UiTextarea
+        v-else
         :id="id"
         v-model="model"
         :placeholder="placeholder"
         :rows="3"
         :disabled="disabled"
         :aria-invalid="Boolean(error) || undefined"
-        :aria-describedby="error ? `${id}-error` : undefined"
+        :aria-describedby="`${id}-hint${error ? ` ${id}-error` : ''}`"
       />
       <p
         v-if="error"

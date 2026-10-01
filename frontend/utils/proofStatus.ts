@@ -4,8 +4,8 @@ export const proofStatuses: ReadonlyArray<{ value: ProofStatus, label: string }>
   { value: 1, label: 'Entwurf' },
   { value: 2, label: 'In Prüfung' },
   { value: 3, label: 'Prüfung fehlgeschlagen' },
-  { value: 4, label: 'Prüfung abgeschlossen' },
-  { value: 5, label: 'Abgeschlossen' },
+  { value: 4, label: 'Auswertung bereit' },
+  { value: 5, label: 'Karte abgeschlossen' },
   { value: 6, label: 'Verworfen' },
 ]
 

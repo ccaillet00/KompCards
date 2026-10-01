@@ -14,9 +14,24 @@ import BrandLogo from '../brand/BrandLogo.vue'
           href="#ueber-kompcards"
           class="hover:text-primary"
         >Über KompCards</a>
-        <span aria-disabled="true">Datenschutz</span>
-        <span aria-disabled="true">Impressum</span>
-        <span aria-disabled="true">Kontakt</span>
+        <NuxtLink
+          to="/information#privacy"
+          class="link"
+        >
+          Datenschutz · in Ausarbeitung
+        </NuxtLink>
+        <NuxtLink
+          to="/information#imprint"
+          class="link"
+        >
+          Impressum · in Ausarbeitung
+        </NuxtLink>
+        <NuxtLink
+          to="/information#contact"
+          class="link"
+        >
+          Kontakt · in Ausarbeitung
+        </NuxtLink>
       </nav>
       <p class="text-sm text-base-content/55">
         Kompetenzen heute. Chancen morgen.

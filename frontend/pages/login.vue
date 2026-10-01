@@ -49,10 +49,10 @@ useSeoMeta({ title: () => `${title.value} – KompCards` })
     <p class="eyebrow">
       Deine Arbeit. Deine Kompetenz. Deine Zukunft.
     </p>
-    <h1 class="mt-5 font-display text-5xl font-bold leading-tight text-primary sm:text-6xl">
+    <h1 class="mt-3 font-display text-4xl font-bold leading-tight text-primary sm:text-5xl">
       {{ title }}
     </h1>
-    <p class="mt-4 max-w-lg text-lg leading-8 text-base-content/65">
+    <p class="mt-3 max-w-lg text-base leading-7 text-base-content/80">
       {{ description }}
     </p>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { definePageMeta, useRoute, useRouter, useSeoMeta } from '#imports'
 import ProofStatusBadge from '../../../components/proof/ProofStatusBadge.vue'
 import UiButton from '../../../components/ui/UiButton.vue'
@@ -8,6 +8,7 @@ import CompetencySummary from '../../../components/workflow/CompetencySummary.vu
 import DocumentationField from '../../../components/workflow/DocumentationField.vue'
 import WorkflowSteps from '../../../components/workflow/WorkflowSteps.vue'
 import { useCompetencyWorkflow } from '../../../composables/useCompetencyWorkflow'
+import { useUnsavedChanges } from '../../../composables/useUnsavedChanges'
 import type { CompetencyInput, CompetencyInputPayload } from '../../../types/proof'
 
 definePageMeta({ middleware: ['service-only', 'auth'] })
@@ -44,6 +45,9 @@ function snapshot(): string {
   return JSON.stringify(form)
 }
 
+const { dirty, markSaved } = useUnsavedChanges(snapshot, hydrated)
+const saveState = computed(() => isSaving.value ? 'Wird gespeichert …' : dirty.value ? 'Ungespeicherte Änderungen' : 'Gespeichert')
+
 function validateForCheck(): boolean {
   const messages: Record<keyof CompetencyInputPayload, string> = {
     userRole: 'Bitte beschreibe deine Rolle.',
@@ -66,6 +70,7 @@ async function saveDraft(): Promise<boolean> {
   try {
     await saveInput(proofId, { ...form })
     lastSavedSnapshot.value = snapshot()
+    markSaved()
     savedMessage.value = 'Dein Entwurf wurde gespeichert.'
     return true
   } catch {
@@ -76,7 +81,12 @@ async function saveDraft(): Promise<boolean> {
 async function checkWithLlm(): Promise<void> {
   if (isSaving.value || isChecking.value) return
   savedMessage.value = null
-  if (!validateForCheck() || !editable.value) return
+  if (!editable.value) return
+  if (!validateForCheck()) {
+    await nextTick()
+    document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+    return
+  }
 
   const mustSave = snapshot() !== lastSavedSnapshot.value || proof.value?.status === 4
   if (mustSave && !(await saveDraft())) return
@@ -112,7 +122,9 @@ onMounted(async () => {
     form.environment = latestInput.environment
     lastSavedSnapshot.value = snapshot()
   }
-  hydrated.value = true
+  // Empty new forms also have a baseline; only actual edits trigger a warning.
+  markSaved()
+  hydrated.value = Boolean(proof.value)
 })
 </script>
 
@@ -144,11 +156,11 @@ onMounted(async () => {
       </NuxtLink>
 
       <div class="mt-5 grid max-w-6xl gap-7 lg:grid-cols-[minmax(0,1.45fr)_minmax(20rem,0.75fr)] lg:items-start">
-        <main>
+        <div>
           <p class="text-sm text-base-content/55">
             Kompetenzkarte erstellen&nbsp; › &nbsp;Eingabe
           </p>
-          <h1 class="mt-3 font-display text-5xl font-bold leading-tight text-primary">
+          <h1 class="mt-3 font-display text-4xl font-bold leading-tight text-primary">
             Arbeit dokumentieren
           </h1>
           <p class="mt-2 max-w-3xl text-lg leading-7 text-base-content/65">
@@ -190,13 +202,17 @@ onMounted(async () => {
           </div>
           <form
             v-else-if="proof"
-            class="mt-9 space-y-6"
+            class="mt-7 space-y-5"
             @submit.prevent="checkWithLlm"
           >
+            <p class="text-sm text-base-content/75">
+              Alle fünf Angaben sind für die KI-Prüfung erforderlich. Entwürfe kannst du unvollständig speichern.
+            </p>
             <DocumentationField
               id="user-role"
               v-model="form.userRole"
               label="Rolle"
+              compact
               hint="Welche Rolle hattest du in der Arbeit?"
               placeholder="z. B. Entwickler, Projektleiter, Teil eines Teams …"
               :error="errors.userRole"
@@ -206,8 +222,8 @@ onMounted(async () => {
               id="what"
               v-model="form.what"
               label="Was hast du gemacht?"
-              hint="Beschreibe kurz und konkret, was du gemacht hast."
-              placeholder="z. B. Datenmodell für eine Anwendung entworfen …"
+              hint="Beschreibe deine Handlung, das erreichte Ergebnis und woran du es überprüft hast."
+              placeholder="z. B. Datenmodell entworfen und mit Testdaten geprüft: Alle 12 Prüffälle waren erfolgreich. Noch offene Ergebnisse ausdrücklich benennen …"
               :error="errors.what"
               :disabled="!editable || isSaving || isChecking"
             />
@@ -215,7 +231,7 @@ onMounted(async () => {
               id="how"
               v-model="form.how"
               label="Wie bist du vorgegangen?"
-              hint="Beschreibe, wie du die Arbeit umgesetzt hast."
+              hint="Nenne dein Vorgehen, eingesetzte Werkzeuge und deinen eigenen Beitrag."
               placeholder="z. B. Anforderungen analysiert, Modelle skizziert …"
               :error="errors.how"
               :disabled="!editable || isSaving || isChecking"
@@ -233,22 +249,27 @@ onMounted(async () => {
               id="environment"
               v-model="form.environment"
               label="Umfeld"
+              compact
               hint="In welchem Umfeld fand die Arbeit statt?"
               placeholder="z. B. Schulprojekt, Praktikum, Berufsalltag …"
               :error="errors.environment"
               :disabled="!editable || isSaving || isChecking"
             />
 
-            <div class="flex flex-wrap items-center justify-between gap-4 border-t border-primary/10 pt-6">
-              <p class="flex items-center gap-2 text-sm text-base-content/55">
+            <div class="workflow-actions">
+              <p
+                data-test="save-state"
+                role="status"
+                class="flex items-center gap-2 text-sm text-base-content/75"
+              >
                 <UiIcon
                   name="circle-check"
                   :size="18"
                   class="text-primary"
                 />
-                Entwürfe können auch unvollständig gespeichert werden.
+                {{ saveState }}
               </p>
-              <div class="flex gap-3">
+              <div class="flex flex-wrap gap-3">
                 <UiButton
                   type="button"
                   variant="secondary"
@@ -270,7 +291,7 @@ onMounted(async () => {
                     v-if="isChecking"
                     class="loading loading-spinner loading-sm"
                   />
-                  {{ isChecking ? 'LLM prüft …' : 'Mit LLM prüfen' }}
+                  {{ isChecking ? 'KI prüft …' : 'Mit KI prüfen' }}
                   <UiIcon
                     v-if="!isChecking"
                     name="arrow-right"
@@ -280,7 +301,7 @@ onMounted(async () => {
               </div>
             </div>
           </form>
-        </main>
+        </div>
 
         <aside
           v-if="competencyContext"
