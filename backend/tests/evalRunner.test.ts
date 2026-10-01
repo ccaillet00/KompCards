@@ -8,7 +8,7 @@ const dirs: string[] = [];
 const env = { EVAL_PROVIDER: 'vllm', LLM_BASE_URL: 'http://localhost:8000/v1', LLM_MODEL: 'fake', EVAL_REPETITIONS: '1' };
 const smallDataset = async () => {
   const dir = await mkdtemp(join(tmpdir(), 'kompcards-eval-test-')); dirs.push(dir);
-  const dataset = JSON.parse(await readFile('../docs/evals/competency-cards.v0.1.json', 'utf8'));
+  const dataset = JSON.parse(await readFile('../docs/evals/competency-cards.v0.2.json', 'utf8'));
   dataset.cases = dataset.cases.slice(0, 1);
   const path = join(dir, 'dataset.json');
   await writeFile(path, JSON.stringify(dataset));
@@ -19,6 +19,14 @@ const output = { work_result: 'Ich habe eine Passwort-Zurücksetzung mit Tokenpr
 const fakeFetch = () => vi.fn(async () => new Response(JSON.stringify({ model: 'fake', choices: [{ message: { content: JSON.stringify(output) }, finish_reason: 'stop' }], usage: { prompt_tokens: 100, completion_tokens: 20, prompt_tokens_details: { cached_tokens: 0 } } })));
 
 describe('eval command', () => {
+  it('uses dataset v0.2 by default and plans all Wozu development cases without calls', async () => {
+    const { out } = await smallDataset(); const fetcher = fakeFetch();
+    await main(['--dry-run', '--out', out], env, fetcher, () => {});
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(JSON.parse(await readFile(join(out, 'manifest.json'), 'utf8'))).toMatchObject({ datasetVersion: '0.2.0-draft', plannedAttempts: 23 });
+    const plan = JSON.parse(await readFile(join(out, 'plan.json'), 'utf8'));
+    expect(plan.filter((row: { caseId: string }) => row.caseId.startsWith('wozu-'))).toHaveLength(3);
+  });
   it('shows help without credentials or model calls and rejects unknown options', async () => {
     const fetcher = fakeFetch(); const log = vi.fn();
     expect(await main(['--help'], {}, fetcher, log)).toBe(0);

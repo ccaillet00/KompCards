@@ -124,7 +124,7 @@ export const competencyInput = mysqlTable('competency_input', {
   what: text('what').notNull(),
   /** The ‘how’ in the exercise of competence */
   how: text('how').notNull(),
-  /** The ‘why’ behind the exercise of competence */
+  /** Wozu: angestrebter Zweck/Nutzen der Tätigkeit; technischer Feldname bleibt why. */
   why: text('why').notNull(),
   /** Where was this plot carried out? */
   environment: text('environment').notNull(),

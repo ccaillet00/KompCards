@@ -17,15 +17,21 @@ const { cards, isLoading, error, load } = useProofs()
 const createdCount = computed(() => cards.value.length)
 const completedCount = computed(() => cards.value.filter(card => card.status === 5).length)
 const activeCount = computed(() => cards.value.filter(card => card.status >= 1 && card.status <= 4).length)
-const latestCard = computed(() => cards.value[0] ?? null)
+const latestCard = computed(() => cards.value.find(card => card.status !== 6) ?? null)
+const pendingCount = computed(() => cards.value.filter(card => card.status === 4).length)
+const nextCard = computed(() => cards.value.find(card => card.status === 4)
+  ?? cards.value.find(card => card.status === 1 || card.status === 3) ?? null)
+const nextTarget = computed(() => nextCard.value
+  ? `/cards/${nextCard.value.id}${nextCard.value.status === 4 ? '/result' : ''}` : '/cards/new')
+const nextLabel = computed(() => nextCard.value?.status === 4 ? 'Auswertung prüfen und abschliessen'
+  : nextCard.value ? 'Entwurf fortsetzen' : 'Neue Karte erstellen')
 const latestCardTarget = computed(() => {
   if (!latestCard.value) return '/cards'
   return [4, 5].includes(latestCard.value.status)
     ? `/cards/${latestCard.value.id}/result`
     : `/cards/${latestCard.value.id}`
 })
-const progress = computed(() => Math.min(100, Math.round((createdCount.value / TARGET_COUNT) * 100)))
-const remainingCount = computed(() => Math.max(0, TARGET_COUNT - createdCount.value))
+const remainingCount = computed(() => Math.max(0, TARGET_COUNT - completedCount.value))
 
 onMounted(load)
 </script>
@@ -50,7 +56,7 @@ onMounted(load)
         <p class="eyebrow">
           Willkommen zurück
         </p>
-        <h1 class="mt-4 font-display text-5xl font-bold leading-tight text-primary xl:text-6xl">
+        <h1 class="mt-4 font-display text-4xl font-bold leading-tight text-primary xl:text-5xl">
           Dein Fortschritt zählt.
         </h1>
         <p class="mt-3 text-xl leading-8 text-base-content/65">
@@ -100,7 +106,7 @@ onMounted(load)
           </h2>
           <div class="mt-5 flex flex-col items-center gap-6 sm:flex-row">
             <ProofProgressRing
-              :current="createdCount"
+              :current="completedCount"
               :target="TARGET_COUNT"
             />
             <div class="grid min-w-0 flex-1 gap-3">
@@ -136,17 +142,15 @@ onMounted(load)
               </div>
             </div>
           </div>
-          <div class="mt-6 flex items-center gap-4">
-            <progress
-              class="progress progress-info h-3 flex-1"
-              :value="progress"
-              max="100"
-            />
-            <strong class="text-primary">{{ progress }} %</strong>
-          </div>
+          <p
+            data-test="goal-progress"
+            class="mt-5 text-sm text-base-content/75"
+          >
+            {{ completedCount }} von {{ TARGET_COUNT }} Karten abgeschlossen. Entwürfe und verworfene Karten zählen nicht zum Ziel.
+          </p>
         </UiSurfaceCard>
 
-        <UiSurfaceCard class="min-w-0 flex flex-col justify-center bg-base-100/95 p-7 backdrop-blur-sm">
+        <UiSurfaceCard class="order-4 min-w-0 flex flex-col justify-center bg-base-100/95 p-7 backdrop-blur-sm">
           <span class="grid size-14 place-items-center rounded-full bg-primary text-primary-content">
             <UiIcon
               name="plus"
@@ -172,7 +176,7 @@ onMounted(load)
           </UiButton>
         </UiSurfaceCard>
 
-        <UiSurfaceCard class="min-w-0 bg-base-100/95 p-7 backdrop-blur-sm">
+        <UiSurfaceCard class="order-3 min-w-0 bg-base-100/95 p-7 backdrop-blur-sm">
           <div class="flex min-w-0 items-center justify-between gap-4">
             <h2 class="flex min-w-0 items-center gap-3 font-display text-2xl font-bold text-primary">
               <UiIcon
@@ -202,7 +206,7 @@ onMounted(load)
               />
             </span>
             <span class="min-w-0 flex-1">
-              <strong class="block truncate text-primary">
+              <strong class="block line-clamp-2 text-primary">
                 {{ latestCard.competencyCode }} – {{ latestCard.competencyDescription }}
               </strong>
               <span class="mt-1 block text-sm text-base-content/60">
@@ -220,7 +224,7 @@ onMounted(load)
           </div>
         </UiSurfaceCard>
 
-        <UiSurfaceCard class="min-w-0 flex flex-col justify-center bg-base-100/95 p-7 backdrop-blur-sm">
+        <UiSurfaceCard class="order-2 min-w-0 flex flex-col justify-center bg-base-100/95 p-7 backdrop-blur-sm">
           <h2 class="flex items-center gap-3 font-display text-2xl font-bold text-primary">
             <UiIcon
               name="graduation-cap"
@@ -228,7 +232,19 @@ onMounted(load)
             />
             Nächster Schritt
           </h2>
-          <p class="mt-3 leading-7 text-base-content/65">
+          <p
+            v-if="pendingCount"
+            class="mt-3 font-semibold text-primary"
+          >
+            {{ pendingCount }} {{ pendingCount === 1 ? 'Auswertung wartet' : 'Auswertungen warten' }} auf deine Bestätigung.
+          </p>
+          <p
+            v-else-if="nextCard"
+            class="mt-3 font-semibold text-primary"
+          >
+            Setze deinen offenen Entwurf fort.
+          </p>
+          <p class="mt-3 leading-7 text-base-content/75">
             <template v-if="remainingCount > 0">
               Noch {{ remainingCount }} Kompetenzkarten bis zu deinem Ziel. Bleib dran – jede dokumentierte Arbeit bringt dich weiter.
             </template>
@@ -237,19 +253,10 @@ onMounted(load)
             </template>
           </p>
           <UiButton
-            v-if="latestCard"
-            :to="latestCardTarget"
-            variant="secondary"
+            :to="nextTarget"
             class="mt-5 w-full"
           >
-            Letzte Karte öffnen
-          </UiButton>
-          <UiButton
-            to="/cards/new"
-            variant="ghost"
-            class="mt-2 w-full"
-          >
-            Neue Karte erstellen
+            {{ nextLabel }}
           </UiButton>
         </UiSurfaceCard>
       </div>

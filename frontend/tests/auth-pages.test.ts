@@ -161,4 +161,13 @@ describe('Authentifizierungsseiten', () => {
       expect(wrapper.find('form').exists()).toBe(true)
     })
   })
+
+ it('verknüpft Registrierungsfehler mit den Eingabefeldern', async () => {
+  const wrapper = await mountSuspended(AuthRegisterForm)
+  await wrapper.get('form').trigger('submit')
+  expect(wrapper.get('#register-name').attributes('aria-describedby')).toContain('register-name-error')
+  expect(wrapper.get('#register-email').attributes('aria-describedby')).toContain('register-email-error')
+  expect(wrapper.get('input[type="checkbox"]').attributes('aria-describedby')).toContain('register-terms-error')
+ })
+
 })

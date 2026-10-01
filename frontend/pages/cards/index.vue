@@ -4,6 +4,7 @@ import { definePageMeta, useSeoMeta } from '#imports'
 import ProofListRow from '../../components/proof/ProofListRow.vue'
 import UiButton from '../../components/ui/UiButton.vue'
 import UiIcon from '../../components/ui/UiIcon.vue'
+import UiInput from '../../components/ui/UiInput.vue'
 import { useProofs } from '../../composables/useProofs'
 import type { ProofStatus } from '../../types/proof'
 import { proofStatuses } from '../../utils/proofStatus'
@@ -15,9 +16,21 @@ const PAGE_SIZE = 10
 const { cards, isLoading, error, load } = useProofs()
 const activeStatus = ref<'all' | ProofStatus>('all')
 const currentPage = ref(1)
-const filteredCards = computed(() => activeStatus.value === 'all'
-  ? cards.value
-  : cards.value.filter(card => card.status === activeStatus.value))
+const search = ref('')
+const area = ref('all')
+const areas = computed(() => [...new Map(cards.value.map(card => [card.areaCode, card.areaTitle])).entries()])
+const filteredCards = computed(() => cards.value.filter(card => {
+  const query = search.value.trim().toLocaleLowerCase('de-CH')
+  return (activeStatus.value === 'all' || card.status === activeStatus.value)
+    && (area.value === 'all' || card.areaCode === area.value)
+    && `${card.competencyCode} ${card.competencyDescription} ${card.areaTitle} ${card.curriculumTitle}`.toLocaleLowerCase('de-CH').includes(query)
+}))
+const hasFilters = computed(() => Boolean(search.value || area.value !== 'all' || activeStatus.value !== 'all'))
+function resetFilters(): void {
+  search.value = ''
+  area.value = 'all'
+  activeStatus.value = 'all'
+}
 const pageCount = computed(() => Math.max(1, Math.ceil(filteredCards.value.length / PAGE_SIZE)))
 const paginatedCards = computed(() => filteredCards.value.slice(
   (currentPage.value - 1) * PAGE_SIZE,
@@ -30,10 +43,11 @@ function countForStatus(status: ProofStatus): number {
   return cards.value.filter(card => card.status === status).length
 }
 
-watch(activeStatus, () => {
+watch([activeStatus, search, area], () => {
   currentPage.value = 1
 })
 
+watch(pageCount, count => { currentPage.value = Math.min(currentPage.value, count) })
 onMounted(load)
 </script>
 
@@ -53,9 +67,9 @@ onMounted(load)
     <div class="fox-world-page-blend absolute inset-0 -z-10" />
 
     <div class="page-shell py-10 xl:py-12">
-      <header class="flex max-w-5xl items-start justify-between gap-8">
+      <header class="grid max-w-5xl gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
         <div>
-          <h1 class="font-display text-5xl font-bold leading-tight text-primary">
+          <h1 class="font-display text-4xl font-bold leading-tight text-primary">
             Meine Karten
           </h1>
           <p class="mt-2 max-w-2xl text-lg leading-7 text-base-content/65">
@@ -75,13 +89,49 @@ onMounted(load)
         </UiButton>
       </header>
 
+      <div class="mt-6 grid max-w-5xl gap-4 rounded-box border border-primary/10 bg-base-100 p-4 sm:grid-cols-[1fr_16rem]">
+        <div>
+          <label
+            for="card-search"
+            class="mb-2 block text-sm font-semibold"
+          >Karten suchen</label>
+          <UiInput
+            id="card-search"
+            v-model="search"
+            placeholder="Kompetenzcode, Beschreibung oder Lehrgang"
+          />
+        </div>
+        <div>
+          <label
+            for="card-area"
+            class="mb-2 block text-sm font-semibold"
+          >Bereich</label>
+          <select
+            id="card-area"
+            v-model="area"
+            class="form-control-select"
+          >
+            <option value="all">
+              Alle Bereiche
+            </option>
+            <option
+              v-for="[code, title] in areas"
+              :key="code"
+              :value="code"
+            >
+              {{ code }} – {{ title }}
+            </option>
+          </select>
+        </div>
+      </div>
       <div
-        class="mt-7 flex max-w-5xl flex-wrap gap-2"
+        class="mt-4 flex max-w-5xl flex-wrap gap-2"
         aria-label="Nach Status filtern"
       >
         <button
           type="button"
           data-test="status-filter-all"
+          :aria-pressed="activeStatus === 'all'"
           class="btn btn-sm border-primary/15 font-medium normal-case"
           :class="activeStatus === 'all' ? 'btn-primary' : 'bg-base-100/90 text-primary hover:bg-secondary'"
           @click="activeStatus = 'all'"
@@ -93,6 +143,7 @@ onMounted(load)
           :key="option.value"
           type="button"
           :data-test="`status-filter-${option.value}`"
+          :aria-pressed="activeStatus === option.value"
           class="btn btn-sm border-primary/15 font-medium normal-case"
           :class="activeStatus === option.value ? 'btn-primary' : 'bg-base-100/90 text-primary hover:bg-secondary'"
           @click="activeStatus = option.value"
@@ -101,6 +152,20 @@ onMounted(load)
         </button>
       </div>
 
+      <div class="mt-3 flex max-w-5xl flex-wrap items-center justify-between gap-3 rounded-box bg-base-100/95 px-3 py-2 text-sm">
+        <p role="status">
+          {{ filteredCards.length }} {{ filteredCards.length === 1 ? 'Karte gefunden' : 'Karten gefunden' }}
+        </p>
+        <button
+          v-if="hasFilters"
+          type="button"
+          data-test="reset-filters"
+          class="link text-primary"
+          @click="resetFilters"
+        >
+          Filter zurücksetzen
+        </button>
+      </div>
       <div
         v-if="error"
         role="alert"
@@ -157,7 +222,7 @@ onMounted(load)
               class="text-primary/45"
             />
             <p class="mt-3 text-base-content/60">
-              {{ cards.length ? 'Für diesen Status wurden keine Karten gefunden.' : 'Du hast noch keine Kompetenzkarten erstellt.' }}
+              {{ cards.length ? 'Für diese Suche und Filter wurden keine Karten gefunden.' : 'Du hast noch keine Kompetenzkarten erstellt.' }}
             </p>
           </div>
         </div>
@@ -183,6 +248,8 @@ onMounted(load)
               type="button"
               class="btn btn-sm join-item"
               :class="currentPage === page ? 'btn-primary' : ''"
+              :aria-current="currentPage === page ? 'page' : undefined"
+              :aria-label="`Seite ${page}`"
               @click="currentPage = page"
             >
               {{ page }}

@@ -72,7 +72,7 @@ describe('Dashboard und Meine Karten', () => {
     expect(wrapper.findAll('[data-test="proof-row"]')).toHaveLength(2)
     expect(wrapper.text()).toContain('ICT-Organisationseinheit')
     expect(wrapper.text()).toContain('Entwurf')
-    expect(wrapper.text()).toContain('Abgeschlossen')
+    expect(wrapper.text()).toContain('Karte abgeschlossen')
     expect(wrapper.findAll('[data-test="proof-row"]')[0]?.attributes('href')).toBe('/cards/3')
     expect(wrapper.findAll('[data-test="proof-row"]')[1]?.attributes('href')).toBe('/cards/2/result')
     expect(wrapper.get('[data-test="page-artwork"] img').classes()).toContain('fox-world-page-image')
@@ -81,4 +81,22 @@ describe('Dashboard und Meine Karten', () => {
     expect(wrapper.findAll('[data-test="proof-row"]')).toHaveLength(1)
     expect(wrapper.get('[data-test="proof-row"]').text()).toContain('A1.1')
   })
+
+ it('zählt ausschliesslich abgeschlossene Karten zum Ziel', async () => {
+  const wrapper = await mountSuspended(DashboardPage)
+  expect(wrapper.get('[data-test="goal-progress"]').text()).toContain('1 von 45')
+  expect(wrapper.text()).toContain('Noch 44')
+ })
+ it('kombiniert Kartensuche, Bereich und Status und meldet aktive Filter', async () => {
+  const wrapper = await mountSuspended(CardsPage)
+  await wrapper.get('#card-search').setValue('  DATENMODELLE  ')
+  expect(wrapper.findAll('[data-test="proof-row"]')).toHaveLength(1)
+  await wrapper.get('[data-test="status-filter-1"]').trigger('click')
+  expect(wrapper.findAll('[data-test="proof-row"]')).toHaveLength(0)
+  expect(wrapper.get('[data-test="status-filter-1"]').attributes('aria-pressed')).toBe('true')
+  await wrapper.get('[data-test="reset-filters"]').trigger('click')
+  await wrapper.get('#card-area').setValue('A1')
+  expect(wrapper.findAll('[data-test="proof-row"]')).toHaveLength(1)
+ })
+
 })

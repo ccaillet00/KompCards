@@ -18,7 +18,7 @@ export interface LlmRequest {
   what: string;
   /** The 'how' in the exercise of competence */
   how: string;
-  /** The 'why' behind the exercise of competence */
+  /** Wozu: angestrebter Zweck/Nutzen der Tätigkeit; technischer Feldname bleibt why. */
   why: string;
   /** Where was this plot carried out? */
   environment: string;
@@ -39,7 +39,7 @@ export interface LlmResult {
   workResult: string;
   /** 1=very bad, 2=bad, 3=good, 4=very good */
   quality: number;
-  /** Qualitative Aussage des LLMs zur Qualität des Arbeitsergebnisses */
+  /** Überprüfbares Ergebnis oder konkret benannter fehlender Nachweis (ADR-020). */
   qualityStatement: string;
   /** Does the Output overlap with the curriculum */
   overlapCurriculum: boolean;

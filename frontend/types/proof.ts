@@ -46,6 +46,7 @@ export interface CompetencyInputPayload {
   userRole: string
   what: string
   how: string
+  /** Wozu: angestrebter Zweck/Nutzen; bestehender API-Feldname why. */
   why: string
   environment: string
 }

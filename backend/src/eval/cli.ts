@@ -163,7 +163,7 @@ export async function main(args: string[], env: NodeJS.ProcessEnv, transport: Ev
     return code;
   }
   const config = loadEvalConfig(env);
-  const datasetRaw = await readFile(opts.dataset ?? join(repoRoot, 'docs/evals/competency-cards.v0.1.json'), 'utf8');
+  const datasetRaw = await readFile(opts.dataset ?? join(repoRoot, 'docs/evals/competency-cards.v0.2.json'), 'utf8');
   const dataset: Dataset = parseDataset(JSON.parse(datasetRaw));
   const selected = selectedCases(config, dataset);
   const system = opts.prompt ? await readFile(opts.prompt, 'utf8') : SYSTEM_PROMPT;

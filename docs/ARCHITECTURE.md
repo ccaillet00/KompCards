@@ -63,7 +63,7 @@ Handler ──(zod)──▶ Service ──(Drizzle)──▶ MySQL
 ## 4. Kern-Datenfluss: Kompetenzkarte erzeugen
 
 ```
-1. Student gibt competency_input ein (what/how/why/…)
+1. Student gibt competency_input ein (Was/Wie/Wozu; technische Felder what/how/why/…)
 2. Service: competency_proof.status = llm_check (2)
 3. Service ruft LLM ab (AI SDK, provider-agnostisch)
    → work_result, quality, quality_statement, overlap_curriculum, note_improvment

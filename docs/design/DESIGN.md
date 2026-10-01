@@ -143,7 +143,9 @@ Die Auswahl erfolgt hierarchisch: Lehrgang → Bereich → Kompetenz. Ein Auswah
 
 ### Arbeit dokumentieren
 
-Die Oberfläche erfasst die vorhandenen Backend-Felder, darunter Rolle, Was, Wie, Warum, Umfeld und die fachlich definierte Betreff-/Vorgabenangabe. Eine Karte kann als Entwurf gespeichert oder zur LLM-Prüfung übermittelt werden.
+Die Oberfläche erfasst die vorhandenen Backend-Felder, darunter Rolle, Was, Wie, Wozu (Zweck/Nutzen), Umfeld und die fachlich definierte Betreff-/Vorgabenangabe. Die drei W bedeuten: Was = ausgeführte Handlung, Wie = Vorgehen/Methode, Wozu = angestrebter Zweck/Nutzen. Die Wozu-Frage lautet «Wozu hast du die Arbeit ausgeführt?». Das API-Feld bleibt `why`. Der frühere Warum-Text im Referenzmockup ist fachlich überholt.
+
+Eine Karte kann als Entwurf gespeichert oder zur LLM-Prüfung übermittelt werden.
 
 ### LLM-Auswertung
 
@@ -168,15 +170,15 @@ Alle vom Backend gelieferten Karten werden kompakt als Liste angezeigt und könn
 | 1 | Entwurf |
 | 2 | In Prüfung |
 | 3 | Prüfung fehlgeschlagen |
-| 4 | Prüfung abgeschlossen |
-| 5 | Abgeschlossen |
+| 4 | Auswertung bereit |
+| 5 | Karte abgeschlossen |
 | 6 | Verworfen |
 
 Das zentrale Mapping liegt in `frontend/utils/proofStatus.ts` und darf nicht parallel in Seiten dupliziert werden.
 
 ### Dashboard
 
-Das Dashboard zeigt erstellte und abgeschlossene Karten, den Fortschritt zum fachlichen Ziel von 45 Karten, die zuletzt bearbeitete Karte und den Einstieg in eine neue Karte. Es werden keine zusätzlichen Kennzahlen oder Backend-Funktionen erfunden.
+Das Dashboard zeigt erstellte und abgeschlossene Karten. Für das Ziel von 45 Karten zählen nur abgeschlossene Karten (Status 5); Entwürfe und verworfene Karten zählen nicht mit. Auswertungen mit Status 4 werden als nächster Schritt priorisiert. Die zuletzt bearbeitete Karte schliesst verworfene Karten aus. Die Kartenübersicht kombiniert Textsuche, Bereich und Status; Kartennummern unterscheiden Einträge derselben Kompetenz. Es werden keine zusätzlichen Kennzahlen oder Backend-Funktionen erfunden.
 
 ### Authentifizierung und Profil
 
@@ -220,3 +222,16 @@ Der authentifizierte MVP ist desktop-first. Die Landing Page soll auch auf schma
 - keine erfundenen Backend-Funktionen;
 - keine direkte Verwendung kompletter Mockups als UI;
 - keine externe Schrift- oder Asset-Abhängigkeit ohne bewusste Projektentscheidung.
+
+## 12. Präzisierungen aus der UI/UX-Prüfung (2026-10-01)
+
+- Das Landing-Beispiel ist ausdrücklich fiktiv und zeigt den Weg von Sachangaben zu Formulierung und Nachweis. Es behauptet keine echte KI-Auswertung.
+- Rolle und Umfeld sind kompakte Eingaben. Die Handlung fragt zusätzlich nach erreichtem Ergebnis und Überprüfung; das Vorgehen nach Werkzeugen und eigenem Beitrag. Alle fünf Angaben sind für eine Prüfung erforderlich, unvollständige Entwürfe bleiben speicherbar.
+- Entwürfe werden weiterhin ausdrücklich gespeichert. Der sichtbare Speicherstatus und eine Warnung beim Verlassen schützen ungespeicherte Änderungen; keine Speicherung fachlicher Daten in Local Storage.
+- Die Auswertung erläutert die vier Qualitätsstufen und den unabhängig bewerteten Lehrplanbezug. Versionswechsel ändern die Vorschau. Erst die ausdrückliche Auswahl übernimmt eine Version und schliesst die Karte ab.
+- Aktionsleisten dürfen umbrechen und werden beim Scrollen am unteren Rand gehalten. Die vorhandene App-Navigation bricht auf schmalen Breiten um; kein neues Menüsystem.
+- Formfehler referenzieren ihre Eingaben; der erste Fehler erhält Fokus. Layouts besitzen einen Sprunglink und ein einziges Hauptinhalts-Landmark.
+- Administrative Sperr-, Sitzungs- und Passwortaktionen erhalten eine Bestätigung mit betroffener Person und Wirkung. Die Benutzerliste lädt weitere Seiten mit dem vorhandenen Offset-Vertrag.
+- Nutzungsbedingungen, Datenschutz, Impressum und Kontakt sind laut Nutzer noch in Ausarbeitung. Die Informationsseite kennzeichnet den Stand ausdrücklich; keine erfundenen Texte oder Kontaktdaten.
+
+Die Landing-Kopfzeile darf bei sehr schmalen Viewports Logo und Login in zwei Zeilen umbrechen. Sekundäre Buttons behalten auch beim Hover dunkle Primärschrift auf hellem Hintergrund.

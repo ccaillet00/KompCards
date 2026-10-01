@@ -19,7 +19,7 @@ const classes = computed(() => [
   'btn gap-2 font-semibold normal-case shadow-none',
   {
     'btn-primary': props.variant === 'primary',
-    'btn-outline border-primary/40 bg-base-100 text-primary hover:border-primary hover:bg-secondary': props.variant === 'secondary',
+    'btn-outline border-primary/40 bg-base-100 text-primary hover:border-primary hover:bg-secondary hover:text-primary': props.variant === 'secondary',
     'btn-ghost text-primary hover:bg-primary/5': props.variant === 'ghost',
     'btn-outline border-error/50 text-error hover:border-error hover:bg-error hover:text-error-content': props.variant === 'danger',
     'btn-sm': props.size === 'sm',

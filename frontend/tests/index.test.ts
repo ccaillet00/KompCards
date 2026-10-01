@@ -62,4 +62,11 @@ describe('Landing Page', () => {
       expect.stringContaining('Kompetenzkarte abschliessen'),
     ]))
   })
+
+ it('kennzeichnet das Beispiel und benennt die Registrierung eindeutig', async () => {
+  const wrapper = await mountSuspended(IndexPage)
+  expect(wrapper.get('a[href$="/register"]').text()).toContain('Konto erstellen')
+  expect(wrapper.get('[data-test="example-card"]').text()).toContain('Fiktives Beispiel')
+ })
+
 })

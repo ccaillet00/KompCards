@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as VueRouter from 'vue-router'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import SelectCompetencyPage from '../pages/cards/new.vue'
@@ -6,6 +7,7 @@ import DocumentationPage from '../pages/cards/[id]/index.vue'
 
 const fixture = vi.hoisted(() => ({
   saving: false,
+  leaveGuard: undefined as (() => boolean) | undefined,
   curricula: [{
     id: 1,
     code: 'RLP-INF',
@@ -45,6 +47,11 @@ const fixture = vi.hoisted(() => ({
   triggerLlmCheck: vi.fn(),
 }))
 
+vi.mock('vue-router', async (importOriginal) => ({
+  ...await importOriginal<typeof VueRouter>(),
+  onBeforeRouteLeave: (guard: () => boolean) => { fixture.leaveGuard = guard },
+}))
+
 vi.mock('../composables/useCompetencyWorkflow', async () => {
   const { ref } = await import('vue')
   return {
@@ -82,6 +89,34 @@ describe('Kompetenzauswahl und Dokumentation', () => {
     fixture.loadProof.mockReset().mockResolvedValue(undefined)
     fixture.saveInput.mockReset().mockResolvedValue(undefined)
     fixture.triggerLlmCheck.mockReset().mockResolvedValue({ id: 5 })
+  })
+
+  it('fragt nach Zweck und Nutzen und lädt das bestehende why-Feld', async () => {
+    const wrapper = await mountSuspended(DocumentationPage, { route: '/cards/9' })
+    await flushPromises()
+
+    expect(wrapper.get('label[for="why"]').text()).toBe('Wozu hast du die Arbeit ausgeführt?')
+    expect(wrapper.text()).toContain('Beschreibe den Zweck der Arbeit und den angestrebten Nutzen.')
+    expect(wrapper.get('#why').attributes('placeholder')).toBe('z. B. um Daten konsistent zu speichern und doppelte Erfassungen zu vermeiden …')
+    expect((wrapper.get('#why').element as HTMLTextAreaElement).value).toBe('Für konsistente Daten')
+    expect(wrapper.text()).not.toContain('Warum hast du so gehandelt?')
+  })
+
+  it('verlangt für die Prüfung einen Zweck, lässt aber einen leeren Entwurf zu', async () => {
+    const wrapper = await mountSuspended(DocumentationPage, { route: '/cards/9' })
+    await flushPromises()
+    await wrapper.get('#why').setValue('   ')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(wrapper.get('#why-error').text()).toBe('Bitte beschreibe den Zweck oder angestrebten Nutzen deiner Arbeit.')
+    expect(wrapper.get('#why').attributes('aria-invalid')).toBe('true')
+    expect(fixture.triggerLlmCheck).not.toHaveBeenCalled()
+    expect(fixture.saveInput).not.toHaveBeenCalled()
+
+    await wrapper.get('[data-test="save-draft"]').trigger('click')
+    await flushPromises()
+    expect(fixture.saveInput).toHaveBeenCalledWith(9, expect.objectContaining({ why: '   ' }))
   })
 
   it('sperrt Eingaben während des Speicherns', async () => {
@@ -140,4 +175,49 @@ describe('Kompetenzauswahl und Dokumentation', () => {
     expect(fixture.triggerLlmCheck).toHaveBeenCalledWith(9)
     expect(push).toHaveBeenCalledWith('/cards/9/result')
   })
+
+ it('zeigt Speicherstatus, Ergebnisnachweis und kompakte Kontextfelder', async () => {
+  const wrapper = await mountSuspended(DocumentationPage, { route: '/cards/9' })
+  await flushPromises()
+  expect(wrapper.text()).toContain('erreichte Ergebnis')
+  expect(wrapper.get('#user-role').element.tagName).toBe('INPUT')
+  expect(wrapper.get('#environment').element.tagName).toBe('INPUT')
+  expect(wrapper.get('[data-test="save-state"]').text()).toContain('Gespeichert')
+  await wrapper.get('#what').setValue('Neue Arbeit')
+  expect(wrapper.get('[data-test="save-state"]').text()).toContain('Ungespeicherte Änderungen')
+  const event = new Event('beforeunload', { cancelable: true })
+  window.dispatchEvent(event)
+  expect(event.defaultPrevented).toBe(true)
+  await wrapper.get('[data-test="save-draft"]').trigger('click')
+  await flushPromises()
+  const savedEvent = new Event('beforeunload', { cancelable: true })
+  window.dispatchEvent(savedEvent)
+  expect(savedEvent.defaultPrevented).toBe(false)
+  wrapper.unmount()
+ })
+ it('verhindert das Verlassen mit ungespeicherten Änderungen nach Abbruch', async () => {
+  const wrapper = await mountSuspended(DocumentationPage, { route: '/cards/9' })
+  await flushPromises()
+  await wrapper.get('#what').setValue('Nicht gespeichert')
+  const confirm = vi.fn(() => false)
+  Object.defineProperty(window, 'confirm', { value: confirm, configurable: true })
+  expect(fixture.leaveGuard?.()).toBe(false)
+  expect(confirm).toHaveBeenCalled()
+  confirm.mockReturnValue(true)
+  expect(fixture.leaveGuard?.()).toBe(true)
+  delete (window as unknown as Record<string, unknown>).confirm
+  wrapper.unmount()
+ })
+ it('filtert Kompetenzen nach Code und Text und löscht eine versteckte Auswahl', async () => {
+  const wrapper = await mountSuspended(SelectCompetencyPage)
+  await flushPromises()
+  await wrapper.get('#area').setValue('3')
+  await wrapper.get('#competency').setValue('11')
+  await wrapper.get('#competency-search').setValue('KEIN TREFFER')
+  expect(wrapper.get('#competency').findAll('option')).toHaveLength(1)
+  expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeDefined()
+  await wrapper.get('#competency-search').setValue('A1.1')
+  expect(wrapper.get('#competency').findAll('option')).toHaveLength(2)
+ })
+
 })
