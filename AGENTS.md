@@ -41,7 +41,7 @@ Web-App für HF-Studierende: Kompetenzkarten strukturiert erfassen; ein LLM erze
 5. **Auth:** Better Auth 1.7.5 mit Drizzle/MySQL, E-Mail/Passwort, 12-Stunden-DB-Sessions und Admin-Plugin. Legacy-Tabellen `userTable`/`userSession` bleiben bestehen, werden aber nicht mehr für Auth verwendet. Hashing: **bcryptjs**, nicht natives `bcrypt`.
 6. **Routing:** Traefik (läuft extern, Routing via Labels im Compose), host-basiert (`kompcards.ccdevlab.ch` → Public-Frontend, `service.kompcards.ccdevlab.ch` → SaaS-Frontend und `/api` → Backend). DB intern; Compose-Mapping `3306:3306` nur für lokale Entwicklung, in Produktion entfernen.
 7. **Nur TypeScript** im Backend.
-8. **Nicht pushen und nicht committen** — der Nutzer committet und pusht.
+8. **Git selbständig verwalten:** Der Agent darf ohne zusätzliche Freigabe Branches erstellen, committen und pushen. Er entscheidet passend zur Aufgabe über Branch und Commit-Zeitpunkt; Regeln unter [Versionskontrolle](docs/DEVELOPMENT.md#6-versionskontrolle).
 
 ## Verbindliche Designregeln
 

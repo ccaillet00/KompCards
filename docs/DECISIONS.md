@@ -156,6 +156,12 @@ Diese Entscheidung wurde durch ADR-014 ersetzt. `userTable` und `userSession` bl
 - **Entscheidung:** Status 4 heisst in der UI „Auswertung bereit“, Status 5 „Karte abgeschlossen“. Das Ziel von 45 Karten zählt Status 5. Die Kartenübersicht kombiniert lokale Text-, Bereichs- und Statusfilter. Formulare behalten das ausdrückliche Speichern mit sichtbarem Speicherzustand und Verlassenswarnung; keine lokale Persistenz fachlicher Eingaben. Auswertungen trennen Vorschau, Eingabequalität, Lehrplanbezug und ausdrückliche Übernahme. Kritische administrative Aktionen zeigen vor Ausführung Wirkung und betroffene Person.
 - **Konsequenz:** Keine Änderung an Datenmodell, Statuswerten oder produktiver LLM-Anbindung. Vorhandene API-Verträge werden verwendet, inklusive Offset-Paginierung der Administration. Die App bleibt desktop-first; vorhandene Navigation und Aktionen dürfen umbrechen. Noch nicht freigegebene Rechtstexte und Kontaktangaben werden sichtbar als in Ausarbeitung gekennzeichnet.
 
+## ADR-023: Selbständige Git-Verwaltung durch Coding-Agents
+
+- **Kontext:** Bisher untersagten die Agenten-Anweisungen Commits und Pushes. Der Nutzer erlaubt ab sofort die selbständige Erstellung von Branches und Commits sowie das Pushen.
+- **Entscheidung:** Agents entscheiden ohne zusätzliche Freigabe, wann ein neuer Branch benötigt wird und wann eine zusammenhängende, geprüfte Änderung committet und gepusht wird. In der Regel wird pro eigenständigem Feature oder Fix ein Branch verwendet; passende bestehende Arbeitsbranches können weiterverwendet werden. Commit-Messages folgen Conventional Commits. Die konkreten Regeln stehen in [DEVELOPMENT.md](./DEVELOPMENT.md#6-versionskontrolle).
+- **Konsequenz:** Das bisherige Commit-/Push-Verbot in `AGENTS.md` und `DEVELOPMENT.md` entfällt. Die Definition of Done bleibt verbindlich; Änderungen des Nutzers werden erhalten. Destruktive Git-Aktionen wie Force-Pushes und das Umschreiben veröffentlichter Historie sind nicht Teil dieser Erlaubnis. Agents berichten über Branch, Commits, Push-Status und Prüfungen.
+
 ## Offene Entscheidungen
 
 Keine — alle Kernpunkte geschlossen:
