@@ -1,6 +1,6 @@
 # KompCards — Entwicklung
 
-**Stand:** 2026-09-01
+**Stand:** 2026-10-10
 **Legende:** **Vorgabe** / **Annahme** (s. [PROJECT.md](./PROJECT.md)).
 
 ## 1. Arbeitsweise: striktes TDD
@@ -51,8 +51,12 @@ Im `backend/`: `bun run eval --dry-run` erstellt einen Request-Plan ohne API-Auf
 
 ## 6. Versionskontrolle
 
-- **Kein Push nach GitHub durch mich** — der Nutzer übernimmt das Pushen.
-- Ich bereite Commits/Vorbereitung vor, pushe aber nicht.
+- **Selbständige Git-Verwaltung:** Der Agent darf Branches erstellen, Commits anlegen und zum konfigurierten Remote pushen, ohne dafür erneut die Freigabe des Nutzers einzuholen (ADR-023).
+- **Branch-Wahl:** Der Agent prüft vorab den aktuellen Branch und Arbeitsstand und entscheidet, ob ein neuer Branch sinnvoll ist. In der Regel erhält jedes eigenständige Feature oder jeder unabhängige Fix einen eigenen Branch. Gehört die Aufgabe zu einem bestehenden Arbeitsbranch, wird dieser weiterverwendet. Kleine, zusammengehörende Folgeänderungen brauchen keinen zusätzlichen Branch. Neue Branches erhalten kurze, beschreibende Namen, z. B. `feat/kompetenzfilter`, `fix/session-expiry` oder `docs/agent-git-workflow`.
+- **Commit-Zeitpunkt:** Der Agent committet, sobald eine fachlich zusammenhängende, überprüfte Änderung abgeschlossen ist. Grössere Aufgaben werden in sinnvolle, eigenständig nachvollziehbare Commits aufgeteilt; unabhängige Änderungen werden getrennt. Vor dem Commit werden Diff und vorgemerkte Dateien geprüft und die Definition of Done erfüllt (`lint`, `test`, `typecheck` für Frontend und Backend).
+- **Commit-Messages:** Conventional Commits verwenden: `<type>(<scope>): <kurze Beschreibung>`, wobei der Scope optional ist. Typen sind z. B. `feat`, `fix`, `docs`, `refactor`, `test`, `chore` oder `ci`. Die Beschreibung benennt die konkrete Änderung; ein optionaler Body erklärt Gründe oder relevante Auswirkungen. Beispiel: `docs(agents): allow autonomous branches, commits and pushes`.
+- **Push:** Abgeschlossene und geprüfte Commits dürfen selbständig auf den passenden Remote-Branch gepusht werden; bei neuen Branches wird der Upstream gesetzt. Nur die zur Aufgabe gehörenden Änderungen aufnehmen, bestehende Änderungen des Nutzers erhalten und keine Secrets committen. Force-Pushes, das Umschreiben veröffentlichter Historie sowie das Löschen fremder Branches sind von dieser Erlaubnis nicht umfasst.
+- **Rückmeldung:** Nach Abschluss nennt der Agent den verwendeten Branch, erstellte Commits, Push-Status und die ausgeführten Prüfungen. Wenn kein Commit oder Push sinnvoll oder möglich war, nennt er kurz den Grund.
 
 ## 7. Verzeichnisstruktur (Ziel)
 
