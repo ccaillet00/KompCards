@@ -9,7 +9,8 @@ import { llmOutputSchema } from './schema.js';
 import type { LlmClient, LlmRequest, LlmResult } from './types.js';
 
 // Manche Modelle liefern mehrere Hinweise als Liste. Nur diese verlustfreie
-// Normalisierung erlauben; Domänenschema und Eval-Validierung bleiben strikt.
+// Normalisierung erlauben; das Domänenschema bleibt strikt. Der Client-Eval
+// bewertet dasselbe normalisierte Ergebnis und weist die Roh-Schemaquote separat aus.
 // Das an das Modell übermittelte JSON-Schema verlangt weiterhin String/null.
 const responseSchema = llmOutputSchema.extend({
   note_improvment: z.preprocess((value) => {
@@ -34,19 +35,21 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 
   constructor(
     private readonly config: Pick<AppConfig, 'llmBaseUrl' | 'llmApiKey' | 'llmModel'>,
+    private readonly options: { fetch?: typeof fetch; systemPrompt?: string } = {},
   ) {
     this.provider = createOpenAICompatible({
       baseURL: config.llmBaseUrl,
       apiKey: config.llmApiKey,
       name: 'kompcards-llm',
+      fetch: options.fetch,
     });
   }
-  
+
   async generateCompetencyOutput(request: LlmRequest): Promise<LlmResult> {
     const { object } = await generateObject({
-      model: this.provider(this.config.llmModel),
+      model: this.provider.chatModel(this.config.llmModel, {}, { supportsStructuredOutputs: true }),
       schema: responseSchema,
-      system: SYSTEM_PROMPT,
+      system: this.options.systemPrompt ?? SYSTEM_PROMPT,
       prompt: buildPrompt(request),
       temperature: 0.1,
       mode: 'json',
