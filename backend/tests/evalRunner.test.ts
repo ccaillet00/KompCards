@@ -33,6 +33,26 @@ describe('eval command', () => {
     expect(log).toHaveBeenCalled(); expect(fetcher).not.toHaveBeenCalled();
     await expect(main(['--rn'], {}, fetcher, log)).rejects.toThrow();
   });
+  it('defaults to the SDK client and plans the actual SDK request without contacting the endpoint', async () => {
+    const { path, out } = await smallDataset(); const fetcher = fakeFetch();
+    await main(['--dry-run', '--dataset', path, '--out', out], env, fetcher, () => {});
+    expect(fetcher).not.toHaveBeenCalled();
+    const manifest = JSON.parse(await readFile(join(out, 'manifest.json'), 'utf8'));
+    expect(manifest).toMatchObject({ configuration: { execution: 'client', timeoutMs: null }, protocol: { execution: 'client', retries: 'sdk-default', thinking: 'provider-default' } });
+    expect(manifest.hashes.client).toEqual(expect.any(String));
+    const plan = JSON.parse(await readFile(join(out, 'plan.json'), 'utf8'));
+    expect(plan[0].request.body).not.toHaveProperty('chat_template_kwargs');
+    expect(plan[0].request.body.response_format.type).toBe('json_schema');
+    expect(JSON.parse(await readFile(join(out, 'output-schema.json'), 'utf8'))).toEqual(plan[0].request.body.response_format.json_schema.schema);
+  });
+
+  it('rejects client settings that would differ from production instead of silently ignoring them', async () => {
+    const fetcher = fakeFetch();
+    for (const overrides of [{ EVAL_TEMPERATURE: '0.7' }, { EVAL_MAX_TOKENS: '1000' }, { EVAL_SEED: '42' }, { EVAL_TIMEOUT_MS: '5000' }, { EVAL_TIMEOUT_MS: '120000' }, { EVAL_PROVIDER: 'anthropic', LLM_API_KEY: 'key' }]) {
+      await expect(main(['--dry-run'], { ...env, ...overrides }, fetcher, () => {})).rejects.toThrow(/Client-Modus/);
+    }
+    expect(fetcher).not.toHaveBeenCalled();
+  });
   it('defaults to a dry-run, writes a reproducible plan and never persists the API key', async () => {
     const { path, out } = await smallDataset(); const fetcher = fakeFetch();
     expect(await main(['--dataset', path, '--out', out], { ...env, LLM_API_KEY: 'sensitive-key' }, fetcher, () => {})).toBe(0);
@@ -63,10 +83,27 @@ describe('eval command', () => {
   });
   it('keeps HTTP failures in results, creates a report and returns failure status', async () => {
     const { path, out } = await smallDataset();
-    expect(await main(['--run', '--dataset', path, '--out', out], env, async () => new Response('busy', { status: 503 }), () => {})).toBe(2);
+    expect(await main(['--run', '--dataset', path, '--out', out], env, async () => new Response('not found', { status: 404 }), () => {})).toBe(2);
     const summary = JSON.parse(await readFile(join(out, 'summary.json'), 'utf8'));
     expect(summary.total).toMatchObject({ attempts: 1, transportErrors: 1, automaticPass: 0 });
     expect(JSON.parse(await readFile(join(out, 'manifest.json'), 'utf8')).status).toBe('completed');
+  });
+  it('re-reports the client-normalized output while preserving raw schema failures and HTTP traces', async () => {
+    const { path, out } = await smallDataset();
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({
+      id: 'normalization-test', created: 0, model: 'fake',
+      choices: [{ index: 0, message: { role: 'assistant', content: JSON.stringify({ ...output, note_improvment: ['Relevanter Hinweis.'] }) }, finish_reason: 'stop' }],
+      usage: { prompt_tokens: 100, completion_tokens: 20 },
+    }), { headers: { 'Content-Type': 'application/json' } }));
+    expect(await main(['--run', '--dataset', path, '--out', out], env, fetcher, () => {})).toBe(0);
+    const row = JSON.parse((await readFile(join(out, 'results.jsonl'), 'utf8')).trim());
+    expect(row.response.httpAttempts).toHaveLength(1);
+    expect(row.response.text).toContain('["Relevanter Hinweis."]');
+    expect(JSON.parse(row.response.validatedText).note_improvment).toBe('Relevanter Hinweis.');
+    expect(await main(['--report', out], {}, vi.fn(), () => {})).toBe(0);
+    const summary = JSON.parse(await readFile(join(out, 'summary.json'), 'utf8'));
+    expect(summary).toMatchObject({ execution: 'client', rawSchemaValid: 0, httpAttempts: 1, retriesObserved: 0,
+      total: { schemaValid: 1, automaticPass: 1 } });
   });
   it('rejects review files belonging to another run', async () => {
     const { path, out } = await smallDataset();

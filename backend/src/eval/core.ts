@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { zodSchema } from 'ai';
 import { buildPrompt } from '../llm/prompt.js';
 import { llmOutputSchema } from '../llm/schema.js';
+import { OpenAiCompatibleLlmClient } from '../llm/client.js';
 import type { LlmRequest } from '../llm/types.js';
 
 const text = z.string().min(1);
@@ -34,6 +35,7 @@ export function parseDataset(value: unknown): Dataset {
 export function hash(value: string): string { return createHash('sha256').update(value).digest('hex'); }
 
 export function loadEvalConfig(env: NodeJS.ProcessEnv) {
+  const execution = z.enum(['client', 'direct']).parse(env.EVAL_EXECUTION ?? 'client');
   const provider = z.enum(['vllm', 'openai-compatible', 'anthropic']).parse(env.EVAL_PROVIDER ?? 'vllm');
   const model = text.parse(env.LLM_MODEL);
   const baseUrl = text.parse(env.LLM_BASE_URL).replace(/\/$/, '');
@@ -48,8 +50,8 @@ export function loadEvalConfig(env: NodeJS.ProcessEnv) {
   const seed = env.EVAL_SEED === undefined ? undefined : number('EVAL_SEED', 0, 2147483647, 0);
   if (seed !== undefined && provider === 'anthropic') throw new Error('Anthropic unterstützt hier keinen Seed');
   const price = (key: string) => env[key] === undefined ? null : z.number().finite().nonnegative().parse(Number(env[key]));
-  return {
-    provider, model, baseUrl, apiKey,
+  const config = {
+    execution, provider, model, baseUrl, apiKey,
     repetitions: number('EVAL_REPETITIONS', 3, 100),
     split: z.enum(['development', 'holdout', 'all']).parse(env.EVAL_SPLIT ?? 'development'),
     maxTokens: number('EVAL_MAX_TOKENS', 800, 65536),
@@ -62,6 +64,10 @@ export function loadEvalConfig(env: NodeJS.ProcessEnv) {
       imageDigest: env.EVAL_IMAGE_DIGEST ?? null, notes: env.EVAL_NOTES ?? null,
     },
   };
+  if (execution === 'client' && (provider === 'anthropic' || config.temperature !== 0.1 || config.maxTokens !== 800 || seed !== undefined || env.EVAL_TIMEOUT_MS !== undefined)) {
+    throw new Error('Client-Modus verwendet die produktive OpenAI-kompatible Anbindung: Temperatur 0.1, 800 Tokens, kein Eval-Seed oder eigener Timeout. Für abweichende Modellvergleiche EVAL_EXECUTION=direct verwenden.');
+  }
+  return config;
 }
 export type EvalConfig = ReturnType<typeof loadEvalConfig>;
 
@@ -94,6 +100,8 @@ const usageEmpty = () => ({ input: null as number | null, output: null as number
 export interface ModelResponse {
   raw: string; text: string; finishReason: string | null; model: string | null;
   status: number | null; error: string | null; elapsedMs: number; usage: ReturnType<typeof usageEmpty>;
+  validatedText?: string;
+  httpAttempts?: { request: EvalRequest; response: { status: number; raw: string } | null; error: string | null }[];
 }
 export interface EvalTransport {
   (url: string, init: RequestInit): Promise<Response>;
@@ -143,6 +151,77 @@ export async function callModel(config: EvalConfig, request: EvalRequest, transp
   return result;
 }
 
+// Observe the SDK transport without changing its headers, body, retries or signals.
+// The application-facing result and the original wire response are kept separately.
+async function callClientModel(config: EvalConfig, input: LlmRequest, system: string, transport: EvalTransport) {
+  const start = performance.now();
+  const httpAttempts: NonNullable<ModelResponse['httpAttempts']> = [];
+  const result: ModelResponse = { raw: '', text: '', finishReason: null, model: null,
+    status: null, error: null, elapsedMs: 0, usage: usageEmpty(), httpAttempts };
+  const usages: ModelResponse['usage'][] = [];
+  const observe: typeof fetch = async (url, init) => {
+    const request = { url: String(url), body: JSON.parse(redact(String(init?.body), config.apiKey)) as Record<string, unknown> };
+    const attempt: typeof httpAttempts[number] = { request, response: null, error: null };
+    httpAttempts.push(attempt);
+    try {
+      const response = await transport(String(url), init ?? {});
+      const raw = redact(await response.clone().text(), config.apiKey);
+      attempt.response = { status: response.status, raw };
+      result.status = response.status;
+      result.raw = raw;
+      const usage = usageEmpty();
+      try {
+        const data = obj(JSON.parse(raw));
+        const choice = obj(Array.isArray(data.choices) ? data.choices[0] : null);
+        result.text = str(obj(choice.message).content) ?? '';
+        result.finishReason = str(choice.finish_reason);
+        result.model = str(data.model);
+        const tokens = obj(data.usage);
+        usage.input = count(tokens.prompt_tokens);
+        usage.output = count(tokens.completion_tokens);
+        usage.cacheRead = count(obj(tokens.prompt_tokens_details).cached_tokens);
+        usage.reasoning = count(obj(tokens.completion_tokens_details).reasoning_tokens);
+      } catch { /* Non-JSON errors still remain in the raw trace. */ }
+      usages.push(usage);
+      return response;
+    } catch (error) {
+      attempt.error = redact(error instanceof Error ? `${error.name}: ${error.message}` : 'Unbekannter Transportfehler', config.apiKey);
+      usages.push(usageEmpty());
+      throw error;
+    }
+  };
+  try {
+    const client = new OpenAiCompatibleLlmClient({ llmBaseUrl: config.baseUrl, llmApiKey: config.apiKey, llmModel: config.model }, { fetch: observe, systemPrompt: system });
+    const output = await client.generateCompetencyOutput(input);
+    result.validatedText = JSON.stringify({ work_result: output.workResult, quality: output.quality,
+      quality_statement: output.qualityStatement, overlap_curriculum: output.overlapCurriculum, note_improvment: output.noteImprovment });
+  } catch (error) {
+    result.error = redact(error instanceof Error ? `${error.name}: ${error.message}` : 'Unbekannter Clientfehler', config.apiKey);
+  }
+  for (const key of Object.keys(result.usage) as (keyof ModelResponse['usage'])[]) {
+    result.usage[key] = usages.length && usages.every(usage => usage[key] !== null)
+      ? usages.reduce((sum, usage) => sum + usage[key]!, 0) : null;
+  }
+  result.elapsedMs = performance.now() - start;
+  return { request: httpAttempts[0]?.request ?? { url: `${config.baseUrl}/chat/completions`, body: {} }, response: result };
+}
+
+export async function buildClientEvalRequest(config: EvalConfig, input: LlmRequest, system: string): Promise<EvalRequest> {
+  // A local synthetic response lets the real SDK construct its request without network access.
+  const { request, response } = await callClientModel(config, input, system, async () => new Response(JSON.stringify({
+    id: 'dry-run', created: 0, model: config.model,
+    choices: [{ index: 0, message: { role: 'assistant', content: JSON.stringify({ work_result: 'Dry-run.', quality: 1,
+      quality_statement: 'Dry-run.', overlap_curriculum: false, note_improvment: null }) }, finish_reason: 'stop' }],
+  }), { headers: { 'Content-Type': 'application/json' } }));
+  if (response.error) throw new Error(`SDK-Request-Plan fehlgeschlagen: ${response.error}`);
+  return request;
+}
+
+export function evaluateResponse(response: ModelResponse, card: EvalCase) {
+  const grade = evaluateOutput(response.validatedText ?? response.text, card, response.finishReason);
+  return { ...grade, automaticPass: grade.automaticPass && !response.error };
+}
+
 export function evaluateOutput(raw: string, card: EvalCase, finishReason: string | null) {
   let value: unknown;
   let jsonValid = true;
@@ -185,17 +264,22 @@ export function selectedCases(config: EvalConfig, dataset: Dataset) {
   if (!cases.length) throw new Error('Keine Fälle im gewählten Split');
   return cases;
 }
+async function callDirectModel(config: EvalConfig, input: LlmRequest, system: string, transport: EvalTransport) {
+  const request = buildEvalRequest(config, input, system);
+  return { request, response: await callModel(config, request, transport) };
+}
 export async function* runEvaluation(config: EvalConfig, dataset: Dataset, system: string, transport: EvalTransport = fetch): AsyncGenerator<Attempt> {
   const cases = selectedCases(config, dataset);
   // Repeat in rounds, not three consecutive calls of the same case.
   for (let repeat = 1; repeat <= config.repetitions; repeat++) {
     for (const card of cases) {
-      const request = buildEvalRequest(config, card.input, system);
       const timestamp = new Date().toISOString();
-      const response = await callModel(config, request, transport);
+      const { request, response } = config.execution === 'client'
+        ? await callClientModel(config, card.input, system, transport)
+        : await callDirectModel(config, card.input, system, transport);
       yield { id: `${card.id}::${repeat}`, caseId: card.id, repeat, split: card.split, tags: card.tags,
         curriculum: card.input.context?.curriculum.titel ?? 'Kontext fehlt', missingContext: !card.input.context,
-        timestamp, request, response, grade: evaluateOutput(response.text, card, response.finishReason), costUsd: cost(config, response.usage) };
+        timestamp, request, response, grade: evaluateResponse(response, card), costUsd: cost(config, response.usage) };
     }
   }
 }
