@@ -16,12 +16,12 @@ const base: LlmRequest = {
 // separat mit dem Eval-Set geprüft, niemals durch echte LLM-Calls in Vitest.
 describe('SYSTEM_PROMPT', () => {
   it('definiert Wozu als angestrebten Zweck und fordert bei reiner Methodenbegründung eine Klärung', () => {
-    expect(SYSTEM_PROMPT).toContain('Wozu = Zweck')
-    expect(SYSTEM_PROMPT).not.toContain('Wozu (Warum)')
-    expect(SYSTEM_PROMPT).toContain('Eine reine Methodenbegründung in Wozu ist kein Zweck')
-    expect(SYSTEM_PROMPT).toContain('frage gezielt nach')
-    expect(SYSTEM_PROMPT).toContain('Ein Zweck oder eine Methode belegt keinen erreichten Erfolg')
-  })
+    expect(SYSTEM_PROMPT).toContain('Wozu = Zweck');
+    expect(SYSTEM_PROMPT).not.toContain('Wozu (Warum)');
+    expect(SYSTEM_PROMPT).toContain('Eine reine Methodenbegründung in Wozu ist kein Zweck');
+    expect(SYSTEM_PROMPT).toContain('frage gezielt nach');
+    expect(SYSTEM_PROMPT).toContain('Ein Zweck oder eine Methode belegt keinen erreichten Erfolg');
+  });
 
   it('fordert Hinweise als einen JSON-String statt einer Liste an', () => {
     const notes = SYSTEM_PROMPT.split('NOTE_IMPROVMENT\n')[1]?.split('FORMULIERUNGSBEISPIELE\n')[0];
@@ -65,10 +65,10 @@ describe('SYSTEM_PROMPT', () => {
 
 describe('buildPrompt', () => {
   it.each([undefined, 'Bitte den Zweck klarer formulieren'])('übergibt why als Wozu, auch bei Feedback %s', (userFeedback) => {
-    const prompt = buildPrompt({ ...base, userFeedback })
-    expect(prompt).toContain('- Wozu (Zweck/Nutzen): um Daten bereitzustellen')
-    expect(prompt).not.toContain('- Warum:')
-  })
+    const prompt = buildPrompt({ ...base, userFeedback });
+    expect(prompt).toContain('- Wozu (Zweck/Nutzen): um Daten bereitzustellen');
+    expect(prompt).not.toContain('- Warum:');
+  });
 
   it('enthält alle Felder der strukturierten Eingabe', () => {
     const prompt = buildPrompt(base);
@@ -127,10 +127,42 @@ describe('buildPrompt', () => {
     expect(prompt).not.toContain('- Lehrgang:');
     expect(prompt).not.toContain('- Kompetenz:');
   });
+
+  it('kennzeichnet fehlenden Kompetenzkontext ausdrücklich vor den Eingabedaten', () => {
+    const prompt = buildPrompt(base);
+    expect(prompt).toContain('Kompetenzbeschreibung: nicht vorhanden');
+    expect(prompt.indexOf('Kompetenzbeschreibung: nicht vorhanden')).toBeLessThan(
+      prompt.indexOf('Strukturierte Eingabe'),
+    );
+  });
+
+  it('kennzeichnet auch eine leere Kompetenzbeschreibung als fehlend, ohne den Code als Ersatz zu verwenden', () => {
+    const prompt = buildPrompt({
+      ...base,
+      context: {
+        competency: { code: 'A1.1', description: '   ' },
+        area: { code: 'A1', titel: 'Grundlagen' },
+        curriculum: { code: 'RLP_INF', titel: 'Informatik' },
+      },
+    });
+    expect(prompt).toContain('Kompetenzbeschreibung: nicht vorhanden');
+    expect(prompt).toContain('A1.1');
+  });
+
+  it('markiert vorhandene Kompetenzbeschreibungen nicht als fehlend', () => {
+    expect(buildPrompt({
+      ...base,
+      context: {
+        competency: { code: 'A1.1', description: 'Grundlagen' },
+        area: { code: 'A1', titel: 'Grundlagen' },
+        curriculum: { code: 'RLP_INF', titel: 'Informatik' },
+      },
+    })).not.toContain('Kompetenzbeschreibung: nicht vorhanden');
+  });
 });
 
 describe('SYSTEM_PROMPT – fachlicher Ausgabe-Vertrag', () => {
-  it('verlangt Rolle, Ich-Form, Perfekt und einen kurzen Absatz aus Was/Wie/Wozu', () => {
+  it('verlangt Rolle, Ich-Form und einen kurzen Absatz aus Was/Wie/Wozu', () => {
     expect(SYSTEM_PROMPT).toContain('Nenne die angegebene Rolle/Funktion im ersten Satz ausdrücklich');
     expect(SYSTEM_PROMPT).toContain('Ich-Form');
     expect(SYSTEM_PROMPT).toContain('Perfekt');
@@ -166,5 +198,68 @@ describe('SYSTEM_PROMPT – fachlicher Ausgabe-Vertrag', () => {
     expect(SYSTEM_PROMPT).toContain('Die Verwaltung hat das Materialbudget freigegeben.');
     expect(SYSTEM_PROMPT).toContain('Zwei notwendige Einträge haben gefehlt');
     expect(SYSTEM_PROMPT).toContain('Die vollständige Datenübernahme ist noch nicht nachgewiesen.');
+  });
+
+  it('lässt beide Textfelder bei Widersprüchen offen und zeigt eine vollständige Ersatzformulierung', () => {
+    expect(SYSTEM_PROMPT).toContain('in work_result und quality_statement');
+    expect(SYSTEM_PROMPT).toContain('Auch „nicht durchgeführt“ oder „noch nicht begonnen“ ist keine gesicherte Tatsache');
+    const example = SYSTEM_PROMPT.split('Widerspruch:\n')[1]?.split('Fehlender Kompetenzkontext:\n')[0];
+    expect(example).toContain('work_result:');
+    expect(example).toContain('quality_statement:');
+    expect(example).toContain('note_improvment:');
+    expect(example).toContain('bleibt wegen widersprüchlicher Angaben unklar');
+  });
+
+  it('zeigt fehlenden Kontext bei unverändert gültigem Ergebnisnachweis', () => {
+    const example = SYSTEM_PROMPT.split('Fehlender Kompetenzkontext:\n')[1]?.split('Methodenbegründung ohne Zweck:\n')[0];
+    expect(example).toContain('quality: 4; overlap_curriculum: false');
+    expect(example).toContain('Ergänze die Kompetenzbeschreibung');
+    expect(example).toContain('hat die Anleitung freigegeben');
+  });
+
+  it('bewertet Methodenpräferenz ohne Zweck mit quality 2 und fragt gezielt nach dem Zweck', () => {
+    const example = SYSTEM_PROMPT.split('Methodenbegründung ohne Zweck:\n')[1]?.split('ABSCHLUSSPRÜFUNG')[0];
+    expect(example).toContain('quality: 2');
+    expect(example).toContain('Nenne den arbeitsbezogenen Zweck');
+    expect(SYSTEM_PROMPT).toContain('Leite keinen Zweck aus Rolle, Umgebung oder Kompetenztext ab');
+  });
+
+  it('erhält wesentliche Handlungen und trennt ihre Durchführung vom offenen Ergebnis', () => {
+    expect(SYSTEM_PROMPT).toContain('Bewahre wesentliche Handlungen wie eine berichtete Eskalation');
+    expect(SYSTEM_PROMPT).toContain('die Übernahme durch die zuständige Stelle');
+    expect(SYSTEM_PROMPT).toContain('die Eignung des Messsystems');
+    expect(SYSTEM_PROMPT).toContain('Eine bereits berichtete Durchführung oder Definition ist keine Informationslücke');
+  });
+
+  it('erlaubt natürliche Vergangenheitsformen in beiden Textfeldern ohne Perfektzwang', () => {
+    const work = SYSTEM_PROMPT.split('WORK_RESULT\n')[1]?.split('QUALITY_STATEMENT\n')[0];
+    const outcome = SYSTEM_PROMPT.split('QUALITY_STATEMENT\n')[1]?.split('QUALITY\n')[0];
+    for (const field of [work, outcome]) expect(field).toContain('Perfekt oder Präteritum');
+    expect(SYSTEM_PROMPT).not.toContain('alle ausgeführten Handlungen im Perfekt');
+    expect(SYSTEM_PROMPT).not.toContain('vergangene Ergebnisse im Perfekt');
+    expect(SYSTEM_PROMPT).toContain('Vollständige Sätze und korrekte Grammatik bleiben Pflicht');
+  });
+
+  it('verhindert Leistungszuschreibung aus Kontext und ergänzt keine Umsetzung zur Analyse', () => {
+    expect(SYSTEM_PROMPT).toContain('Hilfsmittel im Unternehmenskontext belegen keine tatsächliche Verwendung');
+    expect(SYSTEM_PROMPT).toContain('Analyse und Massnahmenableitung belegen keine Umsetzung oder Wirkungskontrolle');
+    expect(SYSTEM_PROMPT).toContain('Streiche bei Platzmangel zuerst Kontextdetails, niemals wesentliche Handlungen');
+  });
+
+  it('zeigt unabhängige Informatikbeispiele für Abnahme, negativen Befund und offene Übernahme', () => {
+    const examples = SYSTEM_PROMPT.split('Informatik: qualitative Abnahme')[1]?.split('ABSCHLUSSPRÜFUNG')[0];
+    expect(examples).toContain('Die Fachstelle nahm die CSV-Ausgabe ohne Korrektur ab.');
+    expect(examples).toContain('Eine Prüfsumme stimmte nicht überein.');
+    expect(examples).toContain('quality: 4; note_improvment: null');
+    expect(examples).toContain('und an den Anbieter eskaliert');
+    expect(examples).toContain('Welche Rückmeldung liegt zur Übernahme durch den Anbieter vor?');
+    expect(examples).toContain('quality: 3');
+  });
+
+  it('verdeutlicht korrekte Grammatik und unterscheidet offene aktuelle Zustände', () => {
+    expect(SYSTEM_PROMPT).toContain('„Die Prüfungen sind fehlgeschlagen“');
+    expect(SYSTEM_PROMPT).toContain('„Die Datei ist nicht lesbar gewesen“');
+    expect(SYSTEM_PROMPT).toContain('„Den Schutzbedarf habe ich bewertet“');
+    expect(SYSTEM_PROMPT).toContain('Aktuell offene Zustände dürfen im Präsens stehen');
   });
 });
