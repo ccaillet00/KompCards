@@ -1,7 +1,8 @@
 import { parse } from 'csv-parse/sync';
+import { eq, inArray } from 'drizzle-orm';
 
 import type { Database } from '../db/client.js';
-import { areas, competencies, competencyProof, curriculum } from '../db/schema.js';
+import { areas, competencies, curriculum } from '../db/schema.js';
 import { BadRequestError, ConflictError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 
@@ -56,7 +57,7 @@ interface CompetencyRow {
  * (curriculum, areas, competencies) aus CSV-Dateien.
  *
  * Business Logic **und** Drizzle-Queries (ADR-005).
- * Strategie: Löschen & Neu (komplett), in einer Transaktion.
+ * Strategie: Neue Lehrpläne ergänzen, bestehende Daten erhalten (ADR-024).
  */
 export class CurriculumService {
   constructor(private readonly db: Database) {}
@@ -65,8 +66,8 @@ export class CurriculumService {
    * Importiert die drei CSVs (curriculum, areas, competencies).
    *
    * 1. CSVs parsen & validieren
-   * 2. FK-Check: keine bestehenden competency_proof-Zeilen
-   * 3. In einer Transaktion: löschen (children first) + einfügen mit ID-Mapping
+   * 2. Uploadlokale IDs und Elternreferenzen prüfen
+   * 3. In einer Transaktion: Code-Konflikte prüfen + einfügen mit ID-Mapping
    */
   async importCurriculum(
     curriculumCsv: string,
@@ -78,36 +79,40 @@ export class CurriculumService {
     const areaRows = parseAreasCsv(areasCsv);
     const competencyRows = parseCompetenciesCsv(competenciesCsv);
 
-    // 2. FK-Check: competency_proof verweist auf competencies (NO ACTION)
-    const existingProofs = await this.db
-      .select({ id: competencyProof.id })
-      .from(competencyProof)
-      .limit(1);
-    if (existingProofs.length > 0) {
-      throw new ConflictError(
-        'Import nicht möglich: Es existieren bereits Kompetenznachweise, die auf die Referenzdaten verweisen.',
-      );
-    }
+    validateImport(curriculumRows, areaRows, competencyRows);
 
-    // 3. Delete + Insert in einer Transaktion
     const result = await this.db.transaction(async (tx) => {
-      // Löschen in korrekter Reihenfolge (children first wegen FKs)
-      await tx.delete(competencies);
-      await tx.delete(areas);
-      await tx.delete(curriculum);
+      // MySQL vergleicht Codes gemäss der bestehenden Datenbank-Kollation.
+      const existing = await tx.select({ code: curriculum.code }).from(curriculum)
+        .where(inArray(curriculum.code, curriculumRows.map((row) => row.code)));
+      if (existing.length > 0) {
+        throw curriculumConflict(existing.map((row) => row.code));
+      }
 
-      // Curriculum einfügen → ID-Mapping: CSV id → neue DB id
-      const curriculumResults = await tx
-        .insert(curriculum)
-        .values(curriculumRows.map((r) => ({ code: r.code, titel: r.titel })))
-        .$returningId();
+      // Einzelne Inserts erlauben bei konkurrierenden Imports eine genaue
+      // Konfliktmeldung. Der Unique-Index sichert die Prüfung zusätzlich ab.
       const curriculumIdMap = new Map<number, number>();
-      curriculumRows.forEach((row, i) => {
-        const result = curriculumResults[i];
-        if (result) {
-          curriculumIdMap.set(row.id, result.id);
+      const insertedCurriculumIds = new Set<number>();
+      for (const row of curriculumRows) {
+        try {
+          const [inserted] = await tx.insert(curriculum)
+            .values([{ code: row.code, titel: row.titel }]).$returningId();
+          curriculumIdMap.set(row.id, inserted!.id);
+          insertedCurriculumIds.add(inserted!.id);
+        } catch (err) {
+          if (isDuplicateEntry(err)) {
+            // Gleichwertige Codes (z. B. Gross-/Kleinschreibung) im Upload
+            // erkennt der bestehende DB-Index, ohne die Kollation in JS nachzubauen.
+            const matching = await tx.select({ id: curriculum.id }).from(curriculum)
+              .where(eq(curriculum.code, row.code));
+            if (matching.some((match) => insertedCurriculumIds.has(match.id))) {
+              throw new BadRequestError(`Lehrplancode "${row.code}" entspricht einem anderen Code in curriculum.csv`);
+            }
+            throw curriculumConflict([row.code]);
+          }
+          throw err;
         }
-      });
+      }
 
       // Areas einfügen (curriculum_id mappen) → ID-Mapping
       const areaResults = await tx
@@ -233,8 +238,8 @@ function validateColumns(records: Record<string, string>[], expected: string[], 
 }
 
 function parseInt(value: string, field: string, name: string, row: number): number {
-  const n = Number.parseInt(value, 10);
-  if (Number.isNaN(n) || n < 1) {
+  const n = Number(value);
+  if (!/^\d+$/.test(value) || !Number.isSafeInteger(n) || n < 1 || n > 4294967295) {
     throw new BadRequestError(`Zeile ${row}: ungültiger Wert "${value}" für "${field}" in ${name}.csv`);
   }
   return n;
@@ -251,6 +256,7 @@ export function parseCurriculumCsv(raw: string): CurriculumRow[] {
     if (!code || !titel) {
       throw new BadRequestError(`Zeile ${i + 2}: fehlender Wert für "code" oder "titel" in curriculum.csv`);
     }
+    validateFieldLengths(code, titel, 'curriculum', i + 2);
     return { id, code, titel };
   });
 }
@@ -267,6 +273,7 @@ export function parseAreasCsv(raw: string): AreaRow[] {
     if (!code || !titel) {
       throw new BadRequestError(`Zeile ${i + 2}: fehlender Wert für "code" oder "titel" in areas.csv`);
     }
+    validateFieldLengths(code, titel, 'areas', i + 2);
     return { id, curriculumId, code, titel };
   });
 }
@@ -283,6 +290,60 @@ export function parseCompetenciesCsv(raw: string): CompetencyRow[] {
     if (!code || !description) {
       throw new BadRequestError(`Zeile ${i + 2}: fehlender Wert für "code" oder "description" in competencies.csv`);
     }
+    validateFieldLengths(code, description, 'competencies', i + 2);
     return { id, areaId, code, description };
   });
+}
+
+/** VARCHAR(10) zählt Zeichen, TEXT erlaubt höchstens 65535 UTF-8-Bytes. */
+function validateFieldLengths(code: string, text: string, name: string, row: number): void {
+  if ([...code].length > 10) {
+    throw new BadRequestError(`Zeile ${row}: "code" darf höchstens 10 Zeichen enthalten (${name}.csv)`);
+  }
+  if (Buffer.byteLength(text, 'utf8') > 65535) {
+    throw new BadRequestError(`Zeile ${row}: Text überschreitet 65535 UTF-8-Bytes (${name}.csv)`);
+  }
+}
+
+function validateImport(plans: CurriculumRow[], sections: AreaRow[], skills: CompetencyRow[]): void {
+  function unique<T>(rows: T[], key: (row: T) => string | number, name: string): void {
+    const seen = new Set<string | number>();
+    for (const row of rows) {
+      const value = key(row);
+      if (seen.has(value)) throw new BadRequestError(`Doppelter Wert "${value}" für ${name}`);
+      seen.add(value);
+    }
+  }
+  unique(plans, (row) => row.id, 'id in curriculum.csv');
+  unique(sections, (row) => row.id, 'id in areas.csv');
+  unique(skills, (row) => row.id, 'id in competencies.csv');
+  unique(plans, (row) => row.code, 'code in curriculum.csv');
+
+  const planIds = new Set(plans.map((row) => row.id));
+  const areaIds = new Set(sections.map((row) => row.id));
+  sections.forEach((row, i) => {
+    if (!planIds.has(row.curriculumId)) {
+      throw new BadRequestError(`Zeile ${i + 2}: curriculum_id "${row.curriculumId}" fehlt in curriculum.csv`);
+    }
+  });
+  skills.forEach((row, i) => {
+    if (!areaIds.has(row.areaId)) {
+      throw new BadRequestError(`Zeile ${i + 2}: area_id "${row.areaId}" fehlt in areas.csv`);
+    }
+  });
+}
+
+function curriculumConflict(codes: string[]): ConflictError {
+  return new ConflictError(`Import abgelehnt: Rahmenlehrplancode bereits vorhanden: ${codes.join(', ')}. Es wurden keine Daten importiert.`);
+}
+
+/** Drizzle umschliesst MySQL-Fehler als cause; nur Duplicate-Entry übersetzen. */
+function isDuplicateEntry(err: unknown): boolean {
+  const visited = new Set<unknown>();
+  while (err && typeof err === 'object' && !visited.has(err)) {
+    visited.add(err);
+    if ('code' in err && err.code === 'ER_DUP_ENTRY') return true;
+    err = 'cause' in err ? err.cause : undefined;
+  }
+  return false;
 }

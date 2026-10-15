@@ -1,6 +1,6 @@
 # KompCards — Entscheidungen (ADR-Log)
 
-**Stand:** 2026-09-03
+**Stand:** 2026-10-15
 Kurze Architektur-Entscheidungsrekorde (ADR) aus dem Requirements-Review. Status: alle **Acceptiert**.
 
 ## ADR-001: Repository-Layout
@@ -50,7 +50,9 @@ Diese Entscheidung wurde durch ADR-014 ersetzt. `userTable` und `userSession` bl
 - **Entscheidung:** **Traefik** als Reverse Proxy / Edge Router. Path-basiertes Routing: `/` → Frontend (Nuxt), `/api` → Backend (Express). DB bleibt intern (nur Backend → DB), öffentlich nicht exponiert.
 - **Konsequenz:** `docker-compose.yml` erhält einen Traefik-Service (einzige öffentliche Kante); Frontend & API sind same-origin ⇒ kein CORS. Ersetzt die frühere Nuxt-Proxy-Annahme. TLS-Terminierung am Traefik.
 
-## ADR-010: Curriculum-Import — CSV-Upload, Löschen & Neu
+## ADR-010: Curriculum-Import — CSV-Upload, Löschen & Neu (Strategie ersetzt)
+
+Die Strategie zum vollständigen Ersetzen und der globale FK-Schutz wurden durch ADR-024 ersetzt. Die folgende Beschreibung dokumentiert das historische Verhalten.
 - **Kontext:** Rahmenlehrplan-Daten (curriculum, areas, competencies) wurden aus einer Markdown-Datei in drei CSV-Dateien umgewandelt (`backend/csv/curriculum.csv`, `areas.csv`, `competencies.csv`). Ein API-Endpunkt soll diese in die DB importieren. Der Endpunkt ist nur innerhalb der Applikation (auth-geschützt) erreichbar, nicht öffentlich.
 - **Entscheidung:**
   - **Ein Endpunkt** `POST /api/curriculum/import` (multipart, 3 Dateien gleichzeitig: `curriculum`, `areas`, `competencies`).
@@ -162,6 +164,15 @@ Diese Entscheidung wurde durch ADR-014 ersetzt. `userTable` und `userSession` bl
 - **Entscheidung:** Agents entscheiden ohne zusätzliche Freigabe, wann ein neuer Branch benötigt wird und wann eine zusammenhängende, geprüfte Änderung committet und gepusht wird. In der Regel wird pro eigenständigem Feature oder Fix ein Branch verwendet; passende bestehende Arbeitsbranches können weiterverwendet werden. Commit-Messages folgen Conventional Commits. Die konkreten Regeln stehen in [DEVELOPMENT.md](./DEVELOPMENT.md#6-versionskontrolle).
 - **Konsequenz:** Das bisherige Commit-/Push-Verbot in `AGENTS.md` und `DEVELOPMENT.md` entfällt. Die Definition of Done bleibt verbindlich; Änderungen des Nutzers werden erhalten. Destruktive Git-Aktionen wie Force-Pushes und das Umschreiben veröffentlichter Historie sind nicht Teil dieser Erlaubnis. Agents berichten über Branch, Commits, Push-Status und Prüfungen.
 
+## ADR-024: Rahmenlehrpläne per CSV ergänzen
+
+- **Kontext:** Einzelne Rahmenlehrpläne sollen nacheinander importiert werden können. Der vollständige Austausch aus ADR-010 löschte dabei zuvor importierte Lehrpläne und verhinderte jeden Import, sobald Kompetenzkarten existierten.
+- **Entscheidung:** Der Import fügt ausschliesslich neue Lehrpläne mit ihren Bereichen und Kompetenzen hinzu. Bestehende Referenzdaten und Kompetenzkarten bleiben unverändert. Der globale `competency_proof`-Check entfällt. Aktualisieren oder Ersetzen bestehender Lehrpläne ist nicht Teil dieses Ablaufs.
+- **Upload-Vertrag:** Weiterhin drei Pflichtdateien (`curriculum`, `areas`, `competencies`), jeweils mit mindestens einem Datensatz, sowie die bisherige Erfolgsantwort mit Datensatzanzahlen. CSV-IDs sind uploadlokale Schlüssel, die auf neue DB-IDs gemappt werden. Elternreferenzen müssen innerhalb desselben Uploads auflösbar sein; bestehende DB-IDs dürfen nicht als Elternreferenzen verwendet werden.
+- **Validierung:** Pflichtspalten und -werte, positive ganzzahlige IDs, eindeutige IDs je Datei, eindeutige Lehrplancodes im Upload, gültige Elternreferenzen und Feldlängen gemäss bestehendem Schema werden vor dem Einfügen geprüft. Exakt doppelte Lehrplancodes werden dabei direkt erkannt. Sind verschiedene Schreibweisen erst gemäss DB-Kollation gleich, wird das Duplikat beim Einfügen erkannt und der gesamte Upload zurückgerollt. Beide Fälle führen zu `400 Bad Request`.
+- **Konflikte und Atomarität:** Existiert ein Lehrplancode bereits, wird der gesamte Upload mit `409 Conflict` abgelehnt und die kollidierenden Codes werden genannt. Das gilt auch für Uploads, die neue und vorhandene Lehrpläne mischen. Alle Inserts laufen in einer Transaktion; Einfügefehler rollen den gesamten Upload zurück. Der vorhandene eindeutige Index auf `curriculum.code` sichert konkurrierende Importe ab; entsprechende Einfügekonflikte werden ebenfalls als `409` ausgegeben.
+- **Konsequenz:** Unterschiedliche Lehrpläne können unabhängig voneinander importiert werden, auch bei vorhandenen Kompetenzkarten. Ein wiederholter Import desselben Lehrplans wird mit Konflikt abgewiesen. Keine Änderung am Datenbankschema, an bestehenden Daten oder an Auth-/Upload-Limits. Diese Entscheidung ersetzt die Austauschstrategie und den globalen FK-Schutz aus ADR-010.
+
 ## Offene Entscheidungen
 
 Keine — alle Kernpunkte geschlossen:
@@ -169,5 +180,5 @@ Keine — alle Kernpunkte geschlossen:
 - **Reverse Proxy / FE→BE-Kommunikation:** **Traefik** (ADR-009).
 - **`quality` / `overlap_curriculum`:** **LLM-seitig gesetzt** (bestätigt).
 - **`quality_statement`:** **LLM-seitig gesetzt, Pflichtfeld** (ADR-011).
-- **Curriculum-Import:** **CSV-Upload, Löschen & Neu** (ADR-010).
+- **Curriculum-Import:** **CSV-Upload ergänzt neue Lehrpläne atomar; vorhandene Codes führen zu 409** (ADR-024, ersetzt die Strategie aus ADR-010).
 - **LLM-Auswahl:** `is_saved` markiert genau eine auswählbare Revision der aktuellen Eingabe; erneute Auswahl ist vorerst erlaubt (ADR-012).

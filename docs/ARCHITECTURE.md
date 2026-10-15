@@ -1,6 +1,6 @@
 # KompCards — Architektur
 
-**Stand:** 2026-09-03
+**Stand:** 2026-10-15
 **Legende:** **Vorgabe** / **Annahme** (s. [PROJECT.md](./PROJECT.md)).
 
 ## 1. Gesamtüberblick (3-Tier)
@@ -165,25 +165,29 @@ Logout / Revocation
 
 ## 9. Curriculum-Import (CSV)
 
-Die Referenzdaten (`curriculum`, `areas`, `competencies`) werden per **CSV-Upload** importiert.
+Die Referenzdaten (`curriculum`, `areas`, `competencies`) werden per **CSV-Upload** ergänzt (ADR-024).
 
-- **Endpunkt:** `POST /api/curriculum/import` (multipart, 3 Dateien: `curriculum`, `areas`, `competencies`).
+- **Endpunkt:** `POST /api/curriculum/import` (multipart, 3 Pflichtdateien mit jeweils mindestens einem Datensatz: `curriculum`, `areas`, `competencies`).
 - **Auth:** Erfordert gültige Better-Auth-Session und die Rolle `admin`.
-- **Strategie:** **Löschen & Neu** (komplett) — bestehende Referenzdaten werden gelöscht und neu eingefügt.
-- **FK-Schutz:** Falls `competency_proof`-Zeilen existieren → **409 Conflict** (Import abgelehnt).
-- **ID-Mapping:** CSV-IDs werden auf neue AUTO_INCREMENT-IDs gemappt (in-memory Map).
-- **Transaktion:** Löschen + Einfügen in einer DB-Transaktion (atomar).
+- **Strategie:** Neue Rahmenlehrpläne samt Bereichen und Kompetenzen hinzufügen. Bestehende Referenzdaten und Kompetenzkarten bleiben unverändert; vorhandene `competency_proof`-Zeilen verhindern den Import nicht.
+- **Konflikte:** Bereits vorhandene Lehrplancodes führen zu **409 Conflict** für den gesamten Upload; die kollidierenden Codes werden genannt. Auch bei gleichzeitigen Uploads schützt der bestehende eindeutige DB-Index vor doppelten Lehrplancodes.
+- **Validierung:** Pflichtspalten/-werte, positive ganzzahlige IDs, eindeutige CSV-IDs je Datei, eindeutige Lehrplancodes im Upload und Feldlängen gemäss bestehendem Schema. Jeder Bereich muss auf einen Lehrplan und jede Kompetenz auf einen Bereich desselben Uploads verweisen. Ungültige Daten führen zu **400 Bad Request**. Exakt doppelte Lehrplancodes werden vor dem Einfügen erkannt; Codes, die erst gemäss DB-Kollation gleich sind (z. B. unterschiedliche Gross-/Kleinschreibung), können erst beim Einfügen erkannt werden und führen ebenfalls zu `400` mit vollständigem Rollback.
+- **ID-Mapping:** CSV-IDs gelten ausschliesslich innerhalb des Uploads und werden auf neue AUTO_INCREMENT-IDs gemappt (in-memory Maps). Sie sind keine Verweise auf vorhandene Datenbankzeilen.
+- **Transaktion:** Sämtliche neuen Datensätze eines Uploads werden in einer DB-Transaktion eingefügt. Bei einem Konflikt oder Einfügefehler bleibt der bisherige Datenbestand unverändert; auch ein gemischter Upload aus neuen und vorhandenen Lehrplänen wird vollständig abgelehnt.
 - **Parsing:** `csv-parse/sync` (synchron); **Upload:** `multer` (memory storage, max. 5 MB/Datei).
 - **Service:** `CurriculumService` (Business Logic + Drizzle-Queries, ADR-005).
+- **Begrenzung:** Bestehende Lehrpläne werden nicht aktualisiert oder ersetzt. Das Datenbankschema bleibt unverändert.
 
 ```
 POST /api/curriculum/import  (multipart: curriculum.csv, areas.csv, competencies.csv)
   → requireAuth + requireUser + requireAdmin
   → multer (3 Dateien, memory)
   → CurriculumService.importCurriculum()
-      1. CSVs parsen & validieren (Spalten, Werte)
-      2. FK-Check: competency_proof existiert? → 409
-      3. Transaktion: DELETE (competencies → areas → curriculum) + INSERT (mit ID-Mapping)
+      1. CSVs parsen & validieren (inkl. Duplikaten und uploadinternen Referenzen) → ggf. 400
+      2. Lehrplancodes auf Konflikte mit dem Bestand prüfen → ggf. 409
+      3. Transaktion: INSERT curriculum → areas → competencies (mit ID-Mapping)
+         Eindeutigkeitskonflikt beim Einfügen → Rollback und 409
+         Kollationsgleiches Duplikat innerhalb des Uploads → Rollback und 400
   → 200 { imported: { curriculum: n, areas: n, competencies: n } }
 ```
 
