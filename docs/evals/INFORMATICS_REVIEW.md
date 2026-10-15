@@ -14,7 +14,7 @@ Holdout-Inhalte nicht zur Prompt-Optimierung nutzen. Falls sie dafür verwendet 
 | inf-a3-2-01 | development | A3.2 | 4 | true | Die praktische Abschlussprüfung ist bestanden worden. | offen |
 | inf-a3-2-02 | development | A3.2 | 2 | true | Der arbeitsbezogene Zweck und das Lernergebnis der Weiterbildung sind noch offen. | offen |
 | inf-b4-4-01 | development | B4.4 | 4 | true | Das Architekturboard hat die Entscheidungsbegründung bestätigt. | offen |
-| inf-b4-4-02 | development | B4.4 | 1 | true | Ein konkreter Entscheidungsgegenstand und ein Entscheidungsnachweis fehlen. | offen |
+| inf-b4-4-02 | development | B4.4 | 1 | false | Ein konkreter Entscheidungsgegenstand und ein Entscheidungsnachweis fehlen. | offen; Label mit Dataset abgeglichen, Interpretation der Methodenangabe fachlich prüfen |
 | inf-b5-4-01 | development | B5.4 | 4 | true | Der Lenkungsausschuss hat den aktualisierten Plan freigegeben. | offen |
 | inf-b5-4-02 | development | B5.4 | 1 | true | Die Durchführung der Risikoanalyse und ihr Ergebnis sind ungeklärt. | offen |
 | inf-b6-2-01 | development | B6.2 | 4 | true | Eine Wochenendschicht ist unbesetzt geblieben und der Plan ist zur Nachbearbeitung zurückgegeben worden. | offen |
