@@ -162,6 +162,20 @@ describe('buildPrompt', () => {
 });
 
 describe('SYSTEM_PROMPT – fachlicher Ausgabe-Vertrag', () => {
+  it('verknüpft belegten Einsatz mit dem Zweck, ohne die Wirkung zu behaupten', () => {
+    const outcome = SYSTEM_PROMPT.split('QUALITY_STATEMENT\n')[1]?.split('QUALITY\n')[0];
+    expect(outcome).toContain('Ergebnis + fachliche Bedeutung');
+    expect(outcome).toContain('Ein berichteter Einsatz belegt die Umsetzung, nicht automatisch die angestrebte Wirkung');
+    expect(outcome).toContain('als Ziel, nicht als erreichten Erfolg');
+    expect(SYSTEM_PROMPT).toContain('Der Rollenverdichter ist zur Komprimierung von Plastik im Einsatz, mit dem Ziel, überfüllte Container zu vermeiden und Kunststoff dem Recycling zuzuführen.');
+  });
+
+  it('formuliert offene Wirkung konstruktiv und fragt den Nachweis gezielt nach', () => {
+    expect(SYSTEM_PROMPT).toContain('Formuliere das Ziel konstruktiv');
+    expect(SYSTEM_PROMPT).toContain('Angestrebt sind bedarfsgerechte Torhütertrainings und die Förderung junger Talente; inwieweit die Beteiligten damit zufrieden sind, bleibt offen.');
+    expect(SYSTEM_PROMPT).toContain('Welche Rückmeldungen von Kindern, Eltern oder Verein liegen zu den Trainings vor?');
+  });
+
   it('verlangt Rolle, Ich-Form und einen kurzen Absatz aus Was/Wie/Wozu', () => {
     expect(SYSTEM_PROMPT).toContain('Nenne die angegebene Rolle/Funktion im ersten Satz ausdrücklich');
     expect(SYSTEM_PROMPT).toContain('Ich-Form');

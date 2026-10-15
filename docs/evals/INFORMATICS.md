@@ -32,7 +32,7 @@ Die Paare sind teilweise ähnlich, um einzelne Informationsunterschiede zu prüf
 
 ## Fachlicher Vertrag und Review
 
-Bewertung nach ADR-020: Arbeitsergebnis mit ausdrücklicher Rolle, Ich-Form und Perfekt, 1–2 Sätze/maximal 60 Wörter; Quality Statement genau ein Satz/maximal 30 Wörter. Vorhandene qualitative, quantitative und negative Nachweise müssen erhalten bleiben. Ohne Beleg ein konkretes offenes Kriterium nennen und gezielt nachfragen; kein erfundener Erfolg und kein pauschaler Ergebnis-Fallback. Eingabequalität und Curriculum-Passung werden unabhängig bewertet.
+Bewertung nach ADR-020: Arbeitsergebnis mit ausdrücklicher Rolle, Ich-Form und natürlicher Vergangenheit (Perfekt oder Präteritum; ADR-025), 1–2 Sätze/maximal 60 Wörter; Quality Statement genau ein Satz/maximal 30 Wörter. Vorhandene qualitative, quantitative und negative Nachweise müssen erhalten bleiben. Ohne Beleg ein konkretes offenes Kriterium nennen und gezielt nachfragen; kein erfundener Erfolg und kein pauschaler Ergebnis-Fallback. Eingabequalität und Curriculum-Passung werden unabhängig bewertet.
 
 `quality_statement_semantics` beschreibt eine zulässige Bedeutung, keine Zeichenkette für einen exakten Textvergleich. Ergebnisnachweise stehen in den Sachangaben, vor allem `how`. `result_evidence` fasst diese nur für die Bewertung zusammen. `must_preserve` verlangt Rolle, wesentliche Handlung und Zweck in ihrer Bedeutung; Tippfehler dürfen korrigiert werden, Widersprüche dürfen nicht eigenmächtig aufgelöst werden. Hinweise sind in diesem Set bei fehlendem Nachweis stets erforderlich. Bei vollständig belegten Angaben ist null zulässig; ein nicht passender Curriculum-Bezug allein senkt quality nicht.
 

@@ -46,6 +46,12 @@ WORK_RESULT
 
 QUALITY_STATEMENT
 - Schreibe genau einen vollständigen Satz mit höchstens 30 Wörtern.
+- Formuliere Ergebnis + fachliche Bedeutung: Was liegt konkret vor und welchem angegebenen Zweck dient es?
+  Verbinde einen berichteten Einsatz oder ein Resultat mit dem konkreten Zweck aus der Eingabe,
+  sofern dies den Satz aussagekräftiger macht. Benenne unbelegte Wirkung als Ziel, nicht als erreichten Erfolg.
+  Ein berichteter Einsatz belegt die Umsetzung, nicht automatisch die angestrebte Wirkung.
+  „Mit dem Ziel“ oder „soll“ kennzeichnen Absichten; „verhindert“, „verbessert“, „gewährleistet“
+  und „führte zu hoher Zufriedenheit“ erfordern eine tatsächlich berichtete Wirkung.
 - Leite das Ergebnis-/Prüfkriterium aus Wie und Wozu ab und verknüpfe es mit dem
   tatsächlich berichteten Nachweis. Ein vorhandener Nachweis hat Vorrang vor einer Lückenbeschreibung.
 - Nenne das konkrete überprüfbare Resultat: Messung, Bestätigung, Freigabe, Auswahl oder Befund.
@@ -53,9 +59,13 @@ QUALITY_STATEMENT
   Bevorzuge kurze aktive Sätze: „Die Leitung hat den Entwurf genehmigt“.
   Richtig sind „Die Prüfungen sind fehlgeschlagen“, „Die Datei ist nicht lesbar gewesen“
   und „Den Schutzbedarf habe ich bewertet“. Aktuell offene Zustände dürfen im Präsens stehen.
-- Wiederhole weder Handlung noch Methode aus work_result; nenne keine Rolle oder Methodendetails.
+- Wiederhole weder Handlung noch Methode als Ablaufbeschreibung aus work_result; nenne keine Rolle oder Methodendetails.
+  Das konkrete Arbeitsergebnis (etwa ein eingesetzter Rollenverdichter) darf zur verständlichen
+  Einordnung des Resultats erneut genannt werden. Vermeide inhaltsarme Sätze wie „Die Maschine steht im Einsatz“.
 - Fehlt ein Nachweis, benenne das aus der Eingabe ableitbare konkrete Zielkriterium
-  als noch nicht nachgewiesen und frage in note_improvment konkret nach dem fehlenden Nachweis.
+  als noch nicht nachgewiesen oder ausdrücklich offen und frage in note_improvment konkret nach dem fehlenden Nachweis.
+  Formuliere das Ziel konstruktiv, etwa „Angestrebt ist ...; ob ..., bleibt offen“.
+  Stelle keine blosse Mängelmeldung an die Stelle des fachlichen Zielbezugs.
   Ist auch kein Kriterium ableitbar, benenne die spezifische Informationslücke und frage danach.
   Erfinde kein Kriterium. Verwende keinen pauschalen Standardsatz über ein fehlendes Ergebnis.
 - Eine bereits berichtete Durchführung oder Definition ist keine Informationslücke.
@@ -87,7 +97,25 @@ Fordere keine bereits angegebenen Nachweise und keine bestimmten positiven Ergeb
 Wenn keine relevante Ergänzung nötig ist, gib null zurück.
 
 FORMULIERUNGSBEISPIELE
-Diese erfundenen Beispiele veranschaulichen die Regeln; übertrage keine ihrer Fakten auf die Eingabe.
+Diese synthetischen und anonymisierten Beispiele veranschaulichen die Regeln; übertrage keine ihrer Fakten auf die Eingabe.
+
+Bedarfsgerechtes Training, Wirkung offen (anonymisiertes Praxisbeispiel):
+Eingabe: Rolle Torhütertrainer Junioren D und E; Was Anliegen von Verein, Trainern,
+Kindern und Eltern berücksichtigt; Wie Gespräche und Erfahrungen im Training;
+Wozu wirksame, passende Trainings und Talentförderung; keine Rückmeldungen zur Wirkung berichtet.
+quality_statement: „Angestrebt sind bedarfsgerechte Torhütertrainings und die Förderung junger Talente; inwieweit die Beteiligten damit zufrieden sind, bleibt offen.“
+quality: 3; note_improvment: „Welche Rückmeldungen von Kindern, Eltern oder Verein liegen zu den Trainings vor?“
+Nicht behaupten: hohe Zufriedenheit, nachgewiesene Wirksamkeit oder nachhaltige Talententwicklung.
+
+Umgesetzte Entsorgungslösung mit Zweckbezug (anonymisiertes Praxisbeispiel):
+Eingabe: Rolle Serviceberater und Student; Was Transferarbeit und Konzept zur Plastikentsorgung;
+Wie Zusammenarbeit mit Vorgesetztem und Entsorgungsspezialist, Lean Management,
+Rollenverdichter umgesetzt, Projekt abgeschlossen und Maschine im Einsatz;
+Wozu überfüllte Container vermeiden und Plastik recyceln.
+quality_statement: „Der Rollenverdichter ist zur Komprimierung von Plastik im Einsatz, mit dem Ziel, überfüllte Container zu vermeiden und Kunststoff dem Recycling zuzuführen.“
+quality: 4; note_improvment: null (sofern der Kompetenzkontext vorhanden ist).
+Der berichtete Betrieb ist ein Ergebnisnachweis; verlange dafür keine zusätzliche Messung.
+Nicht behaupten: Container sind nicht mehr überfüllt, Recyclingquote erhöht oder Effizienz verbessert.
 
 Qualitative Freigabe, auch ohne Curriculum-Bezug:
 Eingabe: Rolle Sachbearbeiterin; Was Materialbudget erstellt; Wie Bedarfsliste und

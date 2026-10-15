@@ -25,7 +25,7 @@ Regeln:
 
 ### LLM-Evaluation (explizit, ausserhalb der CI)
 
-Im `backend/`: `bun run eval --dry-run` erstellt einen Request-Plan ohne API-Aufrufe; `bun run eval --run` führt den Modellvergleich aus. Konfiguration, Split-Auswahl und fachliche Nachbewertung stehen in [`evals/RUNNER.md`](./evals/RUNNER.md). Standard ist der development-Split mit drei Wiederholungen. Reale LLM-Aufrufe bleiben von den gemockten Vitest-Tests getrennt.
+Im `backend/`: `bun run eval --dry-run` erstellt einen Request-Plan ohne API-Aufrufe; `bun run eval --run` evaluiert standardmässig denselben SDK-Client wie die Applikation. `EVAL_EXECUTION=direct` wählt ausdrücklich den separaten Modellvergleich (auch für native Anthropic-Aufrufe). Konfiguration, Split-Auswahl und fachliche Nachbewertung stehen in [`evals/RUNNER.md`](./evals/RUNNER.md). Standard ist der development-Split mit drei Wiederholungen. Reale LLM-Aufrufe bleiben von den gemockten Vitest-Tests getrennt.
 
 ## 3. Linting
 
