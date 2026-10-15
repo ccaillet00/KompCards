@@ -7,7 +7,7 @@ import {
 } from '../src/eval/core.js';
 
 const dataset = () => parseDataset(JSON.parse(readFileSync('../docs/evals/competency-cards.v0.2.json', 'utf8')));
-const env = { EVAL_PROVIDER: 'vllm', LLM_BASE_URL: 'http://localhost:8000/v1', LLM_MODEL: 'test-model' };
+const env = { EVAL_PROVIDER: 'vllm', EVAL_EXECUTION: 'direct', LLM_BASE_URL: 'http://localhost:8000/v1', LLM_MODEL: 'test-model' };
 const config = () => loadEvalConfig(env);
 const card = () => dataset().cases[0]!;
 const answer = {
@@ -16,7 +16,7 @@ const answer = {
   overlap_curriculum: true, note_improvment: null,
 };
 const response = (finish = 'stop') => new Response(JSON.stringify({
-  model: 'resolved-model', choices: [{ message: { content: JSON.stringify(answer) }, finish_reason: finish }],
+  id: 'test-completion', created: 0, model: 'resolved-model', choices: [{ index: 0, message: { role: 'assistant', content: JSON.stringify(answer) }, finish_reason: finish }],
   usage: { prompt_tokens: 100, completion_tokens: 40, prompt_tokens_details: { cached_tokens: 0 } },
 }));
 
@@ -110,6 +110,53 @@ describe('automatic grading', () => {
 });
 
 describe('repeat runs and reports', () => {
+  it('uses the production client by default, records its actual request and normalizes notes without hiding raw output', async () => {
+    const clientConfig = loadEvalConfig({ ...env, EVAL_EXECUTION: 'client', EVAL_REPETITIONS: '1' });
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({
+      id: 'sdk-test', created: 0, model: 'resolved-model',
+      choices: [{ index: 0, message: { role: 'assistant', content: JSON.stringify({ ...answer, note_improvment: ['Ergänze den Kontext.'] }) }, finish_reason: 'stop' }],
+      usage: { prompt_tokens: 100, completion_tokens: 40, prompt_tokens_details: { cached_tokens: 0 } },
+    }), { headers: { 'Content-Type': 'application/json' } }));
+    const rows: Attempt[] = [];
+    for await (const row of runEvaluation(clientConfig, { ...dataset(), cases: [card()] }, 'custom-system', fetcher)) rows.push(row);
+    expect(rows[0]!.request.body).not.toHaveProperty('chat_template_kwargs');
+    expect(rows[0]!.request.body).toMatchObject({ response_format: { type: 'json_schema' } });
+    expect(JSON.stringify(rows[0]!.request.body)).toContain('custom-system');
+    expect(JSON.stringify(rows[0]!.request.body)).not.toContain('must_not_invent');
+    expect(rows[0]!.response.text).toContain('["Ergänze den Kontext."]');
+    expect(rows[0]!.grade.output?.note_improvment).toBe('Ergänze den Kontext.');
+    expect(rows[0]!.grade.automaticPass).toBe(true);
+    expect(rows[0]!.response).toMatchObject({ error: null, usage: { input: 100, output: 40 }, httpAttempts: [{ response: { status: 200 } }] });
+  });
+
+  it('retains SDK validation failures even when the raw JSON is parseable', async () => {
+    const clientConfig = loadEvalConfig({ ...env, EVAL_EXECUTION: 'client', EVAL_REPETITIONS: '1' });
+    const rows: Attempt[] = [];
+    for await (const row of runEvaluation(clientConfig, { ...dataset(), cases: [card()] }, 'rules', async () => new Response(JSON.stringify({
+      id: 'sdk-test', created: 0, model: 'resolved-model',
+      choices: [{ index: 0, message: { role: 'assistant', content: JSON.stringify({ ...answer, quality: 5 }) }, finish_reason: 'stop' }],
+      usage: { prompt_tokens: 100, completion_tokens: 40 },
+    }), { headers: { 'Content-Type': 'application/json' } }))) rows.push(row);
+    expect(rows[0]!.response.error).not.toBeNull();
+    expect(rows[0]!.response.raw).toContain('sdk-test');
+    expect(rows[0]!.grade.automaticPass).toBe(false);
+  });
+
+  it('records every SDK retry with redaction and keeps unknown failed-attempt token usage unknown', async () => {
+    const clientConfig = loadEvalConfig({ ...env, EVAL_EXECUTION: 'client', EVAL_REPETITIONS: '1', LLM_API_KEY: 'private-key' });
+    const fetcher = vi.fn().mockResolvedValueOnce(new Response('private-key: busy', { status: 503 }))
+      .mockResolvedValueOnce(response());
+    const rows: Attempt[] = [];
+    for await (const row of runEvaluation(clientConfig, { ...dataset(), cases: [card()] }, 'rules', fetcher)) rows.push(row);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(rows[0]!.response.httpAttempts).toHaveLength(2);
+    expect(rows[0]!.response.httpAttempts?.[0]?.response).toMatchObject({ status: 503, raw: '[REDACTED]: busy' });
+    expect(JSON.stringify(rows)).not.toContain('private-key');
+    expect(rows[0]!.response.error).toBeNull();
+    expect(rows[0]!.response.usage.input).toBeNull();
+    expect(rows[0]!.grade.automaticPass).toBe(true);
+  });
+
   it('filters splits, repeats in rounds and retains all failed attempts in the denominator', async () => {
     const data = { ...dataset(), cases: [card(), dataset().cases[20]!] };
     const fetcher = vi.fn().mockResolvedValueOnce(response()).mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(response('length'));

@@ -1,6 +1,6 @@
 # KompCards — Entscheidungen (ADR-Log)
 
-**Stand:** 2026-09-03
+**Stand:** 2026-10-15
 Kurze Architektur-Entscheidungsrekorde (ADR) aus dem Requirements-Review. Status: alle **Acceptiert**.
 
 ## ADR-001: Repository-Layout
@@ -50,7 +50,9 @@ Diese Entscheidung wurde durch ADR-014 ersetzt. `userTable` und `userSession` bl
 - **Entscheidung:** **Traefik** als Reverse Proxy / Edge Router. Path-basiertes Routing: `/` → Frontend (Nuxt), `/api` → Backend (Express). DB bleibt intern (nur Backend → DB), öffentlich nicht exponiert.
 - **Konsequenz:** `docker-compose.yml` erhält einen Traefik-Service (einzige öffentliche Kante); Frontend & API sind same-origin ⇒ kein CORS. Ersetzt die frühere Nuxt-Proxy-Annahme. TLS-Terminierung am Traefik.
 
-## ADR-010: Curriculum-Import — CSV-Upload, Löschen & Neu
+## ADR-010: Curriculum-Import — CSV-Upload, Löschen & Neu (Strategie ersetzt)
+
+Die Strategie zum vollständigen Ersetzen und der globale FK-Schutz wurden durch ADR-024 ersetzt. Die folgende Beschreibung dokumentiert das historische Verhalten.
 - **Kontext:** Rahmenlehrplan-Daten (curriculum, areas, competencies) wurden aus einer Markdown-Datei in drei CSV-Dateien umgewandelt (`backend/csv/curriculum.csv`, `areas.csv`, `competencies.csv`). Ein API-Endpunkt soll diese in die DB importieren. Der Endpunkt ist nur innerhalb der Applikation (auth-geschützt) erreichbar, nicht öffentlich.
 - **Entscheidung:**
   - **Ein Endpunkt** `POST /api/curriculum/import` (multipart, 3 Dateien gleichzeitig: `curriculum`, `areas`, `competencies`).
@@ -162,6 +164,45 @@ Diese Entscheidung wurde durch ADR-014 ersetzt. `userTable` und `userSession` bl
 - **Entscheidung:** Agents entscheiden ohne zusätzliche Freigabe, wann ein neuer Branch benötigt wird und wann eine zusammenhängende, geprüfte Änderung committet und gepusht wird. In der Regel wird pro eigenständigem Feature oder Fix ein Branch verwendet; passende bestehende Arbeitsbranches können weiterverwendet werden. Commit-Messages folgen Conventional Commits. Die konkreten Regeln stehen in [DEVELOPMENT.md](./DEVELOPMENT.md#6-versionskontrolle).
 - **Konsequenz:** Das bisherige Commit-/Push-Verbot in `AGENTS.md` und `DEVELOPMENT.md` entfällt. Die Definition of Done bleibt verbindlich; Änderungen des Nutzers werden erhalten. Destruktive Git-Aktionen wie Force-Pushes und das Umschreiben veröffentlichter Historie sind nicht Teil dieser Erlaubnis. Agents berichten über Branch, Commits, Push-Status und Prüfungen.
 
+## ADR-024: Rahmenlehrpläne per CSV ergänzen
+
+- **Kontext:** Einzelne Rahmenlehrpläne sollen nacheinander importiert werden können. Der vollständige Austausch aus ADR-010 löschte dabei zuvor importierte Lehrpläne und verhinderte jeden Import, sobald Kompetenzkarten existierten.
+- **Entscheidung:** Der Import fügt ausschliesslich neue Lehrpläne mit ihren Bereichen und Kompetenzen hinzu. Bestehende Referenzdaten und Kompetenzkarten bleiben unverändert. Der globale `competency_proof`-Check entfällt. Aktualisieren oder Ersetzen bestehender Lehrpläne ist nicht Teil dieses Ablaufs.
+- **Upload-Vertrag:** Weiterhin drei Pflichtdateien (`curriculum`, `areas`, `competencies`), jeweils mit mindestens einem Datensatz, sowie die bisherige Erfolgsantwort mit Datensatzanzahlen. CSV-IDs sind uploadlokale Schlüssel, die auf neue DB-IDs gemappt werden. Elternreferenzen müssen innerhalb desselben Uploads auflösbar sein; bestehende DB-IDs dürfen nicht als Elternreferenzen verwendet werden.
+- **Validierung:** Pflichtspalten und -werte, positive ganzzahlige IDs, eindeutige IDs je Datei, eindeutige Lehrplancodes im Upload, gültige Elternreferenzen und Feldlängen gemäss bestehendem Schema werden vor dem Einfügen geprüft. Exakt doppelte Lehrplancodes werden dabei direkt erkannt. Sind verschiedene Schreibweisen erst gemäss DB-Kollation gleich, wird das Duplikat beim Einfügen erkannt und der gesamte Upload zurückgerollt. Beide Fälle führen zu `400 Bad Request`.
+- **Konflikte und Atomarität:** Existiert ein Lehrplancode bereits, wird der gesamte Upload mit `409 Conflict` abgelehnt und die kollidierenden Codes werden genannt. Das gilt auch für Uploads, die neue und vorhandene Lehrpläne mischen. Alle Inserts laufen in einer Transaktion; Einfügefehler rollen den gesamten Upload zurück. Der vorhandene eindeutige Index auf `curriculum.code` sichert konkurrierende Importe ab; entsprechende Einfügekonflikte werden ebenfalls als `409` ausgegeben.
+- **Konsequenz:** Unterschiedliche Lehrpläne können unabhängig voneinander importiert werden, auch bei vorhandenen Kompetenzkarten. Ein wiederholter Import desselben Lehrplans wird mit Konflikt abgewiesen. Keine Änderung am Datenbankschema, an bestehenden Daten oder an Auth-/Upload-Limits. Diese Entscheidung ersetzt die Austauschstrategie und den globalen FK-Schutz aus ADR-010.
+
+## ADR-025: Natürliche Vergangenheitsformen und getrennte fachliche Fehler
+
+- **Kontext:** Das Referenzreview vom 14. Oktober nennt eine berichtete Lehrerreferenz mit Ergebnisnachweis im Präteritum. Sie stützt Ergebnisorientierung, aber keine durchgehende Perfektpflicht und keine allgemeine schulische Satz-/Wortvorgabe. Der Nutzer beauftragt zuerst den Regelabgleich, danach die Promptoptimierung und die Zulassung natürlicher Vergangenheitsformen.
+- **Entscheidung:** Die Perfektpflicht aus ADR-020 entfällt für beide Textfelder. Perfekt und Präteritum sind bei korrektem zeitlichem Sinn gleichwertig; aktuell offene Zustände dürfen im Präsens stehen. Rolle und Ich-Form im Arbeitsergebnis, vollständige Sätze sowie bestehende Satz-/Wortgrenzen bleiben interne Projektregeln. Faktentreue, Erhalt wesentlicher Handlungen und Einschränkungen, Ergebnisorientierung und gezielte Nachfragen bleiben streng. Hilfsmittel im Unternehmenskontext belegen keine tatsächliche Verwendung; Analyse und Massnahmenableitung belegen keine Umsetzung oder Wirkungskontrolle.
+- **Bewertung:** Rubrik v1.1 trennt facts, action, grammar, outcome und improvements. Präteritum allein senkt grammar nicht. Kritische Fakten- und Handlungserhalt-Fehler dürfen nicht mit Sprachpunkten ausgeglichen werden. quality 1–4 und Curriculum-Passung bleiben unverändert und unabhängig voneinander.
+- **Versionierung:** Bisherige README-Rubrik als `docs/evals/rubric.v1.0.md` erhalten; neue Läufe frieren README mit Rubrik v1.1 und Hash ein. Dataset-Labels, historische Snapshots und Reviews bleiben erhalten. Sprachliche Neubewertung benötigt separate Berichte; verbesserte Werte durch neue Regeln sind keine Promptverbesserung. Ungeprüfte synthetische Labels und das berichtete Lehrerurteil sind keine allgemeine fachliche Freigabe.
+- **Validierung:** Erst Rubrikabgleich, dann rote Promptvertragstests und Promptanpassung. Neue Informatik-Promptbeispiele sind unabhängig vom Benchmark und Holdout. Vitest nutzt keine echten LLM-Aufrufe; semantische Verbesserung erfordert einen separaten Client-Eval unter derselben Rubrik und menschliches Gegenlesen.
+
+## ADR-026: Ergebnis mit fachlichem Zweckbezug statt blosser Nachweisstatus
+
+- **Kontext:** Praxisbeispiele zu Torhütertraining und Plastikentsorgung zeigen wenig aussagekräftige Qualitätsaussagen: eine reine Nachweislücke oder ein isolierter Maschinenstatus. Die gewünschten Vergleichsformulierungen enthalten allerdings teilweise nicht berichtete Wirkungen.
+- **Entscheidung:** `quality_statement` verbindet das berichtete Ergebnis mit seinem angegebenen Zweck, sofern dadurch der fachliche Nutzen verständlicher wird. Ein eingesetztes Arbeitsergebnis darf erneut genannt werden; Ablauf und Methode werden nicht wiederholt. Ein berichteter Betrieb belegt die Umsetzung, nicht automatisch die Wirkung. Unbelegte Wirkungen bleiben ausdrücklich Ziele. Ohne Nachweis darf das konkrete Ziel konstruktiv mit einer offenen Wirkung formuliert werden; die wörtliche Formel «noch nicht nachgewiesen» aus ADR-020 ist nicht mehr verpflichtend. Die gezielte Nachfrage bleibt in `note_improvment`.
+- **Grenzen:** Keine erfundenen Erfolge, keine Abwertung berichteter Umsetzung wegen fehlender Wirkungsmessung. Negative Ergebnisse und Widersprüche bleiben erhalten. Satz-/Wortgrenzen, Bewertung 1–4, Schema und Curriculum-Abgleich bleiben unverändert. Zwei anonymisierte Praxisbeispiele dienen als Formulierungshilfe, nicht als unabhängiger Benchmark.
+- **Validierung:** Rote Promptvertragstests vor der Anpassung, danach Vitest ohne externe Modellaufrufe. Eine tatsächliche Verbesserung der Gemma-Antworten muss separat mit neuen Auswertungen geprüft werden; bestehende gespeicherte Antworten ändern sich nicht.
+
+## ADR-027: JSON-Schema auch über den produktiven SDK-Aufrufweg
+
+- **Kontext:** Die Prüfung nach dem Eval vom 14. Oktober 2026 zeigt, dass der OpenAI-kompatible SDK-Adapter standardmässig nur `response_format.type = json_object` sendet. Die lokale Zod-Validierung war vorhanden, aber das im Code definierte Schema wurde dem Modell nicht als strukturierte Ausgabevorgabe übermittelt. Der separate Eval-Runner verwendet bereits `json_schema`.
+- **Entscheidung:** Der produktive Client aktiviert `supportsStructuredOutputs` in der Modellkonfiguration des installierten Adapters. Er sendet damit das bestehende Schema als `json_schema`. Der konfigurierte OpenAI-kompatible Endpunkt muss diesen Modus unterstützen; es gibt keinen stillen Rückfall auf reines JSON. Das Domain-Schema und die verlustfreie Normalisierung reiner Hinweislisten bleiben erhalten.
+- **Validierung:** Ein Test mit dem echten SDK und gemocktem HTTP prüft den gesendeten Request einschliesslich Schema, String/null für Hinweise, Sampling, Tokenbudget und aktuellem Prompt. Keine realen Modellaufrufe in Vitest.
+- **Grenzen:** Der direkte Eval verwendet weiterhin sein eigenes Transport-Schema und explizite vLLM-Template-Parameter. Die SDK-Änderung beweist keine Gleichheit der Thinking-Konfiguration oder der Serverausführung; das wird separat geprüft. Bestehende Inhalte und DB-Strukturen werden nicht verändert.
+
+## ADR-028: Eval über denselben SDK-Client wie die Applikation
+
+- **Kontext:** Die bisherigen Evals nutzen direkte HTTP-Adapter und unterscheiden sich vom App-Aufruf bei Schema, Thinking, SDK-Retries und Hinweisnormalisierung. Der Nutzer verlangt den produktiven Client als Eval-Aufrufweg.
+- **Entscheidung:** `EVAL_EXECUTION=client` ist der Standard. Jeder Fall wird über `OpenAiCompatibleLlmClient.generateCompetencyOutput()` ausgeführt. Ein injizierbarer Fetch beobachtet Requests und Antworten, ohne SDK-Header, Requestkörper, Signale oder Retry-Verhalten zu ersetzen. Der Dry-run konstruiert Requests über denselben Client mit lokalem synthetischem Transport. Ein optionaler Systemprompt unterstützt weiterhin explizite Promptvergleiche; die App-Defaults bleiben unverändert.
+- **Bewertung:** Das validierte Client-Ergebnis wird bewertet; rohe Antworten, deren strikte Schemaquote und sämtliche HTTP-Versuche bleiben separat erhalten. Zeiten umfassen SDK-Retries und Validierung; Tokenwerte werden nur bei vollständigen Zählern über alle Versuche summiert. Aufruffehler bleiben im Nenner. Manifest und Berichte kennzeichnen den Aufrufweg und enthalten zusätzlich den Client-Quellcode-Hash.
+- **Kompatibilität:** `EVAL_EXECUTION=direct` erhält historische Modellvergleiche und die native Anthropic API. Alte Berichte bleiben lesbar. Im Client-Modus werden produktionsfremde Sampling-, Seed- und Timeout-Vorgaben sowie native Anthropic-Aufrufe abgelehnt. Ein neuer Client-Eval ist keine direkt vergleichbare Fortsetzung der historischen direkten Benchmark-Reihe.
+- **Tests:** Echtes SDK mit gemocktem HTTP, einschliesslich Request-Plan, Validierungsfehlern, Hinweisnormalisierung, SDK-Retry, Redaction und erneuter Berichterstellung. Vitest/CI rufen weiterhin kein reales Modell auf. Der Eval prüft den isolierten LLM-Client, nicht den vollständigen Frontend-/API-/DB-Ablauf.
+
 ## Offene Entscheidungen
 
 Keine — alle Kernpunkte geschlossen:
@@ -169,5 +210,5 @@ Keine — alle Kernpunkte geschlossen:
 - **Reverse Proxy / FE→BE-Kommunikation:** **Traefik** (ADR-009).
 - **`quality` / `overlap_curriculum`:** **LLM-seitig gesetzt** (bestätigt).
 - **`quality_statement`:** **LLM-seitig gesetzt, Pflichtfeld** (ADR-011).
-- **Curriculum-Import:** **CSV-Upload, Löschen & Neu** (ADR-010).
+- **Curriculum-Import:** **CSV-Upload ergänzt neue Lehrpläne atomar; vorhandene Codes führen zu 409** (ADR-024, ersetzt die Strategie aus ADR-010).
 - **LLM-Auswahl:** `is_saved` markiert genau eine auswählbare Revision der aktuellen Eingabe; erneute Auswahl ist vorerst erlaubt (ADR-012).

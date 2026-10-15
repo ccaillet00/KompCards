@@ -4,8 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { SYSTEM_PROMPT } from '../llm/prompt.js';
+import { llmOutputSchema } from '../llm/schema.js';
 import {
-  buildEvalRequest, emptyReview, evaluateOutput, hash, loadEvalConfig, outputJsonSchema,
+  buildClientEvalRequest, buildEvalRequest, emptyReview, evaluateResponse, hash, loadEvalConfig, outputJsonSchema,
   parseDataset, parseReviews, redact, runEvaluation, selectedCases, summarize,
 } from './core.js';
 import type { Attempt, Dataset, EvalTransport, Review } from './core.js';
@@ -17,10 +18,12 @@ const HELP = `KompCards Eval (Bun, separat von Vitest)
   bun run eval --report DIRECTORY
 
 Ohne Modus: dry-run (keine API-Aufrufe). --run erzeugt kostenpflichtige API-Aufrufe.
-Env: LLM_BASE_URL (inkl. /v1), LLM_MODEL, LLM_API_KEY (bei Anthropic Pflicht).
+Env: LLM_BASE_URL (inkl. /v1), LLM_MODEL, LLM_API_KEY.
+EVAL_EXECUTION=client (Default, produktiver SDK-Client) | direct (separater Modellvergleich)
 EVAL_PROVIDER=vllm|openai-compatible|anthropic (Default vllm)
 EVAL_SPLIT=development|holdout|all (Default development)
-EVAL_REPETITIONS=3 EVAL_TEMPERATURE=0.1 EVAL_MAX_TOKENS=800 EVAL_TIMEOUT_MS=120000
+EVAL_REPETITIONS=3; Client-Modus: produktive Temperatur 0.1, 800 Tokens, SDK-Retries/Provider-Thinking.
+Nur direct: EVAL_TEMPERATURE EVAL_MAX_TOKENS EVAL_TIMEOUT_MS EVAL_SEED; Anthropic benötigt direct.
 Optionale Preise/Metadaten: siehe docs/evals/RUNNER.md.
 Exit: 0 = erfolgreich ausgeführt/automatische Kriterien erfüllt, fachliche Prüfung ggf. offen;
       2 = automatische/fachliche Fehler oder unvollständiger Lauf; 1 = Konfigurations-/Dateifehler.`;
@@ -55,7 +58,7 @@ const json = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;
 const manifestSchema = z.object({
   runId: z.string(), createdAt: z.string(), status: z.enum(['dry-run', 'running', 'completed', 'interrupted']),
   plannedAttempts: z.number().int().nonnegative(), completedAttempts: z.number().int().nonnegative(),
-  hashes: z.object({ dataset: z.string(), prompt: z.string(), rubric: z.string(), core: z.string(), cli: z.string() }),
+  hashes: z.object({ dataset: z.string(), prompt: z.string(), rubric: z.string(), core: z.string(), cli: z.string(), client: z.string().optional() }),
   configuration: z.object({ model: z.string(), provider: z.string() }).passthrough(),
 }).passthrough();
 type Manifest = z.infer<typeof manifestSchema>;
@@ -68,6 +71,11 @@ const storedAttemptSchema = z.object({
   response: z.object({ raw: z.string(), text: z.string(), finishReason: z.string().nullable(), model: z.string().nullable(),
     status: z.number().nullable(), error: z.string().nullable(), elapsedMs: z.number().nonnegative(),
     usage: z.object({ input: nullableCount, output: nullableCount, cacheRead: nullableCount, cacheWrite: nullableCount, reasoning: nullableCount }),
+    validatedText: z.string().optional(),
+    httpAttempts: z.array(z.object({
+      request: z.object({ url: z.string(), body: z.record(z.unknown()) }),
+      response: z.object({ status: z.number(), raw: z.string() }).nullable(), error: z.string().nullable(),
+    })).optional(),
   }), costUsd: z.number().nonnegative().nullable(),
 });
 
@@ -95,6 +103,13 @@ function makeSummary(manifest: Manifest, rows: Attempt[], reviews: Review[]) {
     for (const type of new Set(review.criticalErrors)) criticalByType[type] = (criticalByType[type] ?? 0) + 1;
   }
   return { runId: manifest.runId, status: manifest.status, complete, plannedAttempts: manifest.plannedAttempts,
+    execution: manifest.configuration.execution ?? 'direct',
+    httpAttempts: rows.reduce((sum, row) => sum + (row.response.httpAttempts?.length ?? 1), 0),
+    retriesObserved: rows.reduce((sum, row) => sum + Math.max(0, (row.response.httpAttempts?.length ?? 1) - 1), 0),
+    rawSchemaValid: rows.filter(row => {
+      try { return llmOutputSchema.strict().safeParse(JSON.parse(row.response.text)).success; }
+      catch { return false; }
+    }).length,
     unexecutedAttempts: manifest.plannedAttempts - rows.length, total, criticalByType, usage: usageSummary(rows),
     costPerSuccessfulCardUsd: complete && total.reviewed === rows.length && total.success && total.costUsd !== null ? total.costUsd / total.success : null,
     bySplit: grouped(rows, reviews, r => [r.split]), byCurriculum: grouped(rows, reviews, r => [r.curriculum]),
@@ -106,9 +121,11 @@ function reportMarkdown(manifest: Manifest, summary: ReturnType<typeof makeSumma
   const lines = [ '# Kompetenzkarten-Evaluation', '',
     `Run: ${manifest.runId} · Modell: ${manifest.configuration.model} · Provider: ${manifest.configuration.provider}`, '',
     `Status: ${manifest.status}; ${s.attempts}/${manifest.plannedAttempts} Aufrufe gespeichert.`, '',
+    `Aufrufweg: ${summary.execution}; HTTP-Versuche: ${summary.httpAttempts}; beobachtete Retries: ${summary.retriesObserved}.`, '',
     '**Automatische Prüfung ist kein Nachweis von Faktentreue oder sprachlicher Qualität.** Labels stammen aus dem synthetischen Entwurf.', '',
     '| Messwert | Ergebnis |', '|---|---|',
     `| Schema gültig | ${s.schemaValid}/${s.attempts} |`,
+    `| Rohantwort ohne Client-Normalisierung schema-gültig | ${summary.rawSchemaValid}/${s.attempts} |`,
     `| Alle automatischen Kriterien erfüllt | ${s.automaticPass}/${s.attempts} |`,
     `| quality korrekt | ${s.qualityMatches}/${s.attempts} |`,
     `| overlap korrekt (fehlender Kontext separat in summary.json) | ${s.overlapMatches}/${s.attempts} |`,
@@ -126,7 +143,10 @@ function reportMarkdown(manifest: Manifest, summary: ReturnType<typeof makeSumma
   lines.push('', 'Weitere Aufschlüsselungen nach Lehrgang, Falltyp und Kontext sowie Tokenwerte: summary.json.', '',
     'Fachliche Bewertung: review-packet.json lesen, reviews.json ausfüllen und `bun run eval --report <Laufverzeichnis>` ausführen.',
     'null bedeutet unbewertet/unbekannt. Leere criticalErrors-Liste bedeutet ausdrücklich geprüft und keine kritischen Fehler gefunden.',
-    'Keine automatische Reparatur, kein Retry, Parallelität 1; kein separater Warm-up. Erste Anfrage und Cache-Effekte sind in den Zeiten enthalten.', '');
+    summary.execution === 'client'
+      ? 'Bewertet wird das vom produktiven Client validierte Ergebnis. Rohantworten und HTTP-Versuche bleiben separat erhalten. SDK-Retries und Hinweisnormalisierung entsprechen der App; Thinking bleibt beim Provider-Default. Zeiten umfassen den gesamten Client-Aufruf.'
+      : 'Direkter Modellvergleich: keine automatische Reparatur, kein Retry; Thinking gemäss gespeichertem Protokoll.',
+    'Parallelität 1; kein separater Warm-up. Erste Anfrage und Cache-Effekte sind in den Zeiten enthalten.', '');
   return lines.join('\n');
 }
 
@@ -143,7 +163,7 @@ export async function writeReport(directory: string): Promise<number> {
     const row = storedAttemptSchema.parse(JSON.parse(line));
     const card = dataset.cases.find(c => c.id === row.caseId);
     if (!card || row.id !== `${row.caseId}::${row.repeat}`) throw new Error('Ungültige Fallreferenz im Ergebnis');
-    return { ...row, grade: evaluateOutput(row.response.text, card, row.response.finishReason) };
+    return { ...row, grade: evaluateResponse(row.response, card) };
   });
   const envelope = z.object({ runId: z.string(), reviews: z.unknown() }).parse(JSON.parse(await readFile(join(directory, 'reviews.json'), 'utf8')));
   if (envelope.runId !== manifest.runId) throw new Error('Review-Run-ID passt nicht zum Lauf');
@@ -176,23 +196,29 @@ export async function main(args: string[], env: NodeJS.ProcessEnv, transport: Ev
   await mkdir(out);
   const { apiKey: _apiKey, ...configuration } = config;
   const manifest: Manifest = { runId, createdAt: new Date().toISOString(), status: opts.mode === 'run' ? 'running' : 'dry-run',
-    plannedAttempts: selected.length * config.repetitions, completedAttempts: 0, configuration,
+    plannedAttempts: selected.length * config.repetitions, completedAttempts: 0,
+    configuration: { ...configuration, timeoutMs: config.execution === 'client' ? null : config.timeoutMs },
     datasetVersion: dataset.version, datasetStatus: dataset.status,
     hashes: { dataset: hash(datasetRaw), prompt: hash(system), rubric: hash(rubric),
       core: hash(await readFile(new URL('./core.ts', import.meta.url), 'utf8')),
-      cli: hash(await readFile(new URL('./cli.ts', import.meta.url), 'utf8')) },
-    protocol: { parallelism: 1, retries: 0, repairs: 0, warmup: false, streaming: false, thinking: config.provider === 'openai-compatible' ? 'provider-default' : 'disabled' },
+      cli: hash(await readFile(new URL('./cli.ts', import.meta.url), 'utf8')),
+      client: hash(await readFile(new URL('../llm/client.ts', import.meta.url), 'utf8')) },
+    protocol: { execution: config.execution, parallelism: 1, retries: config.execution === 'client' ? 'sdk-default' : 0,
+      repairs: 0, warmup: false, streaming: false, thinking: config.execution === 'client' || config.provider === 'openai-compatible' ? 'provider-default' : 'disabled' },
   };
   const save = (name: string, value: unknown) => writeFile(join(out, name), redact(json(value), config.apiKey));
   await save('manifest.json', manifest);
   await writeFile(join(out, 'dataset.json'), datasetRaw);
   await writeFile(join(out, 'system-prompt.txt'), system);
   await writeFile(join(out, 'rubric.md'), rubric);
-  await save('output-schema.json', outputJsonSchema);
-  log(`${opts.mode}: ${selected.length} Fälle × ${config.repetitions} = ${manifest.plannedAttempts} Aufrufe; ${config.provider}/${config.model}`);
+  const firstRequest = config.execution === 'client' ? await buildClientEvalRequest(config, selected[0]!.input, system) : null;
+  const clientSchema = firstRequest ? z.object({ response_format: z.object({ json_schema: z.object({ schema: z.record(z.unknown()) }) }) }).parse(firstRequest.body).response_format.json_schema.schema : null;
+  await save('output-schema.json', clientSchema ?? outputJsonSchema);
+  log(`${opts.mode} (${config.execution}): ${selected.length} Fälle × ${config.repetitions} = ${manifest.plannedAttempts} Aufrufe; ${config.provider}/${config.model}`);
   log(`Ausgabe: ${out}`);
   if (opts.mode === 'dry-run') {
-    await save('plan.json', selected.map(c => ({ caseId: c.id, request: buildEvalRequest(config, c.input, system) })));
+    await save('plan.json', await Promise.all(selected.map(async c => ({ caseId: c.id,
+      request: config.execution === 'client' ? await buildClientEvalRequest(config, c.input, system) : buildEvalRequest(config, c.input, system) }))));
     log('Keine API-Aufrufe ausgeführt. Für den Modelllauf --run verwenden.');
     return 0;
   }
